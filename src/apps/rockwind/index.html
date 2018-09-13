@@ -1,0 +1,278 @@
+<html>
+<head>
+    <title>Rockstars</title>
+    <link rel="stylesheet" href="../assets/css/bootstrap.css">
+    {{#if debug}}<script>{{ '/js/hot-loader.js' | includeFile }}</script>{{/if}}
+<style>
+body {
+    color: #444;
+    padding: 60px;
+}
+h2 {
+    font-size: 38px;
+    font-weight: normal;
+    letter-spacing: .1em;
+}
+a { 
+    text-decoration: none;
+    color: #4283b9;
+}
+a:hover {
+    text-decoration: none;
+}
+#visual-sitemap a.dead:hover {
+    background: rgba(141, 110, 99,.5);
+}
+#visual-sitemap a.alive:hover {
+    background: rgba(200,255,200,.5);
+}
+#visual-sitemap a {
+    display: block;
+    float: left;
+    margin: 0 50px 50px 0;
+    padding: 20px;
+    line-height: 0;
+    box-shadow: 0 3px 8px rgba(100, 100, 100, 0.3);
+    background: rgba(255,255,255,.1);
+}
+#visual-sitemap img {
+    height: 200px;
+}
+.clear {
+    clear: both;
+}
+th:first-child {
+    text-align: right;
+}
+</style>
+</head>
+<body>
+    <a href="https://github.com/NetCoreWebApps/Rockwind"><img style="z-index:3; position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/a6677b08c955af8400f44c6298f40e7d19cc5b2d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png"></a>
+
+    <h2>Rockstars</h2>
+    <p>
+        Rockstars shows an example of a self-contained content website complete with its own custom index.html home page and 
+        multiple _layout.html layout pages and partials.
+    </p>
+    <div id="visual-sitemap">
+        <a class="dead" href="rockstars/dead/cobain/"><img src="rockstars/img/thumb-05.jpg"></a>
+        <a class="alive" href="rockstars/alive/love/"><img src="rockstars/img/thumb-04.jpg"></a>
+        <a class="dead" href="rockstars/dead/hendrix/"><img src="rockstars/img/thumb-06.jpg"></a>
+        <a class="alive" href="rockstars/alive/vedder/"><img src="rockstars/img/thumb-02.jpg"></a>
+        <a class="dead" href="rockstars/dead/jackson/"><img src="rockstars/img/thumb-07.jpg"></a>
+        <a class="alive" href="rockstars/alive/springsteen/"><img src="rockstars/img/thumb-03.jpg"></a>
+        <a class="dead" href="rockstars/dead/presley/"><img src="rockstars/img/thumb-09.jpg"></a>
+        <a class="alive" href="rockstars/alive/grohl"><img src="rockstars/img/thumb-01.jpg"></a>
+        <a class="dead" href="rockstars/dead/joplin/"><img src="rockstars/img/thumb-08.jpg"></a>
+    </div>
+    <div class="clear"></div>
+
+    <h2>Northwind</h2>
+    <p>
+        The Northwind website shows an example of a multi-level data driven website developed using just 
+        <a href="http://templates.servicestack.net/docs/db-filters"DB Filters></a>.
+    </p>
+
+    <table class="table table-bordered" style="width:auto">
+        <tr>
+            <th>Customers</th>
+            <td><a href="/northwind/customers">/northwind/customers</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/customers.html">/northwind/customers.html</a></td>
+        </tr>
+        <tr>
+            <th>Employees</th>
+            <td><a href="/northwind/employees">/northwind/employees</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/employees.html">/northwind/employees.html</a></td>
+        </tr>
+        <tr>
+            <th>Products</th>
+            <td><a href="/northwind/products">/northwind/products</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/products.html">/northwind/products.html</a></td>
+        </tr>
+        <tr>
+            <th>Categories</th>
+            <td><a href="/northwind/categories">/northwind/categories</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/categories.html">/northwind/categories.html</a></td>
+        </tr>
+        <tr>
+            <th>Suppliers</th>
+            <td><a href="/northwind/suppliers">/northwind/suppliers</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/suppliers.html">/northwind/suppliers.html</a></td>
+        </tr>
+        <tr>
+            <th>Shipppers</th>
+            <td><a href="/northwind/shippers">/northwind/shippers</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/shippers.html">/northwind/shippers.html</a></td>
+        </tr>
+        <tr>
+            <td class="bg-primary" colspan="3" style="text-align:center;color:#fff;font-size:1.5rem">Use Cases</td>
+        </tr>
+        <tr>
+            <th>Order Report #10643</th>
+            <td><a href="/northwind/order-report/10643">/northwind/order-report/10643</a></td>
+            <td><a href="https://github.com/NetCoreWebApps/WebApp/blob/master/src/apps/rockwind/northwind/order-report/_id.html">/northwind/order-report/_id.html</a></td>
+        </tr>
+        <tr>
+            <th>Northwind SQL Viewer</th>
+            <td><a href="/northwind/sql/">/northwind/sql/</a></td>
+            <td>
+                <div><a href="https://github.com/NetCoreWebApps/WebApp/blob/master/src/apps/rockwind/northwind/sql/index.html">/northwind/sql/index.html</a></div>
+                <div><a href="https://github.com/NetCoreWebApps/WebApp/blob/master/src/apps/rockwind/northwind/sql/api.html">/northwind/sql/api.html</a></div>
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-primary" colspan="3" style="text-align:center;color:#fff;font-size:1.5rem">Page Queries</td>
+        </tr>
+        <tr>
+            <th>Customers in Germany</th>
+            <td><a href="/northwind/customers?country=Germany">/northwind/customers?country=Germany</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/customers.html">/northwind/customers.html</a></td>
+        </tr>
+        <tr>
+            <th>Customers in London</th>
+            <td><a href="/northwind/customers?city=London">/northwind/customers?city=London</a></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Alfreds Futterkiste Details</th>
+            <td><a href="/northwind/customer?id=ALFKI">/northwind/customer?id=ALFKI</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/customer.html">/northwind/customer.html</a></td>
+        </tr>
+        <tr>
+            <th>Order #10643</th>
+            <td><a href="/northwind/order?id=10643">/northwind/order?id=10643</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/order.html">/northwind/order.html</a></td>
+        </tr>
+        <tr>
+            <th>Employee Nancy Davolio Details</th>
+            <td><a href="/northwind/employee?id=1">/northwind/employee?id=1</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/employee.html">/northwind/employee.html</a></td>
+        </tr>
+        <tr>
+            <th>Chai Product Details</th>
+            <td><a href="/northwind/products?id=1">/northwind/products?id=1</a></td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/northwind/products.html">/northwind/products.html</a></td>
+        </tr>
+        <tr>
+            <th>Beverage Products</th>
+            <td><a href="/northwind/products?category=Beverages">/northwind/products?category=Beverages</a></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Products from Bigfoot Breweries</th>
+            <td><a href="/northwind/products?supplier=Bigfoot+Breweries">/northwind/products?supplier=Bigfoot+Breweries</a></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Products containing Tofu</th>
+            <td><a href="/northwind/products?nameContains=Tofu">/northwind/products?nameContains=Tofu</a></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td class="bg-primary" colspan="3" style="text-align:center;color:#fff;font-size:1.5rem">API Queries</td>
+        </tr>
+        <tr>
+            <th>All Customers</th>
+            <td>
+                <div><a href="/api/customers">/api/customers</a></div>
+                <div><a href="/api/customers.csv">/api/customers.csv</a></div>
+                <div><a href="/api/customers.html">/api/customers.html</a></div>
+                <div><a href="/api/customers?format=html">/api/customers?format=html</a></div>
+                <div style="margin:5px 0 0 0;color:#888;font-size:13px"><b>Accept</b> HTTP Header also supported</div>
+            </td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/api/customers.html">/api/customers.html</a></td>
+        </tr>
+        <tr>
+            <th>Alfreds Futterkiste Details</th>
+            <td>
+                <div><a href="/api/customers/ALFKI">/api/customers/ALFKI</a></div>
+                <div><a href="/api/customers/ALFKI.csv">/api/customers/ALFKI.csv</a></div>
+                <div><a href="/api/customers/ALFKI.html">/api/customers/ALFKI.html</a></div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>As List</th>
+            <td>
+                <div><a href="/api/customers?id=ALFKI">/api/customers?id=ALFKI</a></div>
+                <div><a href="/api/customers.csv?id=ALFKI">/api/customers.csv?id=ALFKI</a></div>
+                <div><a href="/api/customers.html?id=ALFKI">/api/customers.html?id=ALFKI</a></div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Customers in Germany</th>
+            <td>
+                <div><a href="/api/customers?country=Germany">/api/customers?country=Germany</a></div>
+                <div><a href="/api/customers.csv?country=Germany">/api/customers.csv?country=Germany</a></div>
+                <div><a href="/api/customers.html?country=Germany">/api/customers.html?country=Germany</a></div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Customers in London</th>
+            <td>
+                <div><a href="/api/customers?city=London">/api/customers?city=London</a></div>
+                <div><a href="/api/customers.csv?city=London">/api/customers.csv?city=London</a></div>
+                <div><a href="/api/customers.html?city=London">/api/customers.html?city=London</a></div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>All Products</th>
+            <td>
+                <div><a href="/api/products">/api/products</a></div>
+                <div><a href="/api/products.csv">/api/products.csv</a></div>
+                <div><a href="/api/products.html">/api/products.html</a></div>
+            </td>
+            <td><a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/rockwind/api/products.html">/api/products.html</a></td>
+        </tr>
+        <tr>
+            <th>Chai Product Details</th>
+            <td>
+                <div><a href="/api/products/1">/api/products/1</a></div>
+                <div><a href="/api/products/1.csv">/api/products/1.csv</a></div>
+                <div><a href="/api/products/1.html">/api/products/1.html</a></div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>As List</th>
+            <td>
+                <div><a href="/api/products?id=1">/api/products?id=1</a></div>
+                <div><a href="/api/products.csv?id=1">/api/products.csv?id=1</a></div>
+                <div><a href="/api/products.html?id=1">/api/products.html?id=1</a></div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Beverage Products</th>
+            <td>
+                <div><a href="/api/products?category=Beverages">/api/products?category=Beverages</a></div>
+                <div><a href="/api/products.csv?category=Beverages">/api/products.csv?category=Beverages</a></div>
+                <div><a href="/api/products.html?category=Beverages">/api/products.html?category=Beverages</a></div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Products from Bigfoot Breweries</th>
+            <td>
+                <div><a href="/api/products?supplier=Bigfoot+Breweries">/api/products?supplier=Bigfoot+Breweries</a></div>
+                <div><a href="/api/products.csv?supplier=Bigfoot+Breweries">/api/products.csv?supplier=Bigfoot+Breweries</a></div>
+                <div><a href="/api/products.html?supplier=Bigfoot+Breweries">/api/products.html?supplier=Bigfoot+Breweries</a></div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Products containing Tofu</th>
+            <td>
+                <div><a href="/api/products?nameContains=Tofu">/api/products?nameContains=Tofu</a></div>
+                <div><a href="/api/products.csv?nameContains=Tofu">/api/products.csv?nameContains=Tofu</a></div>
+                <div><a href="/api/products.html?nameContains=Tofu">/api/products.html?nameContains=Tofu</a></div>
+            </td>
+            <td></td>
+        </tr>
+    </table>
+
+</body>
+</html>

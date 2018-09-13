@@ -1,0 +1,269 @@
+<!--
+title: Redis
+-->
+
+{{ limit ?? 100      | assignTo: limit }}
+{{ q     ?? ''       | assignTo: q }}
+{{ key   ?? ''       | assignTo: key }}
+{{ type  ?? 'string' | assignTo: type }}
+{{ "?"   | addQueryString({ q, limit }) | assignTo: baseUrl }}
+
+{{ ['GET','LRANGE','SMEMBERS','ZRANGE','HGETALL'] | any: startsWith(call, it) 
+   | assignTo: isViewCommand }}
+
+{{ `<script>
+var baseUrl = "${baseUrl}";
+var key = "${key}";
+var limit = "${limit}";
+var type = "${type}";
+var call = "${escapeDoubleQuotes(call)}";
+var isViewCommand = ${lower(isViewCommand)};
+</script>` | raw }}
+
+{{#raw appendTo scripts}}
+<script>
+$('input[name=q]').on('input', function(){ 
+    if (isViewCommand) $("[name=call]").val('')
+    $(this).closest('form').submit() 
+})
+
+$('.details tbody tr').on('click', function(){
+    var key = $(this).find('td:first').html()
+    var type = $(this).find('td:nth-child(2)').html()
+    var call = type == "string" ?
+        "GET " + key
+        : type == "list" ? 
+        "LRANGE " + key + " 0 -1"
+        : type == "set" ?
+        "SMEMBERS " + key
+        : type == "zset" ?
+        "ZRANGE " + key + " 0 -1 WITHSCORES" 
+        : type == "hash" ?
+        "HGETALL " + key  : null;
+    location.href = baseUrl + '&key=' + encodeURIComponent(key) + "&type=" + type + "&call=" + encodeURIComponent(call)
+})
+
+$('.action.edit').on('click', function(){
+    if (!key) return
+    $("#type-string").trigger('click')
+    $('#value').val(window.keyValue)
+})
+
+$('.action.delete').on('click', function(){
+    location.href = baseUrl + '&call=' + encodeURIComponent("DEL " + key)
+})
+
+$('.action.q').on('click', function(){
+    location.href = '?q=' + encodeURIComponent(key.split(':').slice(0, $(this).data('pos') + 1).join(':'))
+})
+
+$('#key,#value').on('input', function(){
+    $('#key').val($('#key').val().replace(/\\s+/g,''))
+    $('#btn-key-type').attr('disabled', !$('#key').val() || !$('#value').val() || ($('#key').val() == key && $('#value').val() == window.keyValue))
+})
+
+$('#key-types').submit(function(e){
+    e.preventDefault()
+    var key = $(this).find('#key').val(), value = $(this).find('#value').val(), type = this.className.split('-')[1];
+    var url = '?q=' + encodeURIComponent(key) + '&key=' + encodeURIComponent(key) + '&type=' + type + '&call='
+        + (type == 'list' 
+        ? encodeURIComponent("RPUSH " + key + " " + value)
+        : type == 'set' 
+        ? encodeURIComponent("SADD " + key + " " + value)
+        : type == 'zset' 
+        ? encodeURIComponent("ZADD " + key + " " + $("#score").val() + " " + value)
+        : type == 'hash' 
+        ? encodeURIComponent("HSET " + key + " " + $("#field").val() + " " + value)
+        : encodeURIComponent("SET " + key + " " + value))
+    location.href = url
+})
+
+$("#search-results tr td:first-child").each(function(){
+    if ($(this).html() == key) $(this).parent().addClass('active')
+})
+
+$(".type-buttons button").on('click', function(){
+    $("#key-types").removeClass().addClass(this.id).find('.btn-success').html($(this).data('label'))
+    var isForKey = type == this.id.split('-')[1]
+    $("#key").val(isForKey ? key : '')
+    $("#value").val(isForKey && (call || "").toUpperCase().startsWith("GET") ? keyValue : '')
+    $('#btn-key-type').attr('disabled', !$('#key').val() || !$('#value').val() || ($('#key').val() == key && $('#value').val() == window.keyValue && type == "string"));
+    if (isViewCommand) $("#key-types input:text:visible,#value").filter(function(){ return !this.value || this.id == "value" }).first().focus()
+})
+
+$("#type-" + type).trigger('click')
+</script>
+{{/raw}}
+
+<form>
+    <div class="row">
+        <div class="col-4">
+            <input type="hidden" name="type" value="{{ type }}">
+            <input type="text" name="q" class="form-control" placeholder="Search for key, e.g. urn..." aria-label="Search for key..." value="{{ q }}"
+            autofocus onfocus="var hold=this.value; this.value=''; this.value=hold"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="col-auto">
+            <input type="text" name="limit" id="limit" class="form-control" placeholder="limit" value="{{ limit }}"
+                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width:70px">
+        </div>
+        <div class="col-auto">
+            <label for="limit" style="width:30px;line-height:2rem;margin: 0 0 0 -10px">results</label>
+        </div>
+        <div class="col-6">
+            <div class="input-group">
+                <input type="text" name="call" class="form-control" placeholder="Redis Command" value="{{ call | ifExists }}"
+                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <span class="input-group-btn"><button class="btn btn-primary" type="submit">Go!</button></span>
+            </div>
+        </div>
+    </div>
+</form>
+
+{{#if Request.Verb == "POST" }}
+    {{ { host, port, db, password } | withoutEmptyValues | redisChangeConnection | end }}
+{{/if}}
+
+<h6 id="connection"><a href="?connection">@ {{ redisConnectionString }}</a></h6>
+
+{{#if connection != null }}
+{{#with redisConnection}}
+<div class="container" style="position:absolute;max-width:440px;margin:65px 0 0 0">
+    <form action="/" method="POST">
+        <div class="form-group row">
+            <label for="host" class="col-sm-3 col-form-label">Host</label>
+            <div class="col-sm-9">
+                <input type="text" class="form-control" id="host" name="host" placeholder="host" value="{{ host }}">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="port" class="col-sm-3 col-form-label">Port</label>
+            <div class="col-sm-9">
+                <input type="text" class="form-control" id="port" name="port" placeholder="port" value="{{ port }}">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="db" class="col-sm-3 col-form-label">Database</label>
+            <div class="col-sm-9">
+                <input type="text" class="form-control" id="db" name="db" placeholder="db" value="{{ db }}">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="password" class="col-sm-3 col-form-label">Password</label>
+            <div class="col-sm-9">
+                <input type="password" class="form-control" id="password" name="password" placeholder="password" value="">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label class="col-sm-3 col-form-label"></label>
+            <div class="col-sm-9">
+                <button type="submit" class="btn btn-primary">Change Connection</button>
+            </div>
+        </div>
+    </form>
+</div>
+{{/with}}
+{{/if}}
+
+{{ ['flush','monitor','brpop','blpop'] | ifNotEmpty(call) | any: contains(lower(call), it)
+   | assignTo: illegalCommand }}
+
+{{#if call and !illegalCommand }}
+    {{ call | redisCall | assignTo: json }}
+    {{ parseJson(json) ?? json | assignTo: obj }}
+{{/if}}
+
+<script>window.keyValue = '{{ json | onlyIfExists | jsString }}';</script>
+
+<div id="details">
+    <table class="table table-bordered auto-width">
+        <caption>
+        {{#if key }}
+            {{ key | split(':') | assignTo: parts }}
+            {{#if parts.Length >= 2 }}
+                {{#each parts}}{{#if index > 0}}&gt;{{/if}}<span class="action q" data-pos="{{index}}">{{it}}</span>{{/each}}
+            {{/if}}
+        {{/if}}
+        </caption>
+
+        {{#if !isEmpty(obj) }}
+            {{ obj | htmlDump({ className: "table table-striped" }) | assignTo: html }}
+            {{#if html}}<tr><td>{{html}}</td></tr>{{/if}}
+
+            {{#if obj and isViewCommand}} {{ 'delete' | addTo: actions }} {{/if}}
+        {{/if}}
+
+        {{#if actions }}
+            {{#if type == 'string' }}
+                {{ 'edit' | addTo: actions }}
+            {{/if}}
+            {{#if actions }}
+                <tr>
+                    <td colspan="2" style="text-align:right">
+                    {{#each actions}}<span class="action {{it}}">{{it}}</span>{{/each}}
+                    </td>
+                </tr>
+            {{/if}}
+        {{/if}}
+   </table>
+
+    {{#if illegalCommand}}<div class="alert alert-danger">Command is not allowed.</div>{{/if}}
+    {{ htmlErrorMessage }}
+
+    {{ ifError | select: <a href="{ baseUrl }">clear command</a> }}
+
+    <div class="type-{{ type }}" id="key-types">
+        <div class="type-buttons">
+            <button id="type-string" type="button" class="btn btn-outline-secondary" data-label="Set String">Strings</button>
+            <button id="type-list"   type="button" class="btn btn-outline-secondary" data-label="Add to List">Lists</button>
+            <button id="type-set"    type="button" class="btn btn-outline-secondary" data-label="Add to Set">Sets</button>
+            <button id="type-zset"   type="button" class="btn btn-outline-secondary" data-label="Add to Sorted Set">Sorted Sets</button>
+            <button id="type-hash"   type="button" class="btn btn-outline-secondary" data-label="Set Hash Entry">Hashes</button>
+        </div>
+        <form>
+            <div class="form-group">
+                <div class="input-group input-group-lg">
+                    <input id="key" type="text" class="form-control" placeholder="key" value="" style="min-width:200px"
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <input id="field" type="text" class="form-control" placeholder="field" value="" style="max-width:130px"
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <input id="score" type="text" class="form-control" placeholder="score" value="" style="max-width:130px"
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-group input-group-lg">
+                    <textarea id="value" class="form-control" placeholder="value" value="" style="min-width:400px;min-height:300px"
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <span class="input-group-btn"><button id="btn-key-type" class="btn btn-success btn-lg" disabled>Set String</button></span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="search-results">
+    {{#if !q}}
+        {{#if connection == null }}
+            <table class="table table-striped" style="width:450px">
+                <tbody>
+                {{#each toList(redisInfo) }}
+                    <tr><th>{{ it.Key | replace('_',' ') }}</th><td title="{{it.Value}}">{{ it.Value | substringWithEllipsis(32) }}</td></tr>
+                {{/each}}
+                </tbody>
+            </table>
+        {{/if}}
+    {{else}}
+        {{ `${q}*` | redisSearchKeys({ limit }) | map: toObjectDictionary(it) 
+            | assignTo: searchResults }} 
+
+        <h3>Results for '{{q}}'</h3>
+        {{#if !isEmpty(searchResults) }}
+            {{ searchResults | htmlDump({ className: "table table-striped details auto-width" }) }}
+        {{else if q}}
+            Your search did not match any keys..
+        {{/if}}
+    {{/if}}
+</div>

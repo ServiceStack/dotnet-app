@@ -1,0 +1,12 @@
+API /posts/{slug}/api
+  * slug : string - Return post with this slug name
+
+{{ `SELECT * 
+      FROM Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName 
+     WHERE Slug = @slug 
+     ORDER BY p.Created DESC` 
+   | dbSingle({ slug })
+   | assignTo: post }}
+
+{{ post ?? httpResult({ status:404, statusDescription:'Post was not found' }) 
+   | return }}

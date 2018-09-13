@@ -1,0 +1,14 @@
+debug true
+name Chat Web App
+port 5000
+
+oauth.RedirectUrl http://localhost:5000/
+oauth.CallbackUrl http://localhost:5000/auth/{0}
+oauth.twitter.ConsumerKey JvWZokH73rdghDdCFCFkJtCEU
+oauth.twitter.ConsumerSecret WNeOT6YalxXDR4iWZjc4jVjFaydoDcY8jgRrGc5FVLjsVlY2Y8
+oauth.facebook.Permissions email
+oauth.facebook.AppId 447523305684110
+oauth.facebook.AppSecret 7d8a16d5c7cbbfab4b49fd51183c93a0
+oauth.github.Scopes user
+oauth.github.ClientId dbe8c242e3d1099f4558
+oauth.github.ClientSecret 42c8db8d0ca72a0ef202e0c197d1377670c990f4

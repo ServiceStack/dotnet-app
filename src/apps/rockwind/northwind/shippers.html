@@ -1,0 +1,7 @@
+<!--
+title: Shippers
+-->
+
+<a id="back" href="javascript:history.back()">&#8592; Back</a>
+
+{{ "select * from Shipper" | dbSelect | htmlDump({ className: "table table-striped auto-width" }) }}

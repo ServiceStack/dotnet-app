@@ -1,0 +1,10 @@
+{{ { command } | ensureAllArgsNotEmpty }}
+
+{{ ['flush','monitor','brpop','blpop'] | any => contains(lower(command), it)
+   | assignTo: illegalCommand }}
+
+{{ illegalCommand ? throwArgumentException('Command is not allowed.') : null }}
+
+{{ command  | redisCall | assignTo: contents }}
+
+{{ contents | return({ 'Content-Type': 'text/plain' }) }}

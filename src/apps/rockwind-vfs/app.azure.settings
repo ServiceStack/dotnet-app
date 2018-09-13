@@ -1,0 +1,12 @@
+# Note: values prefixed with '$' are resolved from Environment Variables
+debug false
+name Azure Blob SQL Server Web App
+db sqlserver
+db.connection $AZURE_SQL_CONNECTION_STRING
+files azure
+files.config {ConnectionString:$AZURE_BLOB_CONNECTION_STRING,ContainerName:rockwind}
+args.assetsBase https://servicestack.blob.core.windows.net/rockwind/
+
+# Reduces an Azure Blob API call, but takes longer for modified pages to appear
+checkForModifiedPagesAfterSecs 60
+defaultFileCacheExpirySecs     60

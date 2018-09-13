@@ -1,0 +1,16 @@
+language: csharp
+solution: src/WebApp/WebApp.csproj
+os: linux
+dist: trusty
+sudo: required
+dotnet: 2.0.0
+mono: none
+env: DOTNETCORE=1
+services:
+  - docker
+script:
+  - chmod +x ./deploy-envs.sh
+  - chmod +x ./scripts/build.sh
+  - chmod +x ./scripts/deploy.sh
+  - cd scripts && ./build.sh
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then ./deploy.sh; fi

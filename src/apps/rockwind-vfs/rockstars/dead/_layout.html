@@ -1,0 +1,42 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<title>Dead Rockstars - {{ title }}</title>
+{{#if debug}}<script>{{ '/js/hot-loader.js' | includeFile }}</script>{{/if}}
+<link href="{{ '../../default.css' | resolveAsset }}" rel="stylesheet" />
+
+<style type="text/css">
+body {
+    background: #ACDBCE url({{ '../../img/tileable_wood_texture.png' | resolveAsset }});
+    background-attachment: fixed;
+}
+a {
+    color: #a30;
+}
+</style>
+</head>
+    <body>
+        <a id="back" href="../../../">&#8592; Home</a>
+
+        <div id="page">
+            <div id="info">
+                <h6>Rocking the grave...</h6>
+                <p>
+                    <a id="home" href="../../../"></a>
+                </p>
+            </div>
+
+            <h1>{{ title }}</h1>
+            
+            {{ "menu-dead" | partial }}
+        
+            <div id="content">
+                {{ page }}
+                <b class="clear"></b>
+            </div>
+            
+            {{ "menu-alive" | partial }}
+        </div>
+
+    </body>
+</html>

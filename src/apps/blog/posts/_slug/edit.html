@@ -1,0 +1,70 @@
+<!--
+title: Edit post
+-->
+
+<div class="page-edit">
+
+{{ 'assert-auth' | partial }}
+
+{{ `SELECT * from Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName WHERE Slug = @slug ORDER BY p.Created DESC` 
+    | dbSingle({ slug })
+    | assignTo: post }}
+
+{{ 'assert-post' | partial({ post }) }}
+
+{{#if isHttpGet }}
+
+    {{ post.Title   | assignTo: postTitle}}
+    {{ post.Content | assignTo: content}} 
+
+{{else if isHttpPost }}
+
+    {{ assignErrorAndContinueExecuting: ex }}
+
+    {{ 'Title must be between 5 and 200 characters'      | onlyIf(length(postTitle) < 5 || length(postTitle) > 200) | assignTo: titleError }}
+    {{ 'Content must be between 25 and 64000 characters' | onlyIf(length(content) < 25  || length(content) > 64000) | assignTo: contentError }}
+    {{ 'Potentially malicious characters detected'       | ifNotExists(contentError) | onlyIf(containsXss(content)) | assignTo: contentError }}
+    
+    {{#if !(ex || titleError || contentError) }}
+        {{ `datetime(CURRENT_TIMESTAMP,'localtime')` | assignTo: sqlNow }}
+
+        {{ `UPDATE Post SET Title=@title, Content=@content, Modified=${sqlNow}, ModifiedBy=@userName WHERE Slug=@slug` 
+           | dbExec({ slug:post.Slug, title: postTitle, content, userName }) | end }}
+        
+        {{ ex == null | assignTo: success }}
+    {{/if}}
+
+{{/if}}
+
+{{#if success}}
+    {{ httpResult({ status:301, Location: `/${userName}` }) | return }}    
+{{else}}
+    <form method="POST" data-save-drafts>
+        {{#if ex}}<div class="error-summary">{{ex.message}}</div>{{/if}}
+        <div class="row">
+            <input name="postTitle" type="text" placeholder="title" autocomplete="off" value="{{postTitle}}">
+            {{#if titleError}}<div class="error">{{titleError}}</div>{{/if}}
+        </div>
+        <div class="row">
+            {{ 'editor' | partial({ name:"content", placeholder:"content (templates)", 'data-autogrow':true, 'data-livepreview':'.preview', error:contentError }) }}
+        </div>
+        <div class="row">
+            <button class="btn" type="submit">Update post</button>
+        </div>
+    </form>
+
+    <div>
+        <div class="preview"></div>
+    </div>
+{{/if}}
+
+<style>
+#body {
+    justify-content: left;
+}
+textarea {
+    height: 20em;
+}
+</style>
+
+</div>

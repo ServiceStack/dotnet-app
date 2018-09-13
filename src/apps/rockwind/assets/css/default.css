@@ -1,0 +1,19 @@
+#back {
+    position:absolute;
+    top:8px;
+    left:8px;
+}
+#back:hover {
+    text-decoration: none;
+}
+caption {
+    caption-side: top;
+    text-align: center;
+}
+.details tbody tr:hover {
+    cursor: pointer;
+    background: #FFF9C4 !important;
+}
+.auto-width {
+    width: auto;
+}

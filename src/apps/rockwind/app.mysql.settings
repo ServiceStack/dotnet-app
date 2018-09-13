@@ -1,0 +1,5 @@
+debug true
+name Rockwind MySql Web App
+port 5000
+db mysql
+db.connection Server=localhost;Database=northwind;UID=root;Password=test;SslMode=none

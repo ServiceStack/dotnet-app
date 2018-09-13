@@ -1,0 +1,21 @@
+<!--
+    title: blog.sqlite database
+-->
+
+<div class="page-blank">
+
+{{ `SELECT * FROM Post ORDER BY Modified DESC` | dbSelect | htmlDump({ caption: 'Post table', className: 'table-data db-post' }) }}
+
+{{#noop remove noop block to also display UserInfo table}}
+{{ `SELECT * FROM UserInfo ORDER BY Modified DESC` | dbSelect | htmlDump({ caption: 'UserInfo table', className: 'table-data' }) }}
+{{/noop}}
+
+<style>
+#body { justify-content: left; }
+.profile { display: none; }
+.db-post td:nth-child(4) {
+    white-space: pre;
+}
+</style>
+
+</div>

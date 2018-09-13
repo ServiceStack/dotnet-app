@@ -1,0 +1,5 @@
+debug true
+name Web App Plugins
+features CustomPlugin, OpenApiFeature, PostmanFeature, CorsFeature, ValidationFeature
+CustomPlugin { ShowProcessLinks: true }
+ValidationFeature { ScanAppHostAssemblies: true }

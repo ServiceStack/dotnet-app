@@ -1,0 +1,7 @@
+API /preview
+  * content : string - ServiceStack Templates to evaluate
+
+{{ content  | evalTemplate({use:{plugins:'MarkdownTemplatePlugin'}}) | assignTo:response }}
+{{ response | return({ contentType:'text/plain' }) }}
+  
+//TODO: opt-in safe plugins/features in new context

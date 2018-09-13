@@ -1,0 +1,8 @@
+
+{{#if post == null }}
+    {{ `Post ${slug} does not exist` | assignTo: error }}
+{{else if post.CreatedBy != userName }}
+    {{ `You do not have permission to edit this post` | assignTo: error }}
+{{/if}}
+
+{{ 'error' | showIfExists(error) | partial({ error }) }}

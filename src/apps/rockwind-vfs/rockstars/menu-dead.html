@@ -1,0 +1,16 @@
+{{ {
+    "/rockstars/dead/cobain/": "Kurt Cobain",
+    "/rockstars/dead/hendrix/": "Jimi Hendrix",
+    "/rockstars/dead/jackson/": "Michael Jackson",
+    "/rockstars/dead/joplin/": "Janis Joplin",
+    "/rockstars/dead/presley/": "Elvis Presley"
+} | assignTo: links }}
+
+<div class="menu">
+    <ul>
+        <li class="label"><b>Past Rockstars:</b></li>
+        {{#each toList(links)}}
+            <li {{ {active: Key == PathInfo} | htmlClass }}><a href="{{Key}}">{{Value}}</a></li>
+        {{/each}}
+    </ul>                
+</div>

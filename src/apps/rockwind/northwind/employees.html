@@ -1,0 +1,18 @@
+<!--
+title: Employees
+-->
+
+<a id="back" href="javascript:history.back()">&#8592; Back</a>
+
+{{ "select Id, TitleOfCourtesy as Title, FirstName, LastName, City, Region, Country, HomePhone, Extension from Employee" | assignTo: sql }}
+
+{{ sql | dbSelect | htmlDump({ className: "table table-striped details" }) }}
+
+{{#raw appendTo scripts}}
+<script>
+$('.details tbody tr').on('click', function(){
+    var id = $(this).find("td:first").html();
+    location.href = 'employee?id=' + id;
+})
+</script>
+{{/raw}}

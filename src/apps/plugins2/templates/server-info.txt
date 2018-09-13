@@ -1,0 +1,13 @@
+<table class="table table-striped">
+<caption>Top 5 Local Disks</caption>
+<tr><th>Name</th><th>Type</th><th>Available Space</th><th>Total Free Space</th><th>Total Size</th></tr>
+{{ drives    | orderByDescending: it.TotalSize
+   | take(5) | selectPartial: drive-info }}
+</table>
+
+<table class="table table-striped">
+<caption>Current Process</caption>
+<tr><th>Id</th><th>Name</th><th>CPU Time</th><th>User Time</th><th>Memory (current)</th>
+    <th>Memory (peak)</th><th>Active Threads</th></tr>
+{{ currentProcess | selectPartial: process-info }}
+</table>

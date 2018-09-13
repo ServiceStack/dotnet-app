@@ -1,0 +1,6 @@
+debug true
+name Rockwind SQLite Web App
+contentRoot ..
+webRoot .
+db sqlite
+db.connection ~/northwind.sqlite

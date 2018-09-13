@@ -1,0 +1,3 @@
+debug true
+name Redis Web App
+redis.connection localhost:6379

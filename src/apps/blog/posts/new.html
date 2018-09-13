@@ -1,0 +1,60 @@
+<!--
+title: New post
+-->
+
+<div class="page-edit">
+
+{{ 'assert-auth' | partial }}
+
+{{#if isHttpPost }}
+    {{ assignErrorAndContinueExecuting: ex }}
+
+    {{ 'Title must be between 5 and 200 characters'      | onlyIf(length(postTitle) < 5 || length(postTitle) > 200) | assignTo: titleError }}
+    {{ 'Content must be between 25 and 64000 characters' | onlyIf(length(content) < 25  || length(content) > 64000) | assignTo: contentError }}
+    {{ 'Potentially malicious characters detected'       | ifNotExists(contentError) | onlyIf(containsXss(content)) | assignTo: contentError }}
+ 
+    {{#if !(titleError || contentError) }}
+        {{#if dbSingle(`SELECT Slug FROM Post WHERE slug = @slug`, { slug: generateSlug(postTitle) }) }}
+            {{ 'Title already exists' | assignTo: titleError }}
+        {{/if}}
+    {{/if}}
+    
+    {{#if !(ex || titleError || contentError) }}
+        {{ `datetime(CURRENT_TIMESTAMP,'localtime')` | assignTo: sqlNow }}
+
+        {{ `INSERT INTO Post (Slug, Title, Content, Created, CreatedBy, Modified, ModifiedBy) VALUES (@slug, @title, @content, ${sqlNow}, @user, ${sqlNow}, @user)` 
+           | dbExec({ slug: generateSlug(postTitle), title: postTitle, content, user: userName }) }}
+        
+        {{ ex == null | assignTo: success }}
+    {{/if}}
+{{/if}}
+
+{{#if success}}
+    {{ httpResult({ status:301, Location: `/${userName}` }) | return }}
+{{else}}
+    <form method="POST" data-save-drafts>
+        {{#if ex}}<div class="error-summary">{{ex.message}}</div>{{/if}}
+        <div class="row">
+            <input name="postTitle" type="text" placeholder="title" autocomplete="off" value="{{postTitle}}">
+            {{#if titleError}}<div class="error">{{titleError}}</div>{{/if}}
+        </div>
+        <div class="row">
+            {{ 'editor' | partial({ name:"content", placeholder:"content (templates)", 'data-autogrow':true, 'data-livepreview':'.preview', error:contentError }) }}
+        </div>
+        <div class="row">
+            <button class="btn" type="submit">create post</button>
+        </div>
+    </form>
+
+    <div>
+        <div class="preview"></div>
+    </div>
+{{/if}}
+
+<style>
+#body {
+    justify-content: left;
+}
+</style>
+
+</div>

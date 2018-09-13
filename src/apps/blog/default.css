@@ -1,0 +1,301 @@
+body {
+    color: #212121;
+    padding: 0;
+    margin: 0;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 1.4rem;
+}
+h1,h2,h3,h4,h5,h6 { 
+    font-family: 'Special Elite', cursive;
+    font-family: 'Noticia Text', serif;
+}
+#title { margin:0; padding:.5em .5em 0 0; font-size: 1.5rem; text-align: right; font-weight: normal }
+#body { display: flex; align-items: center; justify-content: center; }
+a { text-decoration: none; color: #428bca; }
+a:hover { text-decoration: underline; opacity: .8; }
+.page { min-width: 880px; max-width: 880px; }
+.page-edit {
+    width: 75%;
+    max-width: 1200px;
+    padding: 1em;
+}
+
+.profile {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    text-align: right;
+    margin: .3em .8em 0 0;
+    font-size: .8em;
+}
+#avatar {
+    display: flex;
+}
+#avatar img {
+    margin-left: 10px;
+}
+.profile a {
+    font-size: .8em;
+}
+.profile .info {
+    margin: .5em 0 0 0;
+}
+.profile strong {
+    padding: .3em;
+}
+.profile .links {
+    margin: 0 0 0 0;
+}
+.svg-icon {
+    vertical-align: bottom;
+    margin: 5px 0 0 0;
+}
+.avatar-sm img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+}
+.avatar-lg img {
+    height: 128px;
+    width: 128px;
+    margin: 4px;
+    border-radius: 50%;
+    border: 1px solid #eee;
+    padding: 4px;
+}
+
+.error {
+    font-size: 16px;
+    color: red;
+    margin: .2em;
+}
+.error-summary {
+    background: #f2dede;
+    color: #a94442;
+    border-color: #ebccd1;
+    padding: .5em;
+    margin: .5em 0px;    
+}
+.alert-danger, .alert-error {
+    color: #a94442;
+    margin: .5em 0px;    
+}
+
+form .row {
+    margin: 0 0 1em 0;
+}
+input, textarea {
+    width: 99%;
+    padding: .5%;
+    font-size:20px;
+    border: 1px solid #eee;    
+}
+button {
+    font-size: 1.5rem;
+    padding: .5em 1em;
+}
+.input-help {
+    float: right;
+    font-size: 14px;
+}
+
+.lnk {
+    padding: 8px 16px;
+    font-size: 16px;
+}
+.btn {
+    color: #24292e;
+    background-color: #eff3f6;
+    background-image: linear-gradient(-180deg, #fafbfc 0%, #eff3f6 90%);
+}
+.btn {
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    position: relative;
+    display: inline-block;
+    padding: 8px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-repeat: repeat-x;
+    background-position: -1px -1px;
+    background-size: 110% 110%;
+    border: 1px solid rgba(27,31,35,0.2);
+    border-radius: 0.25em;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+.btn:hover, .btn.hover {
+    background-color: #e6ebf1;
+    background-image: linear-gradient(-180deg, #f0f3f6 0%, #e6ebf1 90%);
+    background-position: -.5em;
+    border-color: rgba(27,31,35,0.35);
+}
+.btn:active {
+    background-image: none;
+    border-color: rgba(27,31,35,0.5);
+    box-shadow: inset 0 0.15em 0.3em rgba(27,31,35,0.15);
+}
+.btn-danger:active {
+    color: #fff;
+    background-color: #b5202c;
+}
+.btn-danger {
+    color: #cb2431;
+    background-color: #fafbfc;
+    background-image: linear-gradient(-180deg, #fafbfc 0%, #eff3f6 90%);
+}
+.btn-danger:hover {
+    color: #fff;
+    background-color: #cb2431;
+    background-image: linear-gradient(-180deg, #de4450 0%, #cb2431 90%);
+    border-color: rgba(27,31,35,0.5);
+}
+
+table.table-data {
+    width: 100%;
+    margin: 1em;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+table.table-data caption {
+    font-size: 20px;
+    padding: .5em;
+    border: 1px solid #f1f1f1;
+}
+.table-data th {
+    white-space: nowrap;
+    padding: .2em;
+}
+.table-data td {
+    max-width: 500px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    vertical-align: top;
+    border: 1px solid #f1f1f1;
+    padding: .2em;
+}
+.table-data thead th {
+    background: #f1f1f1;
+}
+
+.post-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+.post-info .avatar-lg img {
+    width: 96px;
+    height: 96px;
+}
+.post-info .post-meta {
+    font-size: .7em;
+}
+.post-content {
+    margin-bottom: 2em;
+}
+.post-title {
+    text-align: center;
+}
+.post-title a {
+    color: #212121;
+    border-bottom: 2px dotted #eee;
+}
+.post-title a:hover {
+    color: #428bca;
+    text-decoration: none;
+}
+.post-date {
+    text-align: center;
+    font-size: 16px;
+    margin: -1em 0 0 0;
+    color: #999;
+}
+.content-actions {
+    text-align: center;
+    padding: 1em;
+}
+.content-actions form {
+    display: inline;
+}
+.preview {
+    border: 1px solid #eee;
+    border-radius: 2px;
+    padding: 1em;
+    user-select: none;
+    overflow-x: auto;
+}
+.preview:first-child, .preview:last-child {
+    margin-top:0;
+    padding-top:0;
+}
+
+pre {
+    word-spacing: normal;
+}
+code, kbd, pre, samp {
+    font-family: monospace,monospace;
+}
+p>code {
+    font-style: normal;
+    line-height: 1.5em;
+    padding: 2px 5px;
+    margin: 0;
+    background-color: rgba(0,0,0,0.04);
+    color: #c7254e;
+    border-radius: 3px;
+}
+pre>code {
+    display: block;
+    padding: 1em;
+    margin-bottom: 1em;
+    color: #333;
+    font-weight: 400;
+}
+code {
+    background-color: #f5f5f5;
+    white-space: pre-wrap;
+    font-size: .75em;
+}
+blockquote {
+    margin: 0 0 10px 0;
+    padding: 10px;
+    background-color: #FFF8DC;
+    border-left: 2px solid #ffeb8e;
+}
+blockquote>p {
+    margin: .5em;
+}
+
+.post-content img {
+    max-width: 880px;
+}
+.post-content table, .preview table {
+    border-collapse: collapse;
+    min-width: 50%;
+    font-size: .9em;
+}
+.post-content table th, .preview table th {
+    text-align: left;
+    padding: .2em .5em;
+    background: #f1f1f1;
+}
+.post-content table td, .preview table td {
+    text-align: left;
+    padding: .2em .5em;
+}
+
+.post-content h2[id], .post-content h3[id], .post-content h4[id], .post-content h5[id] {
+    cursor: pointer;
+}
+.post-content h2[id]:hover:after, .post-content h3[id]:hover:after, .post-content h4[id]:hover:after, .post-content h5[id]:hover:after {
+    content: " \00B6";
+}

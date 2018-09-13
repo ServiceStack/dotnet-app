@@ -1,0 +1,10 @@
+<div class="page">
+
+{{ `SELECT * 
+      FROM Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName 
+     ORDER BY p.Created DESC, Id DESC`
+   | dbSelect | assignTo: posts }}
+
+{{ 'posts' | partial({ posts } )}}
+
+</div>

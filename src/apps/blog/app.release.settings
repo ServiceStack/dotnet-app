@@ -1,0 +1,15 @@
+name Blog Web App
+db sqlite
+db.connection ../blog.sqlite
+
+features AuthFeature
+AuthFeature.AuthProviders TwitterAuthProvider
+
+oauth.RedirectUrl http://blog.web-app.io
+oauth.CallbackUrl http://blog.web-app.io/auth/{0}
+oauth.twitter.ConsumerKey K9jvaxhuc3VD3lwsOKzcYw
+oauth.twitter.ConsumerSecret XI0a4o9qs3NTXYvzDdAdycvu4jf1zNo9xotbyuiVM
+
+args.blog { name:'blog.web-app.io', href:'/' }
+
+CefConfig { width:1150, height:900 }

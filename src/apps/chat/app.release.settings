@@ -1,0 +1,13 @@
+debug false
+name Chat Web App
+
+oauth.RedirectUrl http://chat.web-app.io/
+oauth.CallbackUrl http://chat.web-app.io/auth/{0}
+oauth.twitter.ConsumerKey udxbVuKZ91L0naGzT8G2n1zlT
+oauth.twitter.ConsumerSecret oqPIwQuwZyR7PPvcTfcstnBB3hsX9vns48M1upukX2kvTQ6SAx
+oauth.facebook.Permissions email
+oauth.facebook.AppId 146286335959326
+oauth.facebook.AppSecret 48207b1ea861ecbff664e86515128c37
+oauth.github.Scopes user
+oauth.github.ClientId 3329b4f03241fb244be4
+oauth.github.ClientSecret a7fc35e9b75b8fff0a65fb9fd1d6f30026f161c4

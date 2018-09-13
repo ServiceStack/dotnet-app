@@ -1,0 +1,75 @@
+<!--
+title: Order Details
+-->
+
+<a id="back" href="javascript:history.back()">&#8592; Back</a>
+
+{{#if id}}
+
+  {{ `select o.Id, OrderDate, CustomerId, Freight, 
+          ${sqlConcat(["e.FirstName", "' '", "e.LastName"])} as Employee, 
+          e.Id as EmployeeId,
+          s.CompanyName as ShipVia, 
+          ShipAddress, ShipCity, ShipPostalCode, ShipCountry
+      from ${sqlQuote("Order")} o
+          inner join
+          Employee e on o.EmployeeId = e.Id
+          left join 
+          Shipper s on o.ShipVia = s.Id
+      where o.Id = @id` 
+    | dbSingle({ id }) | assignTo: order
+  }}
+
+  {{ `select p.ProductName, 
+          ${sqlCurrency("od.UnitPrice")} UnitPrice,
+          Quantity, Discount
+      from orderDetail od
+        inner join
+        Product p on od.ProductId = p.Id
+      where OrderId = @id`
+    | dbSelect({ id }) 
+    | assignTo: orderDetails 
+  }}
+
+  {{#with order}}
+    <table class="table table-bordered auto-width">
+        <tr>
+            <th>Id</th>
+            <td>{{ Id }}</td>
+        </tr>
+        <tr>
+            <th>Date</th>
+            <td>{{ OrderDate | dateFormat }}</td>
+        </tr>
+        <tr>
+            <th>Customer Id</th>
+            <td><a href="customer?id={{ CustomerId }}">{{ CustomerId }}</a></td>
+        </tr>
+        <tr>
+            <th>Employee</th>
+            <td><a href="employee?id={{ EmployeeId }}">{{ Employee }}</a></td>
+        </tr>
+        <tr>
+            <th>Shipped by</th>
+            <td><a href="shippers">{{ ShipVia }}</a></td>
+        </tr>
+        <tr>
+            <th>Shipping Cost</th>
+            <td>{{ Freight | currency }}</td>
+        </tr>
+        <tr>
+            <th>Shipped to</th>
+            <td>
+                <p>{{ ShipAddress }}</p>
+                <p>{{ ShipCity }}, {{ ShipPostalCode }}, {{ ShipCountry }}</p>
+            </td>
+        </tr>
+    </table>
+  {{else}}
+    {{ `There is no Order with id: ${id}` }}
+  {{/with}}
+
+  {{ orderDetails | htmlDump({ className: "table table-striped", caption: "Line Items" }) }}
+ 
+{{/if}}
+

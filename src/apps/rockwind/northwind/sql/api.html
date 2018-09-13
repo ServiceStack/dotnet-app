@@ -1,0 +1,6 @@
+
+{{#if isUnsafeSql(sql) }} 
+    {{ `<div class="alert alert-danger">Potentially unsafe SQL detected</div>` | return }}
+{{/if}}
+
+{{ sql | dbSelect | htmlDump | return }}

@@ -1,0 +1,1 @@
+dotnet web/app.dll ../redis/web.settings

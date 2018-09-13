@@ -1,0 +1,66 @@
+<div class="page">
+
+{{ `SELECT * from UserInfo WHERE UserName = @user` | dbSingle({ user }) | assignTo: userInfo }}
+{{#with userInfo}}
+
+<script>document.title = '{{DisplayName}} (@{{UserName}})'</script>
+
+<div id="user-profile">
+    <div class="avatar-lg"><img src="{{ AvatarUrlLarge }}" alt="avatar"></div>
+
+    <h3>@{{UserName}} posts</h3>
+
+    {{ UserName == userName | assignTo: userPageIsAuthenticatedUser }}
+    {{#if userPageIsAuthenticatedUser }}
+        <div class="links">
+            <a href="/posts/new">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                </svg>            
+                <div>new post</div>
+            </a>
+        </div>
+    {{/if}}
+</div>
+
+<div>
+    {{ `SELECT * 
+          FROM Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName 
+         WHERE UserName = @user 
+         ORDER BY p.Created DESC, Id DESC` 
+       | dbSelect({ user })
+       | assignTo: posts }}
+    
+    {{ 'posts' | partial({ posts, hidePostInfo: true } )}}
+</div>
+
+<style>
+#body {
+    flex-direction: column;
+}
+#user-profile {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+#user-profile h3 {
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: normal;
+    margin: .5em 0;
+}
+#user-profile .links  {
+    margin: .5em 0 0 0;
+    display: flex;
+    justify-content: center;
+}
+</style>
+
+{{else}}
+
+    {{ 'error' | partial({ error: `User ${user} does not exist` }) }}
+
+{{/with}}
+
+</div>

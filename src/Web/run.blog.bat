@@ -1,0 +1,1 @@
+web ..\apps\blog\app.settings

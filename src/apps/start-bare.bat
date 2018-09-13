@@ -1,0 +1,1 @@
+dotnet web/app.dll ../bare/web.settings

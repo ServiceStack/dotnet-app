@@ -1,0 +1,77 @@
+
+<h2>Northwind SQL Viewer</h2>
+
+<textarea name="sql">select * from "Customer" order by Id desc limit 10</textarea>
+<ul class="tables">
+  <li>Category</li>
+  <li>Customer</li>
+  <li>Employee</li>
+  <li>Order</li>
+  <li>Product</li>
+  <li>Supplier</li>
+</ul>
+
+<div class="preview"></div>
+
+<style>
+h2 { text-align: center; }
+textarea {
+    width: 100%;
+    min-height: 200px;
+    margin: 10px 0;
+}
+.preview {
+    border: 1px solid #eee;
+    border-radius: 2px;
+    overflow-x: auto;
+}
+ul.tables {
+  list-style: none;
+}
+th {
+  white-space: nowrap;
+}
+ul.tables li {
+  display: inline;
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+  padding-right: 1em;
+}
+</style>
+
+<script>
+let textarea = document.querySelector("textarea");
+
+let listItems = document.querySelectorAll('.tables li');
+for (let i=0; i<listItems.length; i++) {
+  listItems[i].addEventListener('click', function(e){
+    var table = e.target.innerHTML;
+    textarea.value = 'select * from "' + table + '" order by Id desc limit 10';
+    textarea.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+  });
+}
+
+// Enable Live Preview of SQL
+textarea.addEventListener("input", livepreview, false);
+livepreview({ target: textarea });
+
+function livepreview(e) {
+  let el = e.target;
+  let sel = '.preview';
+
+  if (el.value.trim() == "") {
+    document.querySelector(sel).innerHTML = "";
+    return;
+  }
+
+  let formData = new FormData();
+  formData.append("sql", el.value);
+
+  fetch("api", {
+    method: "post",
+    body: formData
+  }).then(function(r) { return r.text(); })
+    .then(function(r) { document.querySelector(sel).innerHTML = r; });
+}
+</script>

@@ -1,0 +1,47 @@
+{{#each posts}} 
+
+<div class="user-post">
+
+{{#partial contentActions }}
+{{#if isAuthenticated and userName = CreatedBy }}
+<div class="content-actions">
+    <a class="lnk" href="/posts/{{Slug}}/edit">edit post</a>
+
+    <form action="/posts/{{Slug}}/delete" method="POST">
+        <button class="btn btn-danger" type="submit" onclick="return confirm('Are you sure you want to delete this post?')">delete post</button>
+    </form>
+</div>
+{{/if}}
+{{/partial}}
+
+{{#if !hidePostInfo}}
+    <div class="post-info">
+        <div class="avatar-lg"><a href="/{{CreatedBy}}"><img src="{{ AvatarUrlLarge }}" alt="avatar"></a></div>
+
+        <div class="post-meta">
+            <a href="/{{CreatedBy}}">@{{ CreatedBy }}</a>
+        </div>
+    </div>
+    {{'contentActions' | partial({ Slug }) }}
+{{/if}}
+
+    <h2 class="post-title">
+        <a href="/posts/{{Slug}}">{{Title}}</a>
+    </h2>
+    <div class="post-date">
+        {{ Created | toDateTime | dateFormat('dddd, dd MMMM') }}
+    </div>
+    
+    {{ { 'data-edit-path': `/posts/${Slug}/edit`} | if(isAuthenticated and userName = CreatedBy) | assignTo: attrs }}
+
+    <div class="post-content" {{ attrs | htmlAttrs }}>
+        {{ Content | evalTemplate({use:{plugins:'MarkdownTemplatePlugin'}}) | raw }}
+    </div>
+
+{{#if hidePostInfo}}
+    {{ 'contentActions' | partial({ Slug }) }}
+{{/if}}
+
+</div>
+
+{{/each}}

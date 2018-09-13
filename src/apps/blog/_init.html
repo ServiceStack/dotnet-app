@@ -1,0 +1,662 @@
+<!--
+layout: none
+-->
+
+================================
+Create blog.sqlite if not exists
+================================
+
+{{  `CREATE TABLE IF NOT EXISTS "Post" 
+    (
+        "Id" INTEGER PRIMARY KEY AUTOINCREMENT, 
+        "Slug" VARCHAR(8000) NULL, 
+        "Title" VARCHAR(8000) NULL, 
+        "Content" VARCHAR(8000) NULL, 
+        "Created" VARCHAR(8000) NOT NULL, 
+        "CreatedBy" VARCHAR(8000) NOT NULL, 
+        "Modified" VARCHAR(8000) NOT NULL,
+        "ModifiedBy" VARCHAR(8000) NOT NULL 
+    );
+    
+    CREATE TABLE IF NOT EXISTS "UserInfo" 
+    (
+        "UserName" VARCHAR(8000) PRIMARY KEY, 
+        "DisplayName" VARCHAR(8000) NULL, 
+        "AvatarUrl" VARCHAR(8000) NULL, 
+        "AvatarUrlLarge" VARCHAR(8000) NULL, 
+        "Created" VARCHAR(8000) NOT NULL,
+        "Modified" VARCHAR(8000) NOT NULL
+    );` 
+    
+    | dbExec
+}}
+
+{{ dbScalar(`SELECT COUNT(*) FROM Post`) | assignTo: postsCount }}
+
+{{#if postsCount == 0 }}
+
+    ========================================
+    Seed with initial UserInfo and Post data
+    ========================================
+
+    {{ `datetime(CURRENT_TIMESTAMP,'localtime')` | assignTo: sqlNow }}
+    {{ `ServiceStack`                            | assignTo: user }}
+
+    ========================
+    Create ServiceStack User - Contains same info as if was @ServiceStack authenticated via Twitter
+    ========================
+
+    {{ `INSERT INTO UserInfo (UserName, DisplayName, AvatarUrl, AvatarUrlLarge, Created, Modified) 
+                      VALUES (@user, @user, @avatarUrl, @avatarUrlLarge, ${sqlNow}, ${sqlNow})`
+        | dbExec({ 
+            user: 'ServiceStack', 
+            avatarUrl: 'https://pbs.twimg.com/profile_images/876249730078056448/JuTVEkWX_normal.jpg',
+            avatarUrlLarge: 'https://pbs.twimg.com/profile_images/876249730078056448/JuTVEkWX.jpg'
+          }) 
+    }}
+
+    ===============================================
+    {{ 'Live Document Example' | assignTo: title }}
+    ===============================================
+
+{{#raw content}}{{#markdown}}
+All Blog posts have access to [ServiceStack Templates](http://templates.servicestack.net) features which enables they to use a highly-productive, 
+easy to use [sandboxed](http://templates.servicestack.net/docs/sandbox) dynamic templating language which lets you easily create live documents 
+[like this one](/posts/live-document-example):
+{{/markdown}}
+
+<pre>
+{{ 11200 | assignTo: balance }}
+{{ 10    | assignTo: projectedMonths }}
+{{'
+Salary:        4000
+App Royalties: 200
+'| trim | parseKeyValueText(':') | assignTo: monthlyRevenues }}
+{{'
+Rent      1000
+Internet  50
+Mobile    50
+Food      400
+Misc      200
+'| trim | parseKeyValueText | assignTo: monthlyExpenses }}
+{{ monthlyRevenues | values | sum | assignTo: totalRevenues }}
+{{ monthlyExpenses | values | sum | assignTo: totalExpenses }}
+{{ subtract(totalRevenues, totalExpenses) | assignTo: totalSavings }}
+
+Current Balance:              <b>{{ balance | currency }}</b>
+
+Monthly Revenues:
+{{ monthlyRevenues | toList | select: { it.Key | padRight(30) }{ it.Value | currency }\n }}
+Total                         <b>{{ totalRevenues | currency }}</b>
+
+Monthly Expenses:
+{{ monthlyExpenses | toList | select: { it.Key | padRight(30) }{ it.Value | currency }\n }}
+Total                         <b>{{ totalExpenses | currency }}</b>
+
+Monthly Savings:              <b>{{ totalSavings | currency }}</b>
+
+Projected Cash Position:
+{{ projectedMonths | times | map => index + 1
+ | select: { now | addMonths(it) | dateFormat }                    <b>{ totalSavings | multiply(it) | add(balance) | currency }</b>\n }}
+</pre>{{/raw}}
+
+    {{ { title, content } | addTo: initialPosts }}
+
+    ==========================================
+    {{ 'Markdown Example' | assignTo: title }}
+    ==========================================
+
+{{#raw content}}{{#markdown}}
+# Headings can start with 1-6 hashes
+
+Markdown follows plain text conventions when rendering HTML.
+
+So paragraphs separated by multiple lines are rendered as separate paragraphs.
+
+### Use more hashes to create nested sub headings
+
+> Text pre-fixed with '>' are treated as block quotes
+
+Use a dash, asterisk or plus to create an ordered list:
+
+ - List Item
+ * List Item
+ + List Item
+
+Whilst you can use numbers for ordered lists:
+
+ 1. Step 1
+ 2. Step 2
+ 3. Step 3
+
+Indent lines by 4 spaces to create pre-formatted code blocks in monospace font:
+
+    $ cd /Users/Guest
+
+Follow [link to markdown block docs](http://templates.servicestack.net/docs/blocks#markdown) for more info.
+{{/markdown}}{{/raw}}
+
+    {{ { title, content } | addTo: initialPosts }}
+
+    ================================================
+    {{ 'Web App Customizations' | assignTo: title }}
+    ================================================
+
+{{#raw content}}{{#markdown}}
+
+## Init page
+
+Just like `Global.asax.cs` can be used to run Startup logic in ASP.NET Web Applications and `Startup.cs` in .NET Core Apps, 
+you can add a `_init.html` to run logic once on Startup. 
+
+This is used in this Blog's [_init.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/_init.html) where it will create a new 
+`blog.sqlite` database if it doesn't exist seeded with the UserInfo and Posts Tables and initial data, e.g:
+
+```
+{{  `CREATE TABLE IF NOT EXISTS "UserInfo" 
+    (
+        "UserName" VARCHAR(8000) PRIMARY KEY, 
+        "DisplayName" VARCHAR(8000) NULL, 
+        "AvatarUrl" VARCHAR(8000) NULL, 
+        "AvatarUrlLarge" VARCHAR(8000) NULL, 
+        "Created" VARCHAR(8000) NOT NULL,
+        "Modified" VARCHAR(8000) NOT NULL
+    );`    
+    | dbExec
+}}
+
+{{ dbScalar(`SELECT COUNT(*) FROM Post`) | assignTo: postsCount }}
+
+{{#if postsCount == 0 }}
+
+    ========================================
+    Seed with initial UserInfo and Post data
+    ========================================
+
+    ...
+
+{{/if}
+
+{{ htmlError }}
+```
+
+The output of the `_init` page is captured in the `initout` argument which can be inspected as a template argument as done in 
+[log.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/log.html):
+
+```
+<div>
+    Output from init.html:
+
+    <pre>{{initout | raw}}</pre>
+</div>
+```
+
+If there was an Exception with any of the SQL Statements it will be displayed in the `{{ htmlError }}` filter which can be later viewed 
+in the [/log](/log) page above.
+
+## Customizable Auth Providers
+
+Auth Providers can be configured in the same way 
+[Web App Plugins can be registered](http://templates.servicestack.net/docs/web-apps#registering-servicestack-plugins) by first specifying 
+you want to register the `AuthFeature` plugin with:
+
+```
+features AuthFeature
+```
+
+Then using `AuthFeature.AuthProviders` to specify which Auth Providers you want to have registered, e.g:
+
+```
+AuthFeature.AuthProviders TwitterAuthProvider, GithubAuthProvider
+```
+
+Each Auth Provider checks the Web Apps `web.settings` for its Auth Provider specific configuration it needs, e.g. to configure both 
+Twitter and GitHub Auth Providers you would populate it with your OAuth Apps details:
+
+```
+oauth.RedirectUrl http://127.0.0.1:5000/
+oauth.CallbackUrl http://127.0.0.1:5000/auth/{0}
+
+oauth.twitter.ConsumerKey {Twitter App Consumer Key}
+oauth.twitter.ConsumerSecret {Twitter App Consumer Secret Key}
+
+oauth.github.ClientId {GitHub Client Id}
+oauth.github.ClientSecret {GitHub Client Secret}
+oauth.github.Scopes {GitHub Auth Scopes}
+```
+
+## Customizable Markdown Providers
+
+By default Web Apps utilize [Markdig](https://github.com/lunet-io/markdig) implementation to render its Markdown. You can switch it back to 
+the built-in Markdown provider that ServiceStack uses with:
+
+```
+markdownProvider MarkdownDeep
+```
+
+## Rich Template Config Arguments
+
+Any `web.settings` configs that are prefixed with `args.` are made available to Template Pages. Any arguments which start with 
+`{` or `[` are automatically converted into a JS object:
+
+```
+args.blog { name:'blog.web-app.io', href:'/' }
+args.tags ['technology','marketing']
+```
+
+Where they can be referenced as an `object` or an `array` directly:
+
+```
+<a href="{{blog.href}}">{{blog.name}}</a>
+
+{{#each tags}} <em>{{it}}</em> {{/each}}
+```
+
+The alternative is to give each argument value a different name:
+
+```
+args.blogName blog.web-app.io
+args.blogHref /
+```
+
+{{/markdown}}{{/raw}}
+
+{{ { title, content } | addTo: initialPosts }}
+
+    ============================================
+    {{ 'Dynamic API Pages' | assignTo: title }}
+    ============================================
+
+{{#raw content}}{{#markdown}}
+In addition to providing a productive dynamic language for generating HTML pages, Template Pages can also be used to rapidly develop Web APIs 
+which can utilize [dynamic page routing](/posts/page-based-routing) to easily create data-driven JSON APIs using optimal pretty URLs, in 
+real-time without any C# classes or compilation in sight!
+
+The only difference between a Template Page that generates HTML or a Template Page that returns an API Response is that API pages use the 
+**return** filter to return a value. 
+
+E.g. To create a **Hello World** C# ServiceStack Service you would typically create a Request DTO, Response DTO and a Service implementation:
+
+
+```
+[Route("/hello/{Name}")]
+public class Hello : IReturn<HelloResponse>
+{
+    public string Name { get; set; }
+}
+public class HelloResponse
+{
+    public string Result { get; set; }
+}
+public class HelloService : Service
+{
+    public object Any(Hello request) => $"Hello, {request.Name}!";
+}
+```
+
+### /hello API Page
+
+> Usage: /hello/\{name}
+
+An API which returns the same wire response as above can be implemented in API Pages by creating a page at 
+[/hello/_name/index.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/hello/_name/index.html) 
+with the contents:
+
+```
+{{ { result: `Hello, ${name}!` } | return }}
+```
+
+Which supports the same content negotiation as a ServiceStack Service where calling it in a browser will generate a 
+[human-friendly HTML Page](http://docs.servicestack.net/html5reportformat):
+
+ - [/hello/World](/hello/World)
+
+Where as calling it with a JSON HTTP client containing `Accept: application/json` HTTP Header or with a `?format=json` query string will 
+return the API response in the JSON Format:
+
+ - [/hello/World?format=json](/hello/World?format=json)
+
+Alternatively you can force a JSON Response by specifying it with:
+
+```
+{{ { result: `Hello, ${name}!` } | return({ format: 'json' }) }} 
+// Equivalent to:
+{{ { result: `Hello, ${name}!` } | return({ contentType: 'application/json' }) }}
+```
+
+### /preview API Page
+
+> Usage: /preview?content=\{templates}
+
+The [/preview.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/preview.html) page uses this to force a plain-text response with:
+
+```
+{{ content  | evalTemplate({use:{plugins:'MarkdownTemplatePlugin'}}) | assignTo:response }}
+{{ response | return({ contentType:'text/plain' }) }}
+```
+
+The preview API above is what provides this Blog's Live Preview feature where it will render any ServiceStack Templates provided in the 
+**content** Query String or HTTP Post Form Data, e.g:
+
+ - [/preview?content={{10|times|select:{pow(index,2)},}}](/preview?content={{10|times|select:{pow(index,2)},}})
+
+Which renders the plain text response:
+
+    0,1,4,9,16,25,36,49,64,81,
+
+### /_user/api Page
+
+> Usage: /\{user}/api
+
+The [/_user/api.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/_user/api.html) API page shows an example of how easy it is to 
+create data-driven APIs where you can literally return the response of an SQL query by calling the `dbSelect` filter and returning the results with:
+
+```
+{{ `SELECT * 
+      FROM Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName 
+     WHERE UserName = @user 
+    ORDER BY p.Created DESC` 
+   | dbSelect({ user })
+   | return }}
+```
+
+The **user** argument is populated as a result of dynamic route from the `_user` directory name which will let you view all 
+[@ServiceStack](/ServiceStack) posts with:
+
+ - [/ServiceStack/api](/ServiceStack/api)
+
+Which also benefits from ServiceStack's multiple formats where the same API can be returned in:
+
+ - [/ServiceStack/api?format=json](/ServiceStack/api?format=json)
+ - [/ServiceStack/api?format=csv](/ServiceStack/api?format=csv)
+ - [/ServiceStack/api?format=xml](/ServiceStack/api?format=xml)
+ - [/ServiceStack/api?format=jsv](/ServiceStack/api?format=jsv)
+
+Which thanks to the live development workflow provides the most productive development experience to rapidly develop Web APIs or perform common 
+tasks like viewing adhoc SQL queries in Excel which can be further manipulated using the 
+[LINQ-like expressiveness](http://templates.servicestack.net/linq/restriction-operators) and wrist-friendly filters available in Templates.
+
+### /posts/_slug/api Page
+
+> Usage:  /posts/\{slug}/api
+
+The [/posts/_slug/api.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/posts/_slug/api.html) page shows an example of using the 
+`httpResult` filter to return a custom HTTP Response where if the post with the specified slug does not exist it will return a 
+`404 Post was not found` HTTP Response:
+
+```
+{{ `SELECT * 
+      FROM Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName 
+     WHERE Slug = @slug 
+     ORDER BY p.Created DESC` 
+   | dbSingle({ slug })
+   | assignTo: post 
+}}
+{{ post ?? httpResult({ status:404, statusDescription:'Post was not found' }) 
+   | return }}
+```
+
+The **httpResult** filter returns a ServiceStack `HttpResult` which allows for the following customization's:
+
+```csharp
+httpResult({ 
+  status:            404,
+  status:            'NotFound' // can also use .NET HttpStatusCode enum name
+  statusDescription: 'Post was not found',
+  response:          post,
+  format:            'json',
+  contentType:       'application/json',
+  'X-Powered-By':    'ServiceStack Templates',
+}) 
+```
+
+Any other arguments like 'X-Powered-By' are returned as HTTP Response Headers. 
+
+This behaves similarly to customizing a response with return arguments:
+
+```
+{{ post | return({ format:'json', 'X-Powered-By':'ServiceStack Templates' }) }}
+```
+
+Using the explicit httpResult filter is useful for returning a custom HTTP Response that doesn't have a Response Body, e.g. the **New Post** page 
+uses `httpFilter` to 
+[redirect back to the Users posts page](https://github.com/NetCoreWebApps/Blog/blob/e8bb7249192c5797348ced091ad5fd434db9a619/app/posts/new.html#L33) 
+after they've successfully created a new Post:
+
+```
+{{#if success}}
+    {{ httpResult({ status:301, Location:`/${userName}` }) | return }}
+{{/if}}
+```
+
+For more examples and info on API Pages checkout to the [API Pages docs](http://templates.servicestack.net/docs/api-pages).
+
+{{/markdown}}{{/raw}}
+
+    {{ { title, content } | addTo: initialPosts }}
+
+    
+    ============================================
+    {{ 'Page based routing' | assignTo: title }}
+    ============================================
+
+{{#raw content}}{{#markdown}}
+Template Pages supports conventional page-based routes where the name of each page can be requested with or without its **.html** extension:
+
+| path | page |
+------ | ---- |
+[/db](/db) |  |
+[/db.html](/db.html) | [/db.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/db.html) |
+[/posts/new](/posts/new) | |
+[/posts/new.html](/posts/new.html) | [/posts/new.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/posts/new.html)
+
+and the default route **/** maps to the `index.html` in each directory if it exists, e.g:
+
+| path | page |
+------ | ---- |
+[/](/) | [/index.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/index.html) |
+
+Nuxt-like [Dynamic Routes](https://nuxtjs.org/guide/routing#dynamic-routes) can also be used where any **file** or **directory** names 
+prefixed with an _ **underscore** allows for dynamic wildcard paths with the matching path component also assigned to the arguments name:
+
+| path | page | arguments |
+------ | ---- | --------- |
+[/ServiceStack](/) | [/_user/index.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/_user/index.html) | user=ServiceStack |
+[/posts/markdown-example](/posts/markdown-example) | [/posts/_slug/index.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/posts/_slug/index.html) | slug=markdown-example |
+[/posts/markdown-example/edit](/posts/markdown-example/edit) | [/posts/_slug/edit.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/posts/_slug/edit.html) | slug=markdown-example |
+
+### Layout and partial recommended naming conventions
+
+As the **_ underscore** prefix for declaring wildcard pages is also what is used to declare "hidden" pages, to disambiguate them from hidden 
+partials and layouts, the recommendation is to have them include `layout` and `partial` their name, i.e:
+
+ - _layout.html
+ - _alt-layout.html
+ - _menu-partial.html
+
+Pages with `layout` or `partial` in their name are hidden and ignored in wildcard path resolution.
+
+If you follow the recommended `_{name}-partial.html` naming convention you will also be able to reference partials using just their name, i.e:
+
+```
+{{ 'menu' | partial }}          // Equivalent to:
+{{ '_menu-partial' | partial }}
+```
+
+{{/markdown}}{{/raw}}
+
+    {{ { title, content } | addTo: initialPosts }}
+
+
+    ===============================
+    {{ 'About' | assignTo: title }}
+    ===============================
+
+{{#raw content}}{{#markdown}}
+This Blog App demonstrates some of the capabilities in [ServiceStack Web Apps](http://templates.servicestack.net/docs/web-apps) - an exciting real-time 
+development model for developing .NET Core Apps where entire Web Apps can be developed within a live hot-reload experience without any compilation, 
+build tools, dependencies, IDEs or any C# source code necessary by using the powerful and user-friendly 
+[ServiceStack Templates language](http://templates.servicestack.net/) and its comprehensive built-in functionality.
+
+### Ultimate Simplicity
+
+This eliminates much of the complexity inherent in developing .NET Web Applications which by their nature results in highly customizable Web Apps 
+where their entire functionality can be modified in real-time whilst the App is running, which is simple enough to be enhanced by non-developers 
+like Designers and Content Creators courtesy of its approachable [Handlebars-like](http://templates.servicestack.net/docs/blocks) and familiar 
+[JavaScript syntax](http://templates.servicestack.net/docs/expression-viewer#expression=map(range(1%2Ccount)%2C%20x%20%3D%3E%20x%20*%20x)&count=5).
+
+Compiled Apps can have a prohibitively large barrier to entry where any modification often requires downloading source code separately, setting 
+up a matching development environment with appropriate extensions and correct versions and non cursory level of experience with their chosen 
+language, frameworks, build tools and other platform idiosyncrasies. 
+
+By contrast Web Apps require no development environment, no IDE's or build tools with all source code already included as part of the App which 
+can be modified in real-time by any text editor to instantly view changes as they're made. So Apps like http://redis.web-app.io which provide a 
+rich Admin UI for searching, browsing and modifying Redis's core data structures, can be easily enhanced by modifying a single 
+[index.html](https://github.com/NetCoreWebApps/Redis/blob/master/app/index.html) at the same time as using the App.
+
+## Blog App Features
+
+This [/Blog](https://github.com/NetCoreWebApps/Blog/tree/master/app) Web App is another example of encapsulating useful functionality in a 
+highly customizable .NET Core Web App which to maximize approachability has no C# source code, plugins and uses no JavaScript or CSS frameworks.
+The development of which ended up being one of the most enjoyable experiences we've had in recent memory where all the usual complexities of 
+developing a C# Server and modern JS App has been dispensed and you can just focus on the App you want to create, 
+using a plain-text editor on the left, a live updating browser on the right and nothing else to interrupt your flow.
+
+Any infrastructure dependencies have also been avoided by using SQLite by default which is 
+[automatically created an populated on first run](/posts/web-app-customizations) if no database exists, or if preferred can be 
+[changed to use any other popular RDBMS](http://templates.servicestack.net/docs/web-apps#multi-platform-configurations) using just config.
+
+### Multi User Blogging Platform
+
+Any number of users can Sign In via Twitter and publish content under their Twitter Username where only they'll be able to modify their own Content. 
+Setting up Twitter is as easy as it can be which just requires modifying the 
+[Twitter Auth Config in web.settings](/posts/web-app-customizations#customizable-auth-providers) with the URL where the blog 
+is hosted and the OAuth Keys for the Twitter OAuth App created at https://apps.twitter.com
+
+### Rich Content
+
+Whilst most blogging platforms just edit static text, each Post content has access to the powerful and 
+[Sandboxed](http://templates.servicestack.net/docs/sandbox) features in http://templates.servicestack.net which can be used to create 
+[Live Documents](/posts/live-document-example) or [Render Markdown](/posts/markdown-example) which is itself just 
+[one of the available blocks](http://templates.servicestack.net/docs/blocks#markdown) where it will render to HTML any content between the `markdown` blocks:
+{{/markdown}}
+
+<pre><code>{​{#markdown}}
+## Markdown Content
+{​{/markdown}}</code></pre>
+
+
+{{#markdown}}
+By default the [Markdig](https://github.com/lunet-io/markdig) implementation is used to render Markdown but can also be configured to use an 
+[alternate Markdown provider](/posts/web-app-customizations#customizable-markdown-providers).
+
+### Rich Markdown Editor
+
+To make it easy to recall Markdown features, each Content is equipped with a Rich Text editor containing the most popular formatting controls 
+along with common short-cuts for each feature, discoverable by hovering over each button:
+
+![](https://raw.githubusercontent.com/ServiceStack/Assets/master/img/livedemos/blog/editor.png)
+
+The Editor also adopts popular behavior in IDEs where `Tab` and `SHIFT+Tab` can be used to indent blocks of text and lines can be commented with 
+`Ctrl+/` or blocks with `CTRL+SHIFT+/`.
+
+Another nice productivity win is being able to `CTRL+CLICK` on any Content you created to navigate to its Edit page.
+
+### Auto saved drafts
+
+The content in each Text `input` and `textarea` is saved to `localStorage` on each key-press so you can freely reload pages and navigate 
+around the site where all unpublished content will be preserved upon return. 
+
+When you want to revert back to the original published content you can clear the text boxes and reload the page which will load content from 
+the database instead of `localStorage`.
+
+### Server Validation
+
+The [new.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/posts/new.html) and [edit.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/posts/_slug/edit.html) pages shows examples of performing server validation with ServiceStack Templates:
+
+```
+{{ assignErrorAndContinueExecuting: ex }}
+
+{{ 'Title must be between 5 and 200 characters'      
+   | onlyIf(length(postTitle) < 5 || length(postTitle) > 200) | assignTo: titleError }}
+{{ 'Content must be between 25 and 64000 characters' 
+   | onlyIf(length(content) < 25  || length(content) > 64000) | assignTo: contentError }}
+{{ 'Potentially malicious characters detected'       
+   | ifNotExists(contentError) | onlyIf(containsXss(content)) | assignTo: contentError }}
+```
+
+![](https://raw.githubusercontent.com/ServiceStack/Assets/master/img/livedemos/blog/server-validation.png)
+
+For more info see the docs on [Error Handling](http://templates.servicestack.net/docs/error-handling).
+
+### Live Previews
+
+Creating and Posting content benefit from Live Previews where its rendered output can be visualized in real-time before it's published. 
+
+Any textarea can easily be enhanced to enable Live Preview by including the `data-livepreview` attribute with the element where the output 
+should be rendered in, e.g:
+
+    <textarea data-livepreview=".preview"></textarea>
+    <div class="preview"></div>
+
+The implementation of which is surprisingly simple where the JavaScript snippet in 
+[default.js](https://github.com/NetCoreWebApps/Blog/blob/master/app/default.js) below is used to send their content on each change:
+
+```
+// Enable Live Preview of new Content
+textAreas = document.querySelectorAll("textarea[data-livepreview]");
+for (let i = 0; i < textAreas.length; i++) {
+  textAreas[i].addEventListener("input", livepreview, false);
+  livepreview({ target: textAreas[i] });
+}
+
+function livepreview(e) {
+  let el = e.target;
+  let sel = el.getAttribute("data-livepreview");
+
+  if (el.value.trim() == "") {
+    document.querySelector(sel).innerHTML = "<div>Live Preview</div>";
+    return;
+  }
+
+  let formData = new FormData();
+  formData.append("content", el.value);
+
+  fetch("/preview", {
+    method: "post",
+    body: formData
+  }).then(function(r) { return r.text(); })
+    .then(function(r) { document.querySelector(sel).innerHTML = r; });
+}
+```
+
+To the [/preview.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/preview.html) API Page which just renders and captures any 
+Template Content its sent and returns the output:
+
+```
+{{ content  | evalTemplate({use:{plugins:'MarkdownTemplatePlugin'}}) | assignTo:response }}
+{{ response | return({ contentType:'text/plain' }) }}
+```
+
+By default the `evalTemplate` filter renders Templates in a new `TemplateContext` which can be customized to utilize any additional 
+`plugins`, `filters` and `blocks` available in the configured [TemplatePagesFeature](http://templates.servicestack.net/docs/view-engine), 
+or for full access you can use `{use:{context:true}}` to evaluate any Template content under the same context that `evalTemplate` is run on.
+
+{{/markdown}}{{/raw}}
+
+    {{ { title, content } | addTo: initialPosts }}
+
+
+    ======================
+    Populate initial posts
+    ======================
+
+    {{#each initialPosts}}
+        {{ `INSERT INTO Post (Slug, Title, Content, Created, CreatedBy, Modified, ModifiedBy) 
+                      VALUES (@slug, @title, @content, ${sqlNow}, @user, ${sqlNow}, @user)`
+           | dbExec({ slug: generateSlug(title), title, content, user }) }}
+    {{/each}}
+
+{{/if}}
+
+{{ htmlError }}

@@ -1,0 +1,21 @@
+{{ limit ?? 100 | assignTo: limit }}
+
+{{ 'select Id, CompanyName, ContactName, ContactTitle, City, Country from Customer' | assignTo: sql }}
+
+{{#if !isEmpty(PathArgs)}}
+   {{ `${sql} where Id = @id` | dbSingle({ id: PathArgs[0] }) 
+      | return }}
+{{/if}}
+
+{{#if id}}      {{ 'Id = @id'           | addTo: filters }} {{/if}}
+{{#if city}}    {{ 'City = @city'       | addTo: filters }} {{/if}}
+{{#if country}} {{ 'Country = @country' | addTo: filters }} {{/if}}
+
+{{#if !isEmpty(filters)}}
+  {{ `${sql} WHERE ${join(filters, ' AND ')}` | assignTo: sql }}
+{{/if}}
+
+{{ `${sql} ORDER BY CompanyName ${sqlLimit(limit)}` | assignTo: sql }}
+
+{{ sql | dbSelect({ id, city, country }) 
+       | return }}

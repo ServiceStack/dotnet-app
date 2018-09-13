@@ -1,0 +1,492 @@
+<!--
+title: Web App Plugins
+-->
+
+<p>
+    This demo shows an example of utilizing external Filters and Services that are automatically loaded from the
+    <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/apps/plugins">Wep App's</a> <b>/plugins</b> folder.
+</p>
+
+<p>
+    Plugins allow "no touch" sharing of 
+    <a href="http://docs.servicestack.net/plugins">ServiceStack Plugins</a>, 
+    <a href="http://docs.servicestack.net/create-your-first-webservice">Services</a>, 
+    <a href="http://templates.servicestack.net/docs/filters">Template Filters</a>
+    <a href="http://templates.servicestack.net/docs/code-pages">Template Code Pages</a>,
+    <a href="http://docs.servicestack.net/validation">Validators</a>, etc.
+    contained within <b>.dll's</b> or <b>.exe's</b> dropped in a Web App's 
+    <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/apps/plugins/plugins">/plugins</a> folder which are auto-registered 
+    on startup. This source code for plugins used in this App were built from the .NET Core 2.1 projects in the
+    <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/example-plugins">/example-plugins</a> folder.
+</p>
+
+<h3>FilterInfo Plugin</h3>
+
+<p>
+    The <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/example-plugins/FilterInfo">/FilterInfo</a> plugin contains the 
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/FilterInfo/EvaluateTemplateService.cs">EvaluateTemplateService</a>
+    which lets us evaluate templates via Ajax and the
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/FilterInfo/FilterInfoFilters.cs">FilterInfoFilters</a>
+    which provides the <em>filterLinkToSrc</em> and <em>filtersAvailable</em> filters used below to provide the UI to quickly browse the 
+    different filters available in ServiceStack:
+</p>
+
+<hr>
+
+<form style="margin: 0 0 20px 0">
+    <div class="row">
+        <div class="col-auto">
+            <div class="input-group">
+                <label for="nameContains" style="line-height:2rem;margin:0 10px 0 0">Search for available filters:</label>
+                <input type="text" id="nameContains" name="nameContains" class="form-control" placeholder="Filter Name Contains" 
+                       value="{{ nameContains | ifExists }}"
+                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <span class="input-group-btn"><button class="btn btn-primary" type="submit">Go!</button></span>
+                <input type="hidden" name="tab">
+            </div>
+        </div>
+    </div>
+</form>
+
+<ul id="filters" class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#default-filters" role="tab">Default Filters</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#html-filters" role="tab">HTML Filters</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#protected-filters" role="tab">Protected Filters</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#info-filters" role="tab">Info Filters</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#redis-filters" role="tab">Redis Filters</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#db-filters" role="tab">DB Filters</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#ss-filters" role="tab">ServiceStack</a>
+    </li>
+</ul>
+
+{{#raw appendTo scripts}}
+<script>
+var tab = queryStringParams()['tab'] || 'default-filters';
+$("#" + tab).addClass('active');
+$(".nav-link[href$=" + tab + "]").addClass('active');
+
+$("FORM").submit(function(){
+    $("input[name=tab]").val($(".tab-pane.active").attr('id'))
+})
+</script>
+{{/raw}}
+
+<style>
+    .tab-content .result .output {
+        margin: 0;
+        padding: 0;
+        max-height: auto;
+        font-size: 16px;
+        border-radius: 0;
+        border-top: 0;
+    }
+    .tab-content .live-template {
+        padding-top: 0;
+    }
+    .tab-content .live-template textarea {
+        border-top: 0;
+        border-radius: 0;
+    }
+    .tab-content td:first-child {
+        text-align: right
+    }
+</style>
+
+{{ 8 | assignTo: rows }}
+<div class="tab-content">
+    <div class="tab-pane" id="default-filters" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateDefaultFilters' | assignTo: filter }}
+<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
+{{ filter | filtersAvailable
+    | where: contains(lower(it.Name), lower(default(nameContains,'')))
+    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
+}}
+</table>` }) }}
+    </div>
+    <div class="tab-pane" id="html-filters" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateHtmlFilters' | assignTo: filter }}
+<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
+{{ filter | filtersAvailable
+    | where: contains(lower(it.Name), lower(default(nameContains,'')))
+    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
+}}
+</table>` }) }}
+    </div>
+    <div class="tab-pane" id="protected-filters" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateProtectedFilters' | assignTo: filter }}
+<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
+{{ filter | filtersAvailable
+    | where: contains(lower(it.Name), lower(default(nameContains,'')))
+    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
+}}
+</table>` }) }}
+    </div>
+    <div class="tab-pane" id="info-filters" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateInfoFilters' | assignTo: filter }}
+<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
+{{ filter | filtersAvailable
+    | where: contains(lower(it.Name), lower(default(nameContains,'')))
+    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
+}}
+</table>` }) }}
+    </div>
+    <div class="tab-pane" id="redis-filters" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateRedisFilters' | assignTo: filter }}
+<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
+{{ filter | filtersAvailable
+    | where: contains(lower(it.Name), lower(default(nameContains,'')))
+    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
+}}
+</table>` }) }}
+    </div>
+    <div class="tab-pane" id="db-filters" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateDbFiltersAsync' | assignTo: filter }}
+<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
+{{ filter | filtersAvailable
+    | where: contains(lower(it.Name), lower(default(nameContains,'')))
+    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
+}}
+</table>` }) }}
+    </div>
+    <div class="tab-pane" id="ss-filters" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateServiceStackFilters' | assignTo: filter }}
+<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
+{{ filter | filtersAvailable
+    | where: contains(lower(it.Name), lower(default(nameContains,'')))
+    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
+}}
+</table>` }) }}
+    </div>
+</div>
+
+<h3>ServerInfo Plugin</h3>
+
+<p>
+    The <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/example-plugins/ServerInfo">/ServerInfo</a> plugin contains the 
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/ServerInfo/ServerInfoFilters.cs">ServerInfoFilters</a>
+    which gives our Templates access to this Server's Drive and Process Info used below:
+</p>
+
+<hr>
+
+{{#raw template}}
+<table class="table table-striped">
+<caption>Top 5 Local Disks</caption>
+<tr><th>Name</th><th>Type</th><th>Available Space</th><th>Total Free Space</th><th>Total Size</th></tr>
+{{ drives    | orderByDescending: it.TotalSize
+   | take(5) | assignTo: driveInfos }}
+{{#each driveInfos}}
+<tr>
+    <td>{{ Name | substringWithEllipsis(50) }}</td>
+    <td>{{ DriveType }} #{{ VolumeLabel }} ({{ DriveFormat }})</td>
+    <td>{{ AvailableFreeSpace / 1024 | format('n0') }} KB</td>
+    <td>{{ TotalFreeSpace / 1024 | format('n0') }} KB</td>
+    <td>{{ TotalSize / 1024 | format('n0') }} KB</td>
+</tr>
+{{/each}}
+</table>
+
+<table class="table table-striped">
+<caption>Current Process</caption>
+<tr><th>Id</th><th>Name</th><th>CPU Time</th><th>User Time</th><th>Memory (current)</th>
+    <th>Memory (peak)</th><th>Active Threads</th></tr>
+{{#if currentProcess}}
+{{ currentProcess | assignTo: p }}
+{{ "h':'mm':'ss'.'FFF" | assignTo: fmtTime }}
+<tr>
+    <td>{{ Id }}</td>
+    <td>{{ p.ProcessName | substringWithEllipsis(15) }}</td>
+    <td>{{ p.TotalProcessorTime | timeFormat(fmtTime) }}</td>
+    <td>{{ p.UserProcessorTime | timeFormat(fmtTime) }}</td>
+    <td>{{ p.WorkingSet64 / 1024 | format('n0') }} KB</td>
+    <td>{{ p.PeakWorkingSet64 / 1024 | format('n0') }} KB</td>
+    <td>{{ p.Threads.Count }}</td>
+</tr>
+{{/if}}
+</table>
+{{/raw}}
+
+{{ "live-template" | partial({ rows:14, template }) }}
+
+<style>
+    #server-info th:first-child {
+        text-align: right;
+    }
+</style>
+
+<h4>ServerInfo Services</h4>
+
+<p>
+    The ServerInfo Plugin's 
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/ServerInfo/ServerInfoServices.cs">ServerInfoServices</a>
+    makes this Server's Drive and Process info available from the API endpoints below:
+</p>
+
+<table id="server-info" class="table table-striped">
+    <tr class="bg-success">
+        <td colspan="2" style="text-align:center;color:#fff;font-size:1.5rem">/drives API</td>
+    </tr>
+    <tr>
+        <th>All Drives</th>
+        <td>
+            <div><a href="/drives">/drives</a></div>
+        </td>
+    </tr>
+    <tr>
+        <th>Disks formatted with NTFS or ext2</th>
+        <td>
+            <div><a href="/drives?DriveFormatIn=NTFS,ext2">/drives?DriveFormatIn=NTFS,ext2</a></div>
+        </td>
+    </tr>
+    <tr>
+        <th>Disks larger than 1 GB</th>
+        <td>
+            <div><a href="/drives?LargerThanBytes=1000000000">/drives?LargerThanBytes=1000000000</a></div>
+        </td>
+    </tr>
+    <tr>
+        <th>Disks smaller than 1 GB</th>
+        <td>
+            <div><a href="/drives?SmallerThanBytes=1000000000">/drives?SmallerThanBytes=1000000000</a></div>
+        </td>
+    </tr>
+    <tr class="bg-success">
+        <td colspan="2" style="text-align:center;color:#fff;font-size:1.5rem">/process API</td>
+    </tr>
+    <tr>
+        <th>Current Process</th>
+        <td>
+            <div><a href="/process/current">/process/current</a></div>
+        </td>
+    </tr>
+    <tr>
+        <th>All Processes</th>
+        <td>
+            <div><a href="/processes">/processes</a></div>
+        </td>
+    </tr>
+    <tr>
+        <th>Process by Id</th>
+        <td>
+            <div><a href="/process/{{ currentProcess.Id }}">/process/{{ currentProcess.Id }}</a></div>
+        </td>
+    </tr>
+    <tr>
+        <th>'dotnet' Processes</th>
+        <td>
+            <div><a href="/processes?NameContains=dotnet">/processes?NameContains=dotnet</a></div>
+        </td>
+    </tr>
+    <tr>
+        <th>Processes larger than 100 MB</th>
+        <td>
+            <div><a href="/processes?MemoryBytesAbove=100000000">/processes?MemoryBytesAbove=100000000</a></div>
+        </td>
+    </tr>
+    <tr>
+        <th>More than 10 Active Threads</th>
+        <td>
+            <div><a href="/processes?ActiveThreadsAbove=10">/processes?ActiveThreadsAbove=10</a></div>
+        </td>
+    </tr>
+</table>
+
+<h4>Contact Services</h4>
+
+<p>
+    The 
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/ServerInfo/ContactServices.cs">ContactServices</a>
+    shows an example of a Service relying on ServiceStack's <a href="http://docs.servicestack.net/validation">Validation Feature</a>:  
+</p>
+
+<style>
+    .error-summary, .error-summary-has-field-errors {
+        display: none;
+    }
+    .is-invalid .error-summary, .is-invalid .error-summary-has-field-errors {
+        display: block;
+    }
+</style>
+
+<div class="container">
+    <div class="row">
+        <form id="contacts" action="/contacts" method="POST" class="col-md-5">
+            <div class="error-summary"></div>
+            <div class="error-summary-has-field-errors"></div>
+
+            <div class="form-group row">
+                <label for="Name" class="col-sm-3 col-form-label">Name</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" id="Name" name="Name" placeholder="Name" value=""
+                           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <div class="invalid-feedback"></div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="Age" class="col-sm-3 col-form-label">Age</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" id="Age" name="Age" placeholder="Age" value=""
+                           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <div class="invalid-feedback"></div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="Company" class="col-sm-3 col-form-label">Company</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" id="Company" name="Company" placeholder="Company" value=""
+                           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <div class="invalid-feedback"></div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-sm-3 col-form-label"></label>
+                <div class="col-sm-9">
+                    <button class="btn btn-primary">Store Contact</button>
+                </div>
+            </div>
+        </form>
+        <div id="contacts-list" class="col-md-5">
+        </div>
+    </div>
+</div>
+
+{{#raw appendTo scripts}}
+<script>
+$("#contacts").ajaxSubmit({
+    success: function(r) {
+        $("#contacts").find("input").val('');
+        fetchContacts();
+    }
+})
+
+function fetchContacts(){
+    $.getJSON("/contacts", function(r) {
+        var sb = "";
+        if (r.results && r.results.length > 0) {
+            sb = "<h5>Contacts</h5>";
+            sb += "<ul>";
+            for (var i=0; i<r.results.length; i++) {
+                var contact = r.results[i];
+                sb += "<li>" + contact.name + " (" + contact.age + ") at " + contact.company + "</li>";
+            }
+            sb += "</ul>";
+            sb += "<p><a href='javascript:resetContacts()'>clear contacts</a></p>";
+        }
+        $("#contacts-list").html(sb);
+    });
+}
+
+fetchContacts();
+
+function resetContacts(){ $.getJSON("/contacts/reset", fetchContacts) }
+
+</script>
+{{/raw}}
+
+<h3>ServiceStack Features</h3>
+
+<p>
+    The use of the <em>ValidationFeature</em> above shows an example of loading a 
+    <a href="http://docs.servicestack.net/plugins">ServiceStack Plugin</a> by specifying it as a feature in its 
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/plugins/web.settings">web.settings</a>:
+</p>
+
+<pre class="settings"><code>debug true
+name Web App Plugins
+port 5000
+contentRoot ~/../plugins
+webRoot ~/../plugins
+features CustomPlugin, OpenApiFeature, PostmanFeature, CorsFeature, ValidationFeature
+CustomPlugin { ShowProcessLinks: true }
+ValidationFeature { ScanAppHostAssemblies: true }
+</code></pre>
+
+<p>
+    All plugins listed in <em>features</em> will be added to your Web App's AppHost in the order they're specified. They can further customized 
+    by adding a separate config entry with the Plugin Name and a JavaScript Object literal to populate the Plugin at registration, e.g
+    the config above is equivalent to:
+</p>
+
+<pre class="cs"><code>Plugins.Add(new CustomPlugin { ShowProcessLinks = true });
+Plugins.Add(new OpenApiFeature());
+Plugins.Add(new PostmanFeature());
+Plugins.Add(new CorsFeature());
+Plugins.Add(new ValidationFeature { ScanAppHostAssemblies = true });</code></pre>
+
+<h4>Custom Plugin</h4>
+
+<p>
+    In this case it tells our <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/ServerInfo/CustomPlugin.cs">CustomPlugin</a>
+    to also show Process Links in our <a href="/metadata">/metadata</a> Page:
+</p>
+
+<pre class="cs"><code>public class CustomPlugin : IPlugin
+{
+    public bool ShowDrivesLinks { get; set; } = true;
+    
+    public bool ShowProcessLinks { get; set; }
+
+    public void Register(IAppHost appHost)
+    {
+        if (ShowDrivesLinks)
+        {
+            var diskFormat = Env.IsWindows ? "NTFS" : "ext2";
+            appHost.GetPlugin&lt;MetadataFeature&gt;()
+                .AddPluginLink("/drives", "All Disks")
+                .AddPluginLink($"/drives?DriveFormatIn={diskFormat}", $"{diskFormat} Disks");
+        }
+
+        if (ShowProcessLinks)
+        {
+            appHost.GetPlugin&lt;MetadataFeature&gt;()
+                .AddPluginLink("/processes", "All Processes")
+                .AddPluginLink("/process/current", "Current Process");
+        }
+    }
+}</code></pre>
+
+<p>
+    Where as it was first registered in the list will appear before any links registered by other plugins:
+</p>
+
+<img src="/assets/img/metadata-screenshot.png" alt="Metadata screenshot">
+
+<h4>Built-in Plugins</h4>
+
+<p>
+    It also tells the <em>ValidationFeature</em> to scan all Service Assemblies for Validators and to automatically register them
+    which is how ServiceStack was able to find the
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/ServerInfo/ContactServices.cs">ContactValidator</a>
+    used to validate the <em>StoreContact</em> request.
+</p>
+
+<p>
+    Other optional plugins registered in this Web App is the metadata Services required for 
+    <a href="http://docs.servicestack.net/openapi">Open API</a>, 
+    <a href="http://docs.servicestack.net/postman">Postman</a> as well as
+    <a href="http://docs.servicestack.net/corsfeature">support for CORS</a>.
+    You can check the <a href="http://templates.servicestack.net/docs/info-filters#debug-template">Metadata Debug Template</a> for all Plugins 
+    loaded in your AppHost.
+</p>
+
+<h3>ServiceStack Metadata Services</h3>
+
+<p>
+    All Services loaded by plugins continue to benefit from ServiceStack's rich metadata services, including being listed 
+    in the <a href="/metadata">/metadata</a> page, being able to explore and interact with Services using 
+    <a href="/swagger-ui/">/swagger-ui/</a> as well as being able to generate Typed APIs for the most popular
+    <a href="http://docs.servicestack.net/add-servicestack-reference">Mobile, Web and Desktop platforms</a>.
+</p>

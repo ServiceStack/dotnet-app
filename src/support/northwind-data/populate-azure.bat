@@ -1,0 +1,1 @@
+dotnet run sqlserver $AZURE_SQL_CONNECTION_STRING

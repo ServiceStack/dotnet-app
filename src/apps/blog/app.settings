@@ -1,0 +1,17 @@
+debug true
+name Blog Web App
+db sqlite
+db.connection blog.sqlite
+
+features AuthFeature
+AuthFeature.AuthProviders TwitterAuthProvider
+TemplatePagesFeature { TemplatesAdminRole: 'AllowAnon' }
+
+oauth.RedirectUrl http://127.0.0.1:5000/
+oauth.CallbackUrl http://127.0.0.1:5000/auth/{0}
+oauth.twitter.ConsumerKey JvWZokH73rdghDdCFCFkJtCEU
+oauth.twitter.ConsumerSecret WNeOT6YalxXDR4iWZjc4jVjFaydoDcY8jgRrGc5FVLjsVlY2Y8
+
+args.blog { name:'blog.web-app.io', href:'/' }
+
+CefConfig { width:1150, height:900 }

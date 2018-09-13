@@ -1,0 +1,1 @@
+dotnet web/app.dll ../rockwind-vfs/web.aws.settings

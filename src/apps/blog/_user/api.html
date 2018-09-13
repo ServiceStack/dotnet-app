@@ -1,0 +1,9 @@
+API /{user}/api
+  * user : string - Return posts created by this Username
+
+{{ `SELECT * 
+      FROM Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName 
+     WHERE UserName = @user 
+    ORDER BY p.Created DESC` 
+   | dbSelect({ user })
+   | return }}

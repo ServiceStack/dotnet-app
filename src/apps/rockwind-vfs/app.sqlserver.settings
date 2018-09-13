@@ -1,0 +1,4 @@
+debug true
+name Rockwind VFS SQL Server Web App
+db sqlserver
+db.connection Server=localhost;Database=northwind;User Id=test;Password=test;MultipleActiveResultSets=True;

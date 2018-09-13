@@ -1,0 +1,1 @@
+dotnet pack WebApp.csproj -c release -o nupkg

@@ -1,0 +1,37 @@
+<div class="page">
+
+{{ `SELECT * 
+      FROM Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName 
+     WHERE Slug = @slug 
+     ORDER BY p.Created DESC` 
+   | dbSingle({ slug })
+   | assignTo: post }}
+
+{{ 'error' | showIf(!post) | partial({ error:'Post does not exist' }) }}
+
+{{ 'posts' | partial({ posts: [post] } )}}
+
+<div class="content-src">
+    <h3>Content Source</h3>
+
+    <textarea data-autogrow onfocus="this.select()" onmouseup="return false">{{ post.Content }}</textarea>        
+</div>
+
+<style>
+.content-src {
+    border-top: 1px solid #eee;
+    position: absolute;
+    left: 10%;
+    width: 80%;
+    padding: 0 0 2em 0;
+}
+.content-src h3 {
+    text-align: center;
+}
+.content-src textarea {
+    min-height: 20em;
+    font-size: 16px;
+}
+</style>
+
+</div>

@@ -1,0 +1,4 @@
+debug true
+name Rockwind VFS SQLite Web App
+db sqlite
+db.connection northwind.sqlite

@@ -1,0 +1,7 @@
+<!--
+title: Categories
+-->
+
+<a id="back" href="javascript:history.back()">&#8592; Back</a>
+
+{{ "select * from Category" | dbSelect | htmlDump({ className: "table table-striped auto-width" }) }}

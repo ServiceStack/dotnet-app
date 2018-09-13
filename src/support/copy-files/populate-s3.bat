@@ -1,0 +1,1 @@
+dotnet run s3 "{AccessKey:$AWS_ACCESS_KEY,SecretKey:$AWS_SECRET_KEY,Region:us-east-1,Bucket:rockwind}"

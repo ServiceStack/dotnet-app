@@ -1,0 +1,34 @@
+<!--
+title: Employee Details
+-->
+
+<a id="back" href="javascript:history.back()">&#8592; Back</a>
+
+{{#if id}}
+
+    {{ "select * from Employee where Id = @id" | dbSingle({ id }) 
+       | assignTo: employee }}
+
+    {{#if employee}}
+        <table class="table table-bordered auto-width">
+            {{#tr {each:toList(employee)} }}
+                <tr><th>{{Key}}</th><td>{{Value}}</td>
+            {{/tr}}
+        </table>
+
+        {{ `select TerritoryDescription, RegionDescription
+            from EmployeeTerritory et
+                inner join
+                Territory t on et.TerritoryId = t.Id
+                inner join 
+                Region r on t.RegionId = r.Id
+            where et.EmployeeId = @id`
+        | dbSelect({ id }) 
+        | htmlDump({ className: "table table-striped auto-width", caption: "Employee Territories"}) }}
+                
+    {{else}}
+        {{ `No Employee has id: ${id}` }}
+    {{/if}}
+
+{{/if}}
+

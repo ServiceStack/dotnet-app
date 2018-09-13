@@ -1,0 +1,37 @@
+<html>
+<head>
+<title>{{ title ?? 'Northwind dynamic data demo' }}</title>
+{{#if debug}}<script>{{ '/js/hot-loader.js' | includeFile }}</script>{{/if}}
+<link rel="stylesheet" href="{{ '../assets/css/bootstrap.css' | resolveAsset }}" />
+<link rel="stylesheet" href="{{ '../assets/css/default.css' | resolveAsset }}" />
+<style>
+    body {
+        padding: 40px;
+    }
+    #title {
+        margin: 30px 0;
+    }
+    #home {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+</style>
+</head>
+
+<body>
+    <a id="home" href="/"><img src="{{ '/assets/img/home-icon.jpg' | resolveAsset }}" alt="Home"></a>
+
+    <h2 id="title">{{ title }}</h2>
+
+    {{ page }}
+
+    <script src="{{ '../assets/js/jquery-3.2.1.min.js' | resolveAsset }}"></script>
+    <script src="{{ '../assets/js/bootstrap.min.js' | resolveAsset }}"></script>
+    <script src="{{ '../assets/js/default.js' | resolveAsset }}"></script>
+
+    {{ scripts | raw }}
+
+</body>
+
+</html>

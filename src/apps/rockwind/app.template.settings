@@ -1,0 +1,4 @@
+debug true
+name Rockwind WebApp
+db sqlite
+db.connection ~/northwind.sqlite

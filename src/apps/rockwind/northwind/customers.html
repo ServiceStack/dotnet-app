@@ -1,0 +1,53 @@
+<!--
+title: Search Customers
+-->
+
+{{ limit ?? 20 | assignTo: limit }}
+
+{{ "select Id, CompanyName, ContactName, ContactTitle, City, Country from Customer" | assignTo: sql }}
+
+{{#if id}}      {{ 'Id = @id'           | addTo: filters }} {{/if}}
+{{#if city}}    {{ 'City = @city'       | addTo: filters }} {{/if}}
+{{#if country}} {{ 'Country = @country' | addTo: filters }} {{/if}}
+
+{{#if !isEmpty(filters)}}
+  {{ `${sql} WHERE ${join(filters, ' AND ')}` | assignTo: sql }}
+{{/if}}
+
+{{ `${sql} ORDER BY CompanyName ${sqlLimit(limit)}` | assignTo: sql }}
+
+<a id="back" href="javascript:history.back()">&#8592; Back</a>
+
+<form class="form-inline">
+    <label class="mr-sm-2" for="country">Country</label>
+    <select class="custom-select mb-2 mr-sm-2 mb-sm-0" name="country" id="country">
+        <option value=""></option>
+        {{#each dbSelect("select distinct Country from Customer order by Country") }}
+            <option {{ {selected: country == Country} | htmlAttrs }}>{{ Country }}</option>
+        {{/each}}
+    </select>
+    <label class="mr-sm-2" for="city">City</label>
+    <select class="custom-select mb-2 mr-sm-2 mb-sm-0" name="city" id="city">
+        <option value=""></option>
+        {{#each dbSelect("select distinct City from Customer order by City") }}
+            <option {{ {selected: city == City} | htmlAttrs }}>{{ City }}</option>
+        {{/each}}
+    </select>
+
+    <label class="mr-sm-2" for="country">Limit</label>
+    <input type="text" name="limit" class="form-control col-1 mb-2 mr-sm-2 mb-sm-0" value="{{ limit }}">
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+{{ sql | dbSelect({ id, city, country }) 
+       | htmlDump({ className: "table table-striped details" }) }}
+
+{{#raw appendTo scripts}}
+<script>
+$('.details tbody tr').on('click', function(){
+    var id = $(this).find("td:first").html();
+    location.href = 'customer?id=' + id;
+})
+</script>
+{{/raw}}

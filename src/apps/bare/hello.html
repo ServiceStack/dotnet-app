@@ -1,0 +1,8 @@
+API Example /hello.html = /hello
+QueryString params, ?name=... is available in {{name}} argument
+
+Returns JSON Response when called with `Accept: application/json`:
+
+{{ { result: `Hello, ${name}!` } | return }}
+
+Only return value is returned as a serialized response, all other content on page is ignored.

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="https://fonts.googleapis.com/css?family=Noticia+Text|Open+Sans|Special+Elite" rel="stylesheet">
+    <title>{{title ?? 'simple.blog'}}</title>
+    <link rel="stylesheet" href="/default.css">
+</head>
+<body>
+    <i hidden>{{ '/js/hot-fileloader.js' | ifDebugIncludeScript }}</i>
+
+    <h3 id="title"><a href="{{ blog.href ?? '/' }}">{{ blog.name ?? 'blog' }}</a></h3>
+
+{{#if isAuthenticated }}
+    {{ `SELECT * from UserInfo WHERE UserName = @userName`   | dbSingle({ userName }) | assignTo: userInfo }}
+    {{#if !userInfo}}
+        {{ userSession.providerOAuthAccess[0]                | assignTo: twitterAuth }}
+        {{ twitterAuth.items.profileUrl | replace(`\\/`,'/') | assignTo: avatarUrl }}
+        {{ avatarUrl | replace('_normal','')                 | assignTo: avatarUrlLarge }}
+        {{ `datetime(CURRENT_TIMESTAMP,'localtime')`         | assignTo: sqlNow }}
+
+        {{ `INSERT INTO UserInfo (UserName, DisplayName, AvatarUrl, AvatarUrlLarge, Created, Modified) 
+                          VALUES (@userName, @name, @avatarUrl, @avatarUrlLarge, ${sqlNow}, ${sqlNow})`
+           | dbExec({ userName, name: userSession.displayName, avatarUrl, avatarUrlLarge }) }}
+    {{else}}
+        {{ userInfo.AvatarUrl | assignTo: avatarUrl }}
+    {{/if}}
+
+    <script>
+        var redirectedFromTwitter = location.hash === '#s=1';
+        if (redirectedFromTwitter) location.href = '/{{username}}';
+    </script>
+
+    <div class="profile auth">
+        <div id="avatar">
+            <div class="info">
+                <div>
+                    <a href="/auth/logout">sign out</a>
+                </div>
+            </div>
+            <div class="avatar-sm">
+                <a href="/{{username}}"><img src="{{ avatarUrl }}" alt="avatar"></a>                
+            </div>
+        </div>
+        <div class="links">
+            <div><a href="/posts/new">new post</a></div>
+            <div><a href="/db">db</a></div>
+        </div>
+    </div>
+{{else}}
+    <div class="profile no-auth">
+        <div>
+            <img class="svg-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAGLSURBVEhL7ZQ7SwNBFIXHnY0IdiKCVj5axcZC0EJBxM7GSvwNVtpZaGnhDwgWQsDsTDBgIVhJGhEESaWdCFYiWISdWYKoGc9ubkJ2M8maUsgHh33MPWeeDOvzTzkzQ9wLNh2p97n0t1jBDFILY7naML1ZKBjuCH3AjBmgP+1cVKe50E9catMUvtHZHrw3TFanqLKdjFRzdZM6jY2qBQTdxsKbUj9cqKwj1Q6VtpMRer5hQNCjK/wlaqpT1OPx0Lgcoe7YuT9K1RZKxsUoXhOmB4xq1xXBItpWW9uSygg1S0kdKKqxcIpYU2ULSFPop6QOeNXJejHWM2FOFQbV9XA0wJJcWQNShJlfUkQKsjKCTq5tId2EDrYpIR0s0TE29MUW1EHP4QEhezowbKCDz0SIXULVuKfXyfp33HywgI3LQx/W4IaEOiJLj+SDCYSfIODLGgxF10ovuAV/GYE5bPI9nt+20EjhXeSpFbL1iFeZwSYf4qooIeg9moFQbzglZTyz0Fp4KVJ1nz6M/QL269uAfmjPLQAAAABJRU5ErkJggg==">
+            <a href="/auth/twitter">sign in</a>
+            <div><a href="/db">db</a></div>
+        </div>
+    </div>
+{{/if}}
+
+    <div id="body">
+        {{page}}
+    </div>
+
+    {{htmlError}}
+
+    <script src="/default.js"></script>
+</body>
+</html>

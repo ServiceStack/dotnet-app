@@ -1,0 +1,1 @@
+dotnet run sqlserver "Server=localhost;Database=northwind;User Id=test;Password=test;MultipleActiveResultSets=True;"

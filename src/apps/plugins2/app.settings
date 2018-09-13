@@ -1,0 +1,5 @@
+debug true
+name Web App Plugins2
+port 5000
+features OpenApiFeature, PostmanFeature, CorsFeature, ValidationFeature, plugins/*
+CustomPlugin { ShowProcessLinks: true }

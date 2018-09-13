@@ -1,0 +1,76 @@
+<!--
+title: Customer Details
+-->
+
+<a id="back" href="javascript:history.back()">&#8592; Back</a>
+
+{{#if id}}
+    {{ "select * from Customer where Id = @id" | dbSingle({ id }) 
+       | assignTo: customer }}
+
+    {{#if customer}}
+        {{ `select o.Id, 
+                ${sqlConcat(["e.FirstName", "' '", "e.LastName"])} Employee, 
+                OrderDate, ShipCountry, ShippedDate, 
+                ${sqlCurrency("sum((d.Unitprice * d.Quantity) - d.discount)")} Total 
+            from ${sqlQuote("Order")} o
+                inner join
+                OrderDetail d on o.Id = d.OrderId
+                inner join 
+                Employee e on o.EmployeeId = e.Id
+            where CustomerId = @id
+            group by o.Id, EmployeeId, FirstName, LastName, OrderDate, ShipCountry, ShippedDate`
+          | dbSelect({ id }) 
+          | assignTo: orders }}
+
+        {{#with customer}}
+        <h3 style="color:#4CAF50; padding:20px 0">{{ CompanyName }}</h3>
+                
+        <table class="table table-bordered" style="width:auto">
+            <tr>
+                <th>Contact</th>
+                <td>{{ ContactName }} ({{ ContactTitle }})</td>
+            </tr>
+            <tr>
+                <th>Address</th>
+                <td>
+                    <p>{{ Address }}</p>
+                    <p>{{ City }}, {{ PostalCode }}, {{ Country }}</p>
+                </td>
+            </tr>
+            <tr>
+                <th>Phone</th>
+                <td>{{ Phone }}</td>
+            </tr>
+            <tr>
+                <th>Fax</th>
+                <td>{{ Fax ?? "" }}</td>
+            </tr>
+        </table>
+        {{/with}}
+          
+        {{ orders | htmlDump({ 
+            className: 'table table-striped details', 
+            caption: `${customer.CompanyName}'s Orders`,
+            emptyCaption: `There's no orders from ${CompanyName} yet`
+          }) 
+        }}
+
+        {{#raw appendTo scripts}}
+        <script>
+        $("form select:first").focus();
+        $('.details tbody tr').on('click', function(){
+            var id = $(this).find("td:first").html();
+            location.href = 'order?id=' + id;
+        })
+        </script>
+        {{/raw}}
+        
+    {{else}}
+        <div class="alert alert-danger">{{ `Customer with id '${id}' does not exist` }}</div>
+    {{/if}}
+
+{{else}}
+    <div class="alert alert-danger">{{ `'id' is required` }}</div>
+{{/if}}
+

@@ -1,0 +1,41 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<title>Alive Rockstars - {{ title }}</title>
+{{#if debug}}<script>{{ '/js/hot-loader.js' | includeFile }}</script>{{/if}}
+<link href="../../default.css" rel="stylesheet" />
+<style type="text/css">
+body {
+    background: #ACDBCE url(../../img/green_dust_scratch.png);
+    background-attachment: fixed;
+}
+a {
+    color: #060;    
+}
+</style>
+</head>
+    <body>
+        <a id="back" href="../../../">&#8592; Home</a>
+
+        <div id="page">
+            <div id="info">
+                <h6>Rockstars still rocking it...</h6>
+                <p>
+                    <a id="home" href="../../../"></a>
+                </p>
+            </div>
+
+            <h1>{{ title }}</h1>
+            
+            {{ "menu-alive" | partial }}
+        
+            <div id="content">
+                {{ page }}
+                <b class="clear"></b>
+            </div>
+            
+            {{ "menu-dead" | partial }}
+        </div>
+
+    </body>
+</html>

@@ -1,0 +1,33 @@
+{{ limit ?? 100 | assignTo: limit }}
+
+{{ `select p."Id", 
+           "ProductName",
+           c."CategoryName" Category,
+           s."CompanyName" Supplier, 
+           "QuantityPerUnit", 
+           ${sqlCurrency('"UnitPrice"')} UnitPrice, 
+           "UnitsInStock", "UnitsOnOrder", "ReorderLevel"   
+      from "Product" p
+           inner join "Category" c on p."CategoryId" = c."Id"
+           inner join "Supplier" s on p."SupplierId" = s."Id"
+     where "Discontinued" = ${sqlFalse}`
+  | assignTo: sql }}
+
+{{#if !isEmpty(PathArgs)}}
+  {{ `${sql} and p."Id" = @id` | dbSingle({ id: toInt(PathArgs[0]) }) 
+     | return }}
+{{/if}}
+
+{{#if id}}           {{ 'p."Id" = @id'                 | addTo: filters }} {{/if}}
+{{#if category}}     {{ 'c."CategoryName" = @category' | addTo: filters }} {{/if}}
+{{#if supplier}}     {{ 's."CompanyName" = @supplier'  | addTo: filters }} {{/if}}
+{{#if nameContains}} {{ '"ProductName" LIKE @name'     | addTo: filters }} {{/if}}
+
+{{#if !isEmpty(filters)}}
+  {{ `${sql} and ${join(filters, ' and ')}` | assignTo: sql }}
+{{/if}}
+
+{{ `${sql} ORDER BY "CompanyName" ${sqlLimit(limit)}` | assignTo: sql }}
+
+{{ sql | dbSelect({ id:toInt(id), category, supplier, name: `%${nameContains}%` }) 
+       | return }}
