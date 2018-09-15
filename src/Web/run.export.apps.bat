@@ -1,42 +1,40 @@
-XCOPY /E /Y ..\apps\bare ..\..\..\..\NetCoreTemplates\bare-webapp\
-DEL ..\..\..\..\NetCoreTemplates\bare-webapp\app\app.min.settings
+SET NETCORE_TEMPLATES=C:\src\NetCoreTemplates
+SET WEB_APPS=C:\src\NetCoreWebApps
 
-XCOPY /E /Y ..\apps\rockwind ..\..\..\..\NetCoreTemplates\rockwind-webapp\
-DEL ..\..\..\..\NetCoreTemplates\rockwind-webapp\app.*
-COPY ..\apps\rockwind\app.template.settings ..\..\..\..\NetCoreTemplates\rockwind-webapp\app.settings
-COPY ..\apps\northwind.sqlite ..\..\..\..\NetCoreTemplates\rockwind-webapp\
+XCOPY /E /Y ..\apps\bare %NETCORE_TEMPLATES%\bare-webapp\
+DEL %NETCORE_TEMPLATES%\bare-webapp\app\app.min.settings
 
-RMDIR ..\..\..\WebAppStarter\app /s /q
-XCOPY /E /Y ..\apps\bare ..\..\..\WebAppStarter\app\
-RMDIR ..\..\..\WebAppStarter\web /s /q
-XCOPY /E /Y ..\apps\web ..\..\..\WebAppStarter\web\
+XCOPY /E /Y ..\apps\rockwind %NETCORE_TEMPLATES%\rockwind-webapp\
+DEL %NETCORE_TEMPLATES%\rockwind-webapp\app.*
+COPY ..\apps\rockwind\app.template.settings %NETCORE_TEMPLATES%\rockwind-webapp\app.settings
+COPY ..\apps\northwind.sqlite %NETCORE_TEMPLATES%\rockwind-webapp\
 
-XCOPY /E /Y ..\apps\bare ..\..\..\bare\
+XCOPY /E /Y ..\apps\bare %WEB_APPS%\bare\
 
-XCOPY /E /Y ..\apps\blog ..\..\..\blog\
-DEL ..\..\..\blog\app.release.settings
+XCOPY /E /Y ..\apps\blog %WEB_APPS%\blog\
+DEL %WEB_APPS%\blog\app.release.settings
 
-XCOPY /E /Y ..\apps\chat ..\..\..\chat\
+XCOPY /E /Y ..\apps\chat %WEB_APPS%\chat\
 
-XCOPY /E /Y ..\apps\plugins ..\..\..\plugins\
+XCOPY /E /Y ..\apps\plugins %WEB_APPS%\plugins\
 
-XCOPY /E /Y ..\apps\redis ..\..\..\redis\
+XCOPY /E /Y ..\apps\redis %WEB_APPS%\redis\
 
-XCOPY /E /Y ..\apps\redis-html ..\..\..\redis-html\
+XCOPY /E /Y ..\apps\redis-html %WEB_APPS%\redis-html\
 
-XCOPY /E /Y ..\apps\rockwind ..\..\..\rockwind\
+XCOPY /E /Y ..\apps\rockwind %WEB_APPS%\rockwind\
 
-COPY ..\apps\northwind.sqlite ..\..\..\rockwind\
-COPY ..\apps\northwind.sqlite ..\..\..\rockwind-aws\
-COPY ..\apps\northwind.sqlite ..\..\..\rockwind-azure\
+COPY ..\apps\northwind.sqlite %WEB_APPS%\rockwind\
+COPY ..\apps\northwind.sqlite %WEB_APPS%\rockwind-aws\
+COPY ..\apps\northwind.sqlite %WEB_APPS%\rockwind-azure\
 
-XCOPY /E /Y ..\apps\rockwind-vfs ..\..\..\rockwind-aws\
-DEL ..\..\..\rockwind-aws\app.*.settings ..\..\..\rockwind-aws\app.*.settings
-COPY ..\apps\rockwind-vfs\app.aws.settings ..\..\..\rockwind-aws\app.settings
-COPY ..\apps\rockwind-vfs\app.aws.settings ..\..\..\rockwind-aws\app.settings
-MOVE ..\..\..\rockwind-aws\template.app.sqlite.settings ..\..\..\rockwind-aws\app.sqlite.settings
+XCOPY /E /Y ..\apps\rockwind-vfs %WEB_APPS%\rockwind-aws\
+DEL %WEB_APPS%\rockwind-aws\app.*.settings %WEB_APPS%\rockwind-aws\app.*.settings
+COPY ..\apps\rockwind-vfs\app.aws.settings %WEB_APPS%\rockwind-aws\app.settings
+COPY ..\apps\rockwind-vfs\app.aws.settings %WEB_APPS%\rockwind-aws\app.settings
+MOVE %WEB_APPS%\rockwind-aws\template.app.sqlite.settings %WEB_APPS%\rockwind-aws\app.sqlite.settings
 
-XCOPY /E /Y ..\apps\rockwind-vfs ..\..\..\rockwind-azure\
-DEL ..\..\..\rockwind-azure\app.*.settings
-COPY ..\apps\rockwind-vfs\app.azure.settings ..\..\..\rockwind-azure\app.settings
-MOVE ..\..\..\rockwind-azure\template.app.sqlite.settings ..\..\..\rockwind-azure\app.sqlite.settings
+XCOPY /E /Y ..\apps\rockwind-vfs %WEB_APPS%\rockwind-azure\
+DEL %WEB_APPS%\rockwind-azure\app.*.settings
+COPY ..\apps\rockwind-vfs\app.azure.settings %WEB_APPS%\rockwind-azure\app.settings
+MOVE %WEB_APPS%\rockwind-azure\template.app.sqlite.settings %WEB_APPS%\rockwind-azure\app.sqlite.settings
