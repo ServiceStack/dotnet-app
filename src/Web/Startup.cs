@@ -98,6 +98,11 @@ namespace WebApp
             Events = events;
             var dotnetArgs = new List<string>();
 
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE")))
+                GitHubSource = Environment.GetEnvironmentVariable("APP_SOURCE");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_GALLERY")))
+                GalleryUrl = Environment.GetEnvironmentVariable("APP_GALLERY");
+
             var createShortcut = false;
             var publish = false;
             var publishExe = false;
@@ -167,7 +172,10 @@ namespace WebApp
             if (Verbose)
             {
                 $"args: '{dotnetArgs.Join(" ")}'".Print();
+                $"APP_SOURCE={GitHubSource}".Print();
 
+                if (GalleryUrl != "https://servicestack.net/apps/gallery")
+                    $"APP_GALLERY={GalleryUrl}".Print();
                 if (runProcess != null)
                     $"Run Process: {runProcess}".Print();
                 if (createShortcut)
@@ -182,10 +190,14 @@ namespace WebApp
             {
                 RegisterStat(tool, "run", runProcess);
 
+                var publishDir = Path.GetDirectoryName(Path.GetFullPath(runProcess));
                 Events.RunNetCoreProcess(new WebAppContext { 
                     Arguments = dotnetArgs.ToArray(), 
                     RunProcess = runProcess,
-                    FavIcon = ToolFavIcon,
+                    AppDir = publishDir,
+                    FavIcon = File.Exists(Path.Combine(publishDir, "favicon.ico")) 
+                        ? Path.Combine(publishDir, "favicon.ico")
+                        : ToolFavIcon,
                 });
             
                 return null;
@@ -205,7 +217,12 @@ namespace WebApp
                 }
             }
 
-            var appDir = webSettingsPath != null ? Path.GetDirectoryName(webSettingsPath) : null;
+            var appDir = webSettingsPath != null 
+                ? Path.GetDirectoryName(webSettingsPath) 
+                : createShortcutFor != null
+                    ? Path.GetDirectoryName(Path.GetFullPath(createShortcutFor))
+                    : Environment.CurrentDirectory;
+
             var ctx = new WebAppContext
             {
                 Tool = tool,
@@ -250,7 +267,7 @@ namespace WebApp
             ctx.UseUrls = useUrls;
             ctx.StartUrl = useUrls.Replace("://*", "://localhost");
             ctx.DebugMode = GetDebugMode();
-            ctx.FavIcon = GetFavIcon();
+            ctx.FavIcon = GetIconPath(appDir);
 
             if (createShortcut)
             {
@@ -271,6 +288,8 @@ namespace WebApp
                     targetPath = "dotnet";
                     arguments = $"{toolPath} {arguments}";
                 }
+
+
                 var icon = GetIconPath(appDir, createShortcutFor);
 
                 if (Verbose) $"CreateShortcut: {shortcutPath}, {targetPath}, {arguments}, {appDir}, {icon}".Print();
@@ -304,7 +323,7 @@ namespace WebApp
                 
                 var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-                var zipUrl = new GithubGateway().GetSourceZipUrl("NetCoreWebApps", "WebWin");
+                var zipUrl = new GithubGateway().GetSourceZipUrl("ServiceStack", "WebWin");
 
                 var invalidFileNameChars = Path.GetInvalidFileNameChars();
                 var safeFileName = new string(zipUrl.Where(c => !invalidFileNameChars.Contains(c)).ToArray());
@@ -459,9 +478,9 @@ Usage:
   {tool}                         Run App in App folder using local app.settings
   {tool} path/to/app.settings    Run App at folder containing specified app.settings
 {runProcess}
-  {tool} list                    List available Apps
-  {tool} gallery                 Open App Gallery in a Browser
-  {tool} install <name>          Install App
+  {tool} list                    List available Apps            (Alias 'l')
+  {tool} gallery                 Open App Gallery in a Browser  (Alias 'g')
+  {tool} install <name>          Install App                    (Alias 'i')
 
   {tool} publish                 Package App to /publish ready for deployment (.NET Core Required)
   {tool} publish-exe             Package self-contained .exe App to /publish  (.NET Core Embedded)
@@ -472,7 +491,6 @@ Usage:
   {tool} init                    Create basic .NET Core Web App
   {tool} init nginx              Create nginx example config
   {tool} init supervisor         Create supervisor example config
-  {tool} init docker             Create Docker example config
   {tool} gist <gist-id>          Write all Gist text files to current directory
 {additional}
   dotnet tool update -g {tool}   Update to latest version
@@ -542,21 +560,27 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 {
                     RegisterStat(tool, "list");
 
-                    var repos = new GithubGateway().GetSourceRepos(GitHubSource);
-                    var padName = repos.OrderByDescending(x => x.Name.Length).First().Name.Length + 1;
-
-                    "".Print();
-                    var i = 1;
-                    foreach (var repo in repos)
+                    var sources = GitHubSource.Split(';');
+                    foreach (var source in sources)
                     {
-                        $" {i++.ToString().PadLeft(3,' ')}. {repo.Name.PadRight(padName,' ')} {repo.Description}".Print();
+                        var repos = new GithubGateway().GetSourceRepos(source);
+                        var padName = repos.OrderByDescending(x => x.Name.Length).First().Name.Length + 1;
+
+                        "".Print();
+                        if (sources.Length > 1) $"{source}:{Environment.NewLine}".Print();
+                        var i = 1;
+                        foreach (var repo in repos)
+                        {
+                            $" {i++.ToString().PadLeft(3, ' ')}. {repo.Name.PadRight(padName, ' ')} {repo.Description}".Print();
+                        }
                     }
 
                     "".Print();
+
                     $"Usage: {tool} install <name>".Print();
                     checkUpdatesAndQuit = true;
                 }
-                else if (arg == "gallery")
+                else if (arg == "gallery" || arg == "g")
                 {
                     RegisterStat(tool, "gallery");
 
@@ -1236,7 +1260,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public string Description { get; set; }
         public string Homepage { get; set; }
         public int Watchers_Count { get; set; }
-        public int Stargazes_Count { get; set; }
+        public int Stargazers_Count { get; set; }
         public int Size { get; set; }
         public string Full_Name { get; set; }
         public DateTime Created_at { get; set; }
@@ -1278,33 +1302,41 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             catch (WebException ex)
             {
                 if (ex.IsNotFound())
-                    throw new Exception($"App '{name}' was not found.");
+                    return null;
                 throw;
             }
         }
 
-        public string GetSourceZipUrl(string orgName, string name)
+        public string GetSourceZipUrl(string orgNames, string name)
         {
-            var repoFullName = UnwrapRepoFullName(orgName, name);
-            var json = GetJson($"repos/{repoFullName}/releases");
-            var response = JSON.parse(json);
-
-            if (response is List<object> releases && releases.Count > 0 &&
-                releases[0] is Dictionary<string,object> release &&
-                release.TryGetValue("zipball_url", out var zipUrl))
+            foreach (var orgName in orgNames.Split(';'))
             {
-                return (string)zipUrl;
+                var repoFullName = UnwrapRepoFullName(orgName, name);
+                if (repoFullName == null)
+                    continue;
+
+                var json = GetJson($"repos/{repoFullName}/releases");
+                var response = JSON.parse(json);
+
+                if (response is List<object> releases && releases.Count > 0 &&
+                    releases[0] is Dictionary<string, object> release &&
+                    release.TryGetValue("zipball_url", out var zipUrl))
+                {
+                    return (string)zipUrl;
+                }
+
+                if (Startup.Verbose) $"No releases found for '{repoFullName}', installing from master...".Print();
+                return $"https://github.com/{repoFullName}/archive/master.zip";
             }
 
-            if (Startup.Verbose) $"No releases found for '{repoFullName}', installing from master...".Print();
-            return $"https://github.com/{repoFullName}/archive/master.zip";
+            throw new Exception($"App '{name}' was not found in sources: {orgNames}");
         }
 
         public List<GithubRepo> GetSourceRepos(string orgName)
         {
             var repos = GetOrgRepos(orgName)
                 .Where(x => !x.Name.StartsWith("Web") && x.Name != "LiveDemos")
-                .OrderByDescending(x => x.Stargazes_Count)
+                .OrderByDescending(x => x.Stargazers_Count)
                 .ToList();
             return repos;
         }
@@ -1317,8 +1349,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public string GetJson(string route)
         {
             var apiUrl = GithubApiBaseUrl.CombineWith(route);
-            if (Startup.Verbose)
-                $"API: {apiUrl}".Print();
+            if (Startup.Verbose) $"API: {apiUrl}".Print();
 
             return apiUrl.GetJsonFromUrl(req => req.UserAgent = UserAgent);
         }
@@ -1332,6 +1363,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             do
             {
+                if (Startup.Verbose) $"API: {nextUrl}".Print();
+
                 results = nextUrl.GetJsonFromUrl(req => req.UserAgent = UserAgent,
                         responseFilter: res => {
                             var links = ParseLinkUrls(res.Headers["Link"]);

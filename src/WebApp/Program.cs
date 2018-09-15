@@ -20,7 +20,7 @@ namespace WebApp
                         CreateShortcut = Shortcut.Create,
                         HandleUnknownCommand = ctx => Startup.PrintUsage("app"),
                         OpenBrowser = url => CefPlatformWindows.Start(new CefConfig { 
-                            StartUrl = url, Width = 1040, DevTools = false, Icon = Startup.ToolFavIcon, HideConsoleWindow = false }),
+                            StartUrl = url, Width = 1040, DevTools = false, Icon = Startup.ToolFavIcon }),
                         RunNetCoreProcess = ctx =>
                         {
                             var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.LeftPart(';') ?? "http://localhost:5000";
