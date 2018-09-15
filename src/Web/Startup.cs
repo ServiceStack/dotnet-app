@@ -203,22 +203,22 @@ namespace WebApp
                 return null;
             }
 
-            if (HandledCommand(tool, dotnetArgs.ToArray()))
+            if (HandledCommand(tool, dotnetArgs.ToArray(), out var instruction))
                 return null;
 
-            string webSettingsPath = null;
+            string appSettingsPath = instruction?.AppSettingsPath;
             foreach (var path in appSettingPaths)
             {
                 var fullPath = Path.GetFullPath(path);
                 if (File.Exists(fullPath))
                 {
-                    webSettingsPath = fullPath;
+                    appSettingsPath = fullPath;
                     break;
                 }
             }
 
-            var appDir = webSettingsPath != null 
-                ? Path.GetDirectoryName(webSettingsPath) 
+            var appDir = appSettingsPath != null 
+                ? Path.GetDirectoryName(appSettingsPath) 
                 : createShortcutFor != null
                     ? Path.GetDirectoryName(Path.GetFullPath(createShortcutFor))
                     : Environment.CurrentDirectory;
@@ -228,14 +228,14 @@ namespace WebApp
                 Tool = tool,
                 Arguments = dotnetArgs.ToArray(),
                 RunProcess = runProcess,
-                WebSettingsPath = webSettingsPath,
+                WebSettingsPath = appSettingsPath,
                 AppSettings = WebTemplateUtils.AppSettings,
                 AppDir = appDir,
                 ToolPath = Assembly.GetExecutingAssembly().Location,
                 DebugMode =  DebugMode ?? false,
             };
 
-            if (dotnetArgs.Count > 0)
+            if (instruction == null && dotnetArgs.Count > 0)
             {
                 if (Events?.HandleUnknownCommand != null)
                 {
@@ -249,15 +249,15 @@ namespace WebApp
                 return null;
             }
 
-            if (webSettingsPath == null && createShortcutFor == null)
+            if (appSettingsPath == null && createShortcutFor == null)
                 throw new Exception($"'{appSettingPaths[0]}' does not exist.\n\nView Help: {tool} --help");
 
-            var usingWebSettings = File.Exists(webSettingsPath);
+            var usingWebSettings = File.Exists(appSettingsPath);
             if (Verbose || (usingWebSettings && !createShortcut && tool == "web"))
-                $"Using '{webSettingsPath}'".Print();
+                $"Using '{appSettingsPath}'".Print();
 
             WebTemplateUtils.AppSettings = new MultiAppSettings(usingWebSettings
-                    ? new TextFileSettings(webSettingsPath)
+                    ? new TextFileSettings(appSettingsPath)
                     : new DictionarySettings(),
                 new EnvironmentVariableSettings());
 
@@ -269,9 +269,10 @@ namespace WebApp
             ctx.DebugMode = GetDebugMode();
             ctx.FavIcon = GetIconPath(appDir);
 
-            if (createShortcut)
+            if (createShortcut || instruction?.Command == "shortcut")
             {
-                RegisterStat(tool, "shortcut", createShortcutFor);
+                if (instruction?.Command != "shortcut")
+                    RegisterStat(tool, "shortcut", createShortcutFor);
 
                 var shortcutPath = createShortcutFor == null
                     ? Path.Combine(appDir, "name".GetAppSetting(defaultValue: "WebApp"))
@@ -289,12 +290,15 @@ namespace WebApp
                     arguments = $"{toolPath} {arguments}";
                 }
 
-
                 var icon = GetIconPath(appDir, createShortcutFor);
 
                 if (Verbose) $"CreateShortcut: {shortcutPath}, {targetPath}, {arguments}, {appDir}, {icon}".Print();
 
                 CreateShortcut(shortcutPath, targetPath, arguments, appDir, icon, ctx);
+
+                if (instruction != null)
+                    $"{Environment.NewLine}Shorcut: {new DirectoryInfo(Path.GetDirectoryName(shortcutPath)).Name}{Path.DirectorySeparatorChar}{Path.GetFileName(shortcutPath)}".Print();
+
                 return null;
             }
             if (publish)
@@ -340,7 +344,7 @@ namespace WebApp
                 }
 
                 var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", "WebWin");
-                try { Directory.Delete(tmpDir, recursive: true); } catch { }
+                DeleteDirectory(tmpDir);
                 
                 if (Verbose) $"Extract to Directory: {cachedVersionPath} -> {tmpDir}".Print();
 
@@ -545,8 +549,17 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             } catch { }
         }
 
-        public static bool HandledCommand(string tool, string[] args)
+        public class Instruction
         {
+            public string Command;
+            public string AppDir;
+            public string AppSettingsPath;
+        }
+
+        public static bool HandledCommand(string tool, string[] args, out Instruction instruction)
+        {
+            instruction = null;
+
             if (args.Length == 0) 
                 return false;
 
@@ -616,12 +629,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     $"Installing {repo}...".Print();
 
                     var tmpFile = Path.GetTempFileName();
-                    if (Verbose)
-                        $"Downloading: {downloadUrl}".Print();
+                    if (Verbose) $"Downloading: {downloadUrl}".Print();
                     new GithubGateway().DownloadFile(downloadUrl, tmpFile);
                     var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
-                    if (Directory.Exists(tmpDir))
-                        Directory.Delete(tmpDir,recursive:true);
+                    DeleteDirectory(tmpDir);
 
                     if (Verbose)
                         $"ExtractToDirectory: {tmpFile} -> {tmpDir}".Print();
@@ -636,7 +647,18 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     $"Installation successful, run with:".Print();
                     "".Print();
                     $"  cd {repo} && {tool}".Print();
-                    return true;
+
+                    var appSettingsPath = Path.Combine(installDir, "app.settings");
+                    if (!File.Exists(appSettingsPath))
+                        return true;
+
+                    instruction = new Instruction
+                    {
+                        Command = "shortcut",
+                        AppDir = installDir,
+                        AppSettingsPath = appSettingsPath,
+                    };
+                    return false; //fall-through to create shortcut
                 }
                 else if (arg == "init")
                 {
