@@ -188,7 +188,7 @@ namespace WebApp
 
             if (runProcess != null)
             {
-                RegisterStat(tool, "run", runProcess);
+                RegisterStat(tool, runProcess, "run");
 
                 var publishDir = Path.GetDirectoryName(Path.GetFullPath(runProcess));
                 Events.RunNetCoreProcess(new WebAppContext { 
@@ -272,7 +272,7 @@ namespace WebApp
             if (createShortcut || instruction?.Command == "shortcut")
             {
                 if (instruction?.Command != "shortcut")
-                    RegisterStat(tool, "shortcut", createShortcutFor);
+                    RegisterStat(tool, createShortcutFor, "shortcut");
 
                 var shortcutPath = createShortcutFor == null
                     ? Path.Combine(appDir, "name".GetAppSetting(defaultValue: "WebApp"))
@@ -297,7 +297,7 @@ namespace WebApp
                 CreateShortcut(shortcutPath, targetPath, arguments, appDir, icon, ctx);
 
                 if (instruction != null)
-                    $"{Environment.NewLine}Shorcut: {new DirectoryInfo(Path.GetDirectoryName(shortcutPath)).Name}{Path.DirectorySeparatorChar}{Path.GetFileName(shortcutPath)}".Print();
+                    $"{Environment.NewLine}Shortcut: {new DirectoryInfo(Path.GetDirectoryName(shortcutPath)).Name}{Path.DirectorySeparatorChar}{Path.GetFileName(shortcutPath)}".Print();
 
                 return null;
             }
@@ -543,7 +543,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         internal static void RegisterStat(string tool, string name, string type = "tool")
         {
-            if (Environment.GetEnvironmentVariable("SERVICESTACK_TELEMETRY_OPTOUT") == "1") return;
+            if (Environment.GetEnvironmentVariable("SERVICESTACK_TELEMETRY_OPTOUT") == "1" || 
+                Environment.GetEnvironmentVariable("SERVICESTACK_TELEMETRY_OPTOUT") == "true")
+                return;
             try {
                 $"https://servicestack.net/stats/{type}/record?name={name}&source={tool}&version={GetVersion()}".GetBytesFromUrlAsync();
             } catch { }
@@ -623,7 +625,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (arg == "install" || arg == "i")
                 {
                     var repo = args[1];
-                    RegisterStat(tool, "install", repo);
+                    RegisterStat(tool, repo, "install");
 
                     var downloadUrl = new GithubGateway().GetSourceZipUrl(GitHubSource, repo);
                     $"Installing {repo}...".Print();
@@ -663,7 +665,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else if (arg == "init")
                 {
                     var gist = args[1];
-                    RegisterStat(tool, "init", gist);
+                    RegisterStat(tool, gist, "init");
                     var id = gist == "nginx"
                         ? InitNginxGist
                         : (gist.StartsWith("supervisor"))
@@ -677,7 +679,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else if (arg == "gist")
                 {
                     var gist = args[1];
-                    RegisterStat(tool, "gist", gist);
+                    RegisterStat(tool, gist, "gist");
                     WriteGistFile(gist);
                     return true;
                 }
