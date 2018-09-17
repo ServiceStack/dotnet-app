@@ -253,7 +253,7 @@ namespace WebApp
                 throw new Exception($"'{appSettingPaths[0]}' does not exist.\n\nView Help: {tool} --help");
 
             var usingWebSettings = File.Exists(appSettingsPath);
-            if (Verbose || (usingWebSettings && !createShortcut && tool == "web"))
+            if (Verbose || (usingWebSettings && !createShortcut && tool == "web" && instruction == null))
                 $"Using '{appSettingsPath}'".Print();
 
             WebTemplateUtils.AppSettings = new MultiAppSettings(usingWebSettings
@@ -296,7 +296,7 @@ namespace WebApp
 
                 CreateShortcut(shortcutPath, targetPath, arguments, appDir, icon, ctx);
 
-                if (instruction != null)
+                if (instruction != null && tool == "app")
                     $"{Environment.NewLine}Shortcut: {new DirectoryInfo(Path.GetDirectoryName(shortcutPath)).Name}{Path.DirectorySeparatorChar}{Path.GetFileName(shortcutPath)}".Print();
 
                 return null;
