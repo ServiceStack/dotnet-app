@@ -308,7 +308,7 @@ namespace WebApp
                 var toolDir = Path.GetDirectoryName(ctx.ToolPath);
 
                 var (publishDir, publishAppDir, publishToolDir) = GetPublishDirs(tool == "app" ? "cef" : tool, appDir);
-                CreatePublishShortcut(ctx, publishDir, publishDir, publishToolDir, Path.GetFileName(ctx.ToolPath));
+                CreatePublishShortcut(ctx, publishDir, publishAppDir, publishToolDir, Path.GetFileName(ctx.ToolPath));
 
                 appDir.CopyAllTo(publishAppDir, excludePaths: new []{ publishToolDir });
                 toolDir.CopyAllTo(publishToolDir);
@@ -1225,7 +1225,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public static List<string> ExcludeFoldersNamed = new List<string>
         {
-            ".git"
+            ".git",
+            "publish"
         };
 
         public static void CopyAllTo(this string src, string dst, string[] excludePaths=null)
@@ -1358,17 +1359,40 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public List<GithubRepo> GetSourceRepos(string orgName)
         {
-            var repos = GetOrgRepos(orgName)
-                .Where(x => !x.Name.StartsWith("Web") && x.Name != "LiveDemos")
+            var repos = GetUserAndOrgRepos(orgName)
                 .OrderByDescending(x => x.Stargazers_Count)
                 .ToList();
             return repos;
         }
 
-        public List<GithubRepo> GetOrgRepos(string githubOrgName)
+        public List<GithubRepo> GetUserAndOrgRepos(string githubOrgOrUser)
         {
-            return StreamJsonCollection<List<GithubRepo>>($"orgs/{githubOrgName}/repos").SelectMany(x => x).ToList();
+            var map = new Dictionary<string,GithubRepo>();
+
+            try
+            {
+                foreach (var repos in StreamJsonCollection<List<GithubRepo>>($"users/{githubOrgOrUser}/repos"))
+                foreach (var repo in repos)
+                    map[repo.Name] = repo;
+            }
+            catch (Exception e) { if (!e.IsNotFound()) throw; }
+
+            try
+            {
+                foreach (var repos in StreamJsonCollection<List<GithubRepo>>($"orgs/{githubOrgOrUser}/repos"))
+                foreach (var repo in repos)
+                    map[repo.Name] = repo;
+            }
+            catch (Exception e) { if (!e.IsNotFound()) throw; }
+
+            return map.Values.ToList();
         }
+
+        public List<GithubRepo> GetUserRepos(string githubUser) => 
+            StreamJsonCollection<List<GithubRepo>>($"users/{githubUser}/repos").SelectMany(x => x).ToList();
+
+        public List<GithubRepo> GetOrgRepos(string githubOrg) => 
+            StreamJsonCollection<List<GithubRepo>>($"orgs/{githubOrg}/repos").SelectMany(x => x).ToList();
 
         public string GetJson(string route)
         {
