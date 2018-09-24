@@ -340,7 +340,7 @@ namespace WebApp
                 if (!isCached)
                 {
                     if (Verbose) $"Downloading {zipUrl}".Print();
-                    new GithubGateway().DownloadFile(zipUrl, cachedVersionPath);
+                    new GithubGateway().DownloadFile(zipUrl, cachedVersionPath.AssertDirectory());
                 }
 
                 var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", "WebWin");
@@ -984,6 +984,14 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public static AppHostBase AppHost;
         public static IAppSettings AppSettings;
         public static IVirtualFiles VirtualFiles;
+
+        public static string AssertDirectory(this string filePath)
+        {
+            try { 
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath)); 
+            } catch { }
+            return filePath;
+        }
 
         public static string ResolveValue(this string value)
         {
