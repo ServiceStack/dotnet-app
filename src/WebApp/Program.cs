@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using ServiceStack;
 using ServiceStack.CefGlue;
 using ServiceStack.Text;
@@ -11,11 +12,11 @@ namespace WebApp
 {
     public class Program
     {
-        public static int Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             try
             {
-                var host = Startup.CreateWebHost("app", args, new WebAppEvents
+                var host = await Startup.CreateWebHost("app", args, new WebAppEvents
                     {
                         CreateShortcut = Shortcut.Create,
                         HandleUnknownCommand = ctx => Startup.PrintUsage("app"),

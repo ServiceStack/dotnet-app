@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -7,11 +8,11 @@ namespace WebApp
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             try
             {
-                var host = Startup.CreateWebHost("web", args)?.Build();
+                var host = (await Startup.CreateWebHost("web", args))?.Build();
                 host?.Run();
             } 
             catch (Exception ex)

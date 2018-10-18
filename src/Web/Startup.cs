@@ -8,6 +8,8 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -93,7 +95,7 @@ namespace WebApp
 
         public static string ToolFavIcon = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "favicon.ico");
 
-        public static WebAppContext CreateWebHost(string tool, string[] args, WebAppEvents events = null)
+        public static async Task<WebAppContext> CreateWebHost(string tool, string[] args, WebAppEvents events = null)
         {
             Events = events;
             var dotnetArgs = new List<string>();
@@ -203,7 +205,8 @@ namespace WebApp
                 return null;
             }
 
-            if (HandledCommand(tool, dotnetArgs.ToArray(), out var instruction))
+            var instruction = await HandledCommandAsync(tool, dotnetArgs.ToArray());
+            if (instruction?.Handled == true)
                 return null;
 
             string appSettingsPath = instruction?.AppSettingsPath;
@@ -556,41 +559,28 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             public string Command;
             public string AppDir;
             public string AppSettingsPath;
+            public bool Handled;
         }
 
-        public static bool HandledCommand(string tool, string[] args, out Instruction instruction)
+        public static async Task<Instruction> HandledCommandAsync(string tool, string[] args)
         {
-            instruction = null;
-
             if (args.Length == 0) 
-                return false;
+                return null;
 
             var cmd = System.Text.RegularExpressions.Regex.Replace(args[0], "^-+", "/");
 
-            var checkUpdatesAndQuit = false;
+            Task<string> checkUpdatesAndQuit = null;
+            Task<string> beginCheckUpdates() => $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync();
+                        
             var arg = args[0];
             if (args.Length == 1)
             {
                 if (arg == "list" || arg == "l")
                 {
                     RegisterStat(tool, "list");
+                    checkUpdatesAndQuit = beginCheckUpdates();
 
-                    var sources = GitHubSource.Split(';');
-                    foreach (var source in sources)
-                    {
-                        var repos = new GithubGateway().GetSourceRepos(source);
-                        var padName = repos.OrderByDescending(x => x.Name.Length).First().Name.Length + 1;
-
-                        "".Print();
-                        if (sources.Length > 1) $"{source}:{Environment.NewLine}".Print();
-                        var i = 1;
-                        foreach (var repo in repos)
-                        {
-                            $" {i++.ToString().PadLeft(3, ' ')}. {repo.Name.PadRight(padName, ' ')} {repo.Description}".Print();
-                        }
-                    }
-
-                    "".Print();
+                    await PrintSources(GitHubSource.Split(';'));
 
                     $"Usage: {tool} install <name>".Print();
                     checkUpdatesAndQuit = true;
@@ -598,26 +588,26 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else if (arg == "gallery" || arg == "g")
                 {
                     RegisterStat(tool, "gallery");
+                    checkUpdatesAndQuit = beginCheckUpdates();
 
                     var openUrl = Events?.OpenBrowser ?? OpenBrowser;
                     openUrl(GalleryUrl);
-                    checkUpdatesAndQuit = true;
                 }
                 else if (arg == "init")
                 {
                     RegisterStat(tool, "init");
                     WriteGistFile(InitDefaultGist);
-                    return true;
+                    return new Instruction { Command = "init", Handled = true };
                 }
                 else if (new[] { "/h", "?", "/?", "/help" }.Contains(cmd))
                 {
                     PrintUsage(tool);
-                    return true;
+                    return new Instruction { Command = "help", Handled = true };
                 }
                 else if (new[] { "/v", "/version" }.Contains(cmd))
                 {
+                    checkUpdatesAndQuit = beginCheckUpdates();
                     $"Version: {GetVersion()}".Print();
-                    checkUpdatesAndQuit = true;
                 }
             }
             else if (args.Length == 2)
@@ -652,17 +642,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                     var appSettingsPath = Path.Combine(installDir, "app.settings");
                     if (!File.Exists(appSettingsPath))
-                        return true;
+                        return new Instruction { Command = "shortcut", Handled = true };
 
-                    instruction = new Instruction
+                    return new Instruction
                     {
                         Command = "shortcut",
                         AppDir = installDir,
                         AppSettingsPath = appSettingsPath,
                     };
-                    return false; //fall-through to create shortcut
                 }
-                else if (arg == "init")
+                if (arg == "init")
                 {
                     var gist = args[1];
                     RegisterStat(tool, gist, "init");
@@ -674,22 +663,22 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                                 ? InitDockerGist
                                 : throw new Exception($"Unknown init name '{gist}'");
                     WriteGistFile(id);
-                    return true;
+                    return new Instruction { Command = "init", Handled = true };
                 }
-                else if (arg == "gist")
+                if (arg == "gist")
                 {
                     var gist = args[1];
                     RegisterStat(tool, gist, "gist");
                     WriteGistFile(gist);
-                    return true;
+                    return new Instruction { Command = "gist", Handled = true };
+                }
                 }
             }
 
-            if (checkUpdatesAndQuit)
             {
                 RegisterStat(tool, cmd.TrimStart('/'));
 
-                var json = $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrl();
+                var json = await checkUpdatesAndQuit;
                 var response = JSON.parse(json);
                 if (response is Dictionary<string, object> r &&
                     r.TryGetValue("items", out var oItems) && oItems is List<object> items &&
@@ -704,9 +693,31 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         $"  dotnet tool update -g {tool}".Print();
                     }
                 }
-                return true;
+                return new Instruction { Handled = true };
             }            
-            return false;
+            return null;
+        }
+
+        private static async Task PrintSources(string[] sources)
+        {
+            var sourceTasks = sources.Map(source => (source, new GithubGateway().GetSourceReposAsync(source)));
+
+            foreach (var sourceTask in sourceTasks)
+            {
+                var (source, task) = sourceTask;
+                var repos = await task;
+                var padName = repos.OrderByDescending(x => x.Name.Length).First().Name.Length + 1;
+
+                "".Print();
+                if (sources.Length > 1) $"{source}:{Environment.NewLine}".Print();
+                var i = 1;
+                foreach (var repo in repos)
+                {
+                    $" {i++.ToString().PadLeft(3, ' ')}. {repo.Name.PadRight(padName, ' ')} {repo.Description}".Print();
+                }
+            }
+
+            "".Print();
         }
 
         public static void WriteGistFile(string gistId)
@@ -1342,7 +1353,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public string GetSourceZipUrl(string orgNames, string name)
         {
-            foreach (var orgName in orgNames.Split(';'))
+            var orgs = orgNames.Split(';');
+            foreach (var orgName in orgs)
             {
                 var repoFullName = UnwrapRepoFullName(orgName, name);
                 if (repoFullName == null)
@@ -1362,24 +1374,27 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return $"https://github.com/{repoFullName}/archive/master.zip";
             }
 
-            throw new Exception($"App '{name}' was not found in sources: {orgNames}");
+            throw new Exception($"'{name}' was not found in sources: {orgs.Join(", ")}");
         }
 
-        public List<GithubRepo> GetSourceRepos(string orgName)
+        public async Task<List<GithubRepo>> GetSourceReposAsync(string orgName)
         {
-            var repos = GetUserAndOrgRepos(orgName)
+            var repos = (await GetUserAndOrgReposAsync(orgName))
                 .OrderByDescending(x => x.Stargazers_Count)
                 .ToList();
             return repos;
         }
 
-        public List<GithubRepo> GetUserAndOrgRepos(string githubOrgOrUser)
+        public async Task<List<GithubRepo>> GetUserAndOrgReposAsync(string githubOrgOrUser)
         {
             var map = new Dictionary<string,GithubRepo>();
 
+            var userRepos = GetJsonCollectionAsync<List<GithubRepo>>($"users/{githubOrgOrUser}/repos");
+            var orgRepos = GetJsonCollectionAsync<List<GithubRepo>>($"orgs/{githubOrgOrUser}/repos");
+
             try
             {
-                foreach (var repos in StreamJsonCollection<List<GithubRepo>>($"users/{githubOrgOrUser}/repos"))
+                foreach (var repos in await userRepos)
                 foreach (var repo in repos)
                     map[repo.Name] = repo;
             }
@@ -1387,7 +1402,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             try
             {
-                foreach (var repos in StreamJsonCollection<List<GithubRepo>>($"orgs/{githubOrgOrUser}/repos"))
+                foreach (var repos in await userRepos)
                 foreach (var repo in repos)
                     map[repo.Name] = repo;
             }
@@ -1434,6 +1449,30 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
 
             } while (results.Count > 0 && nextUrl != null);
+        }
+
+        public async Task<List<T>> GetJsonCollectionAsync<T>(string route)
+        {
+            var to = new List<T>();
+            List<T> results;
+            var nextUrl = GithubApiBaseUrl.CombineWith(route);
+
+            do
+            {
+                if (Startup.Verbose) $"API: {nextUrl}".Print();
+
+                results = (await nextUrl.GetJsonFromUrlAsync(req => req.UserAgent = UserAgent,
+                        responseFilter: res => {
+                            var links = ParseLinkUrls(res.Headers["Link"]);
+                            links.TryGetValue("next", out nextUrl);
+                        }))
+                    .FromJson<List<T>>();
+                
+                to.AddRange(results);
+
+            } while (results.Count > 0 && nextUrl != null);
+
+            return to;
         }
 
         public static Dictionary<string, string> ParseLinkUrls(string linkHeader)
