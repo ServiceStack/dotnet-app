@@ -79,6 +79,7 @@ namespace WebApp
         public static string GalleryUrl { get; set; } = "https://servicestack.net/apps/gallery";
 
         public static string GitHubSource { get; set; } = "NetCoreWebApps";
+        public static string GitHubSourceTemplates { get; set; } = "NetCoreTemplates;NetFrameworkTemplates;NetFrameworkCoreTemplates";
         static string[] SourceArgs = { "/s", "-s", "/source", "--source" };
 
         public static bool Verbose { get; set; }
@@ -102,6 +103,8 @@ namespace WebApp
 
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE")))
                 GitHubSource = Environment.GetEnvironmentVariable("APP_SOURCE");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_TEMPLATES")))
+                GitHubSourceTemplates = Environment.GetEnvironmentVariable("APP_SOURCE_TEMPLATES");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_GALLERY")))
                 GalleryUrl = Environment.GetEnvironmentVariable("APP_GALLERY");
 
@@ -138,7 +141,7 @@ namespace WebApp
                 }
                 if (SourceArgs.Contains(arg))
                 {
-                    GitHubSource = args[++i];
+                    GitHubSource = GitHubSourceTemplates = args[++i];
                     continue;
                 }
                 if (arg == "shortcut")
@@ -489,6 +492,9 @@ Usage:
   {tool} gallery                 Open App Gallery in a Browser  (Alias 'g')
   {tool} install <name>          Install App                    (Alias 'i')
 
+  {tool} new                     List available Project Templates
+  {tool} new <template> <name>   Create New Project From Template
+
   {tool} publish                 Package App to /publish ready for deployment (.NET Core Required)
   {tool} publish-exe             Package self-contained .exe App to /publish  (.NET Core Embedded)
 
@@ -583,7 +589,15 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     await PrintSources(GitHubSource.Split(';'));
 
                     $"Usage: {tool} install <name>".Print();
-                    checkUpdatesAndQuit = true;
+                }
+                else if (arg == "new")
+                {
+                    RegisterStat(tool, "new");
+                    checkUpdatesAndQuit = beginCheckUpdates();
+                    
+                    await PrintSources(GitHubSourceTemplates.Split(';'));
+                    
+                    $"Usage: {tool} new <template> <name>".Print();
                 }
                 else if (arg == "gallery" || arg == "g")
                 {
@@ -672,9 +686,49 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     WriteGistFile(gist);
                     return new Instruction { Command = "gist", Handled = true };
                 }
+                if (arg == "new")
+                {
+                    await PrintSources(GitHubSourceTemplates.Split(';'));
+                    AssertValidProjectName(null, tool);
                 }
             }
+            else if (args.Length == 3)
+            {
+                var repo = args[1];
+                var projectName = args[2];
+                AssertValidProjectName(projectName, tool);
 
+                RegisterStat(tool, repo, "new");
+
+                var downloadUrl = new GithubGateway().GetSourceZipUrl(GitHubSourceTemplates, repo);
+                $"Installing {repo}...".Print();
+
+                var tmpFile = Path.GetTempFileName();
+                if (Verbose) $"Downloading: {downloadUrl}".Print();
+                new GithubGateway().DownloadFile(downloadUrl, tmpFile);
+                var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
+                DeleteDirectory(tmpDir);
+
+                if (Verbose)
+                    $"ExtractToDirectory: {tmpFile} -> {tmpDir}".Print();
+                ZipFile.ExtractToDirectory(tmpFile, tmpDir);
+                var installDir = Path.GetFullPath(repo);
+
+                var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
+                if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {projectDir.FullName}".Print();
+                DeleteDirectory(projectDir.FullName);
+                Directory.Move(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
+
+                var projectNameKebab = CamelToKebab(projectName);
+                RenameProject(str => str.Replace("MyApp", projectName).Replace("my-app", projectNameKebab), projectDir);
+
+                "".Print();
+                $"{projectName} {repo} project created.".Print();
+                "".Print();
+                return new Instruction { Handled = true };
+            }
+
+            if (checkUpdatesAndQuit != null)
             {
                 RegisterStat(tool, cmd.TrimStart('/'));
 
@@ -696,6 +750,85 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             }            
             return null;
+        }
+
+        private static Regex ValidNameChars = new Regex("^[a-zA-Z_$][0-9a-zA-Z_$.]*$", RegexOptions.Compiled);
+        private static string[] IllegalNames = "CON|AUX|PRN|COM1|LP2|.|..".Split('|');
+        private static string[] IgnoreExtensions = "jpg|jpeg|png|gif|ico|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga|ogg|dll|exe|pdb|so|zip|key|snk|p12|swf|xap|class|doc|xls|ppt|sqlite|db".Split('|');
+
+        private static string CamelToKebab(String str) => Regex.Replace((str ?? ""),"([a-z])([A-Z])","$1-$2").ToLower();
+        
+        private static Regex replaceRegEx = new Regex("MyApp", RegexOptions.Compiled | RegexOptions.Multiline);
+        private static Regex replaceKebabRegEx = new Regex("my-app", RegexOptions.Compiled | RegexOptions.Multiline);
+        
+        private static string ReplaceProjectString(string projectName, string projectNameKebab, string str) =>
+            str.Replace("MyApp", projectName).Replace("my-app", projectNameKebab);
+
+        private static Encoding UTF8WithoutBOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes:true);
+
+        private static void RenameProject(Func<string,string> replaceFn, DirectoryInfo projectDir)
+        {
+            foreach (var file in projectDir.GetFiles())
+            {
+                var fileName = file.Name;
+                var parts = fileName.SplitOnLast('.');
+                var ext = parts.Length == 2 ? parts[1].ToLower() : null;
+
+                if (!IgnoreExtensions.Contains(ext))
+                {
+                    var textContents = File.ReadAllText(file.FullName);
+                    var newContents = replaceFn(textContents);
+                    if (textContents != newContents)
+                    {
+                        if (Verbose) $"Replacing {file.FullName}".Print();
+                        try
+                        {
+                            File.WriteAllText(file.FullName, newContents, UTF8WithoutBOM);
+                        }
+                        catch (Exception ex)
+                        {
+                            $"Could not replace text in file '{file.Name}': {ex.Message}".Print();
+                        }
+                    }
+                }
+
+                var oldPath = file.FullName;
+                var newName = replaceFn(fileName);
+                if (newName != fileName)
+                {
+                    var newPath = Path.Combine(projectDir.FullName, newName);
+                    if (Verbose) $"Moving File {oldPath} -> {newPath}".Print();
+                    File.Move(oldPath, newPath);
+                }
+            }
+            
+            foreach (var dir in projectDir.GetDirectories())
+            {
+                RenameProject(replaceFn, dir);
+            }
+
+            var newDirName = replaceFn(projectDir.Name);
+            if (newDirName != projectDir.Name && projectDir.Parent != null)
+            {
+                var newDirPath = Path.Combine(projectDir.Parent.FullName, newDirName);
+                if (Verbose) $"Moving Directory {projectDir.FullName} -> {newDirPath}".Print();
+                Directory.Move(projectDir.FullName, newDirPath);
+            }
+        }
+        
+        private static void AssertValidProjectName(string name, string tool) 
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException($"Project Name required.\n\nUsage: {tool} new <template> <name>");
+
+            if (!ValidNameChars.IsMatch(name))
+                throw new ArgumentException($"Illegal char in project name: {name}");
+
+            if (IllegalNames.Contains(name))
+                throw new ArgumentException($"Illegal project name: {name}");
+
+            if (Directory.Exists(name))
+                throw new ArgumentException($"Project folder already exists: {name}");
         }
 
         private static async Task PrintSources(string[] sources)
