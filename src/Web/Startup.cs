@@ -501,6 +501,19 @@ Usage:
   {tool} new                     List available Project Templates
   {tool} new <template> <name>   Create New Project From Template
 
+  {tool} <lang>                  Update all ServiceStack References in current directory
+  {tool} <file>                  Update existing ServiceStack Reference (e.g. TechStacks.dtos.cs)
+  {tool} <lang>     <url> <file> Add ServiceStack Reference and save to file name
+  {tool} csharp     <url>        Add C# ServiceStack Reference         (Alias 'cs')
+  {tool} typescript <url>        Add TypeScript ServiceStack Reference (Alias 'ts')
+  {tool} swift      <url>        Add Swift ServiceStack Reference      (Alias 'sw')
+  {tool} java       <url>        Add Java ServiceStack Reference       (Alias 'ja')
+  {tool} kotlin     <url>        Add Kotlin ServiceStack Reference     (Alias 'kt')
+  {tool} dart       <url>        Add Dart ServiceStack Reference       (Alias 'da')
+  {tool} fsharp     <url>        Add F# ServiceStack Reference         (Alias 'fs')
+  {tool} vbnet      <url>        Add VB.NET ServiceStack Reference     (Alias 'vb')
+  {tool} tsd        <url>        Add TypeScript Definition ServiceStack Reference
+
   {tool} publish                 Package App to /publish ready for deployment (.NET Core Required)
   {tool} publish-exe             Package self-contained .exe App to /publish  (.NET Core Embedded)
 
@@ -579,14 +592,73 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (args.Length == 0) 
                 return null;
 
-            var cmd = System.Text.RegularExpressions.Regex.Replace(args[0], "^-+", "/");
+            var cmd = Regex.Replace(args[0], "^-+", "/");
 
             Task<string> checkUpdatesAndQuit = null;
             Task<string> beginCheckUpdates() => $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync();
                         
             var arg = args[0];
+            if (RefAlias.Keys.Contains(arg) || RefAlias.Values.Contains(arg))
+            {
+                var lang = RefAlias.TryGetValue(arg, out var value)
+                    ? value
+                    : arg;
+                var dtosExt = RefExt[lang];
+                
+                if (args.Length == 1)
+                {
+                    UpdateAllReferences(tool, lang, Environment.CurrentDirectory, dtosExt);
+                }
+                else if (args.Length >= 2)
+                {
+                    var target = args[1];
+                    var isUrl = target.IndexOf("://", StringComparison.Ordinal) >= 0;
+                    if (isUrl)
+                    {
+                        string fileName;
+                        if (args.Length == 3)
+                        {
+                            fileName = args[2];
+                        }
+                        else
+                        {
+                            var parts = new Uri(target).Host.Split('.');
+                            fileName = parts.Length >= 2
+                                ? parts[parts.Length - 2]
+                                : parts[0];
+                        }
+
+                        if (!fileName.EndsWith($".{dtosExt}"))
+                        {
+                            fileName = $"{fileName}.{dtosExt}";
+                        }
+
+                        var typesUrl = target.IndexOf($"/types/{lang}", StringComparison.Ordinal) == -1
+                            ? target.CombineWith($"/types/{lang}")
+                            : target;
+
+                        SaveReference(tool, lang, typesUrl, Path.GetFullPath(fileName));
+                    } 
+                    else 
+                    {
+                        UpdateReference(tool, lang, Path.GetFullPath(target));
+                    }
+                }
+                return new Instruction { Handled = true };
+            }
             if (args.Length == 1)
             {
+                if (RefExt.Values.Any(ext => arg.EndsWith(ext)))
+                {
+                    foreach (var entry in RefExt)
+                    {
+                        if (arg.EndsWith(entry.Value))
+                        {
+                            UpdateReference(tool, entry.Key, Path.GetFullPath(arg));
+                            return new Instruction { Handled = true };
+                        }
+                    }
+                }
                 if (arg == "list" || arg == "l")
                 {
                     RegisterStat(tool, "list");
@@ -794,6 +866,137 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             }            
             return null;
+        }
+
+        private static readonly Dictionary<string,string> RefAlias = new Dictionary<string, string>
+        {
+            {"cs", "csharp"},
+            {"ts", "typescript"},
+            {"sw", "swift"},
+            {"ja", "java"},
+            {"kt", "kotlin"},
+            {"da", "dart"},
+            {"fs", "fsharp"},
+            {"vb", "vbnet"},
+            {"tsd", "typescript.d"},
+        };
+        
+        private static readonly Dictionary<string,string> RefExt = new Dictionary<string, string>
+        {
+            {"csharp", "dtos.cs"},
+            {"typescript", "dtos.ts"},
+            {"swift", "dtos.swift"},
+            {"java", "dtos.java"},
+            {"kotlin", "dtos.kt"},
+            {"dart", "dtos.dart"},
+            {"fsharp", "dtos.fs"},
+            {"vbnet", "dtos.vb"},
+            {"typescript.d", "dtos.d.ts"},
+        };
+
+        public static void SaveReference(string tool, string lang, string typesUrl, string filePath)
+        {
+            var exists = File.Exists(filePath);
+            RegisterStat(tool, lang, exists ? "updateref" : "addref");
+
+            if (Verbose) $"API: {typesUrl}".Print();
+            var dtos = typesUrl.GetStringFromUrl();
+
+            if (dtos.IndexOf("Options:", StringComparison.Ordinal) == -1) 
+                throw new Exception($"Invalid Response from {typesUrl}");
+            
+            File.WriteAllText(filePath, dtos, Utf8WithoutBom);
+
+            var fileName = Path.GetFileName(filePath);
+            (exists ? $"Updated: {fileName}" : $"Saved to: {fileName}").Print();
+        }
+
+        public static void UpdateReference(string tool, string lang, string existingRefPath)
+        {
+            if (!File.Exists(existingRefPath))
+                throw new Exception($"File does not exist: {existingRefPath.Replace('\\', '/')}");
+
+            var target = Path.GetFileName(existingRefPath);
+            var targetExt = target.SplitOnLast('.')[1];
+            var langExt = RefExt[lang].SplitOnLast('.')[1];
+            if (targetExt != langExt) 
+                throw new Exception($"Invalid file type: '{target}', expected '.{langExt}' source file");
+
+            var existingRefSrc = File.ReadAllText(existingRefPath);
+
+            var startPos = existingRefSrc.IndexOf("Options:", StringComparison.Ordinal);
+            if (startPos == -1) 
+                throw new Exception($"{target} is not an existing ServiceStack Reference");
+
+            var options = new Dictionary<string,string>();
+            var baseUrl = "";
+
+            existingRefSrc = existingRefSrc.Substring(startPos);
+            var lines = existingRefSrc.Replace("\r","").Split('\n');
+            foreach (var l in lines) 
+            {
+                var line = l;
+                if (line.StartsWith("*/"))
+                    break;
+                if (lang == "vbnet")
+                {
+                    if (line.Trim().Length == 0)
+                        break;
+                    if (line[0] == '\'')
+                        line = line.Substring(1);
+                }            
+        
+                if (line.StartsWith("BaseUrl: ")) 
+                {
+                    baseUrl = line.Substring("BaseUrl: ".Length);
+                } 
+                else if (!string.IsNullOrEmpty(baseUrl)) 
+                {
+                    if (!line.StartsWith("//") && !line.StartsWith("'")) 
+                    {
+                        var parts = line.SplitOnFirst(":");
+                        if (parts.Length == 2) {
+                            var key = parts[0].Trim();
+                            var val = parts[1].Trim();
+                            options[key] = val;
+                        }
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(baseUrl))
+                throw new Exception($"Could not find baseUrl in {target}");
+
+            var qs = "";
+            foreach (var key in options.Keys) {
+                qs += qs.Length > 0 ? "&" : "?";
+                qs += $"{key}={options[key].UrlEncode()}";
+            }
+
+            var typesUrl = baseUrl.CombineWith($"/types/{lang}") + qs;
+            SaveReference(tool, lang, typesUrl, target);
+        }
+
+        private static void UpdateAllReferences(string tool, string lang, string dirPath, string dtosExt)
+        {
+            var dtoRefs = Directory.GetFiles(dirPath, $"*.{dtosExt}", SearchOption.AllDirectories);
+            if (dtoRefs.Length == 0)
+                throw new Exception($"No '{dtosExt}' ServiceStack References found in '{dirPath}'");
+
+            if (Verbose) $"Updating {dtoRefs.Length} Reference(s)".Print();
+
+            foreach (var dtoRef in dtoRefs)
+            {
+                try
+                {
+                    UpdateReference(tool, lang, dtoRef);
+                }
+                catch (Exception ex)
+                {
+                    $"Could not update ServiceStack Reference '{dtoRef}': ".Print();
+                    (Verbose ? ex.ToString() : ex.Message).Print();
+                }
+            }
         }
 
         private static readonly Regex ValidNameChars = new Regex("^[a-zA-Z_$][0-9a-zA-Z_$.]*$", RegexOptions.Compiled);
