@@ -34,36 +34,9 @@ namespace WebApp
                                 fileName = "dotnet";
                                 arguments = ctx.RunProcess;
                             }
-
-                            using (var process = new Process
-                            {
-                                StartInfo =
-                                {
-                                    FileName = fileName,
-                                    Arguments = arguments,
-                                    UseShellExecute = false,
-                                    CreateNoWindow = true,
-                                    RedirectStandardOutput = true,
-                                }
-                            })
-                            {
-                                process.OutputDataReceived += (sender, data) => {
-                                    Console.WriteLine(data.Data);
-                                };
-                                process.StartInfo.RedirectStandardError = true;
-                                process.ErrorDataReceived += (sender, data) => {
-                                    Console.WriteLine(data.Data);
-                                };
-                                process.Start();
-
-                                process.BeginOutputReadLine();
-                                process.BeginErrorReadLine();
-
-                                CefPlatformWindows.Start(new CefConfig { StartUrl = url, Icon = ctx.FavIcon });
-
-                                process.Kill();
-                                process.Close();
-                            }
+                            
+                            Startup.PipeProcess(fileName, arguments, fn: () => 
+                                CefPlatformWindows.Start(new CefConfig { StartUrl = url, Icon = ctx.FavIcon }));
                         }
                 });
                 if (host == null)

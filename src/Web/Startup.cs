@@ -331,23 +331,10 @@ namespace WebApp
             {
                 RegisterStat(tool, "publish-exe");
                 
-                var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
                 var zipUrl = new GithubGateway().GetSourceZipUrl("ServiceStack", "WebWin");
 
-                var invalidFileNameChars = Path.GetInvalidFileNameChars();
-                var safeFileName = new string(zipUrl.Where(c => !invalidFileNameChars.Contains(c)).ToArray());
-                var cachedVersionPath = Path.Combine(homeDir, ".servicestack", "cache", safeFileName);
-
-                var isCached = File.Exists(cachedVersionPath);
-                if (Verbose)
-                    Console.WriteLine((isCached ? "Using cached release: " : "Using new release: ") + cachedVersionPath);
-
-                if (!isCached)
-                {
-                    if (Verbose) $"Downloading {zipUrl}".Print();
-                    new GithubGateway().DownloadFile(zipUrl, cachedVersionPath.AssertDirectory());
-                }
+                var cachedVersionPath = DownloadCachedZipUrl(zipUrl);
 
                 var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", "WebWin");
                 DeleteDirectory(tmpDir);
@@ -735,6 +722,50 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var projectNameKebab = CamelToKebab(projectName);
                 RenameProject(str => str.Replace("MyApp", projectName).Replace("my-app", projectNameKebab), projectDir);
 
+                // Restore Solution
+                var slns = Directory.GetFiles(projectDir.FullName, "*.sln", SearchOption.AllDirectories);
+                if (slns.Length == 1)
+                {
+                    var sln = slns[0];
+                    if (Verbose) $"Found {sln}".Print();
+                    
+                    if (GetExePath("nuget", out var nugetPath))
+                    {
+                        $"running nuget restore...".Print();
+                        PipeProcess(nugetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
+                    }
+                    else if (GetExePath("dotnet", out var dotnetPath))
+                    {
+                        $"running dotnet restore...".Print();
+                        PipeProcess(dotnetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
+                    }
+                    else
+                    {
+                        $"'nuget' or 'dotnet' not found in PATH, skipping restore.".Print();
+                    }
+                }
+                else if (Verbose) $"Found {slns.Length} *.sln".Print();
+
+                // Install npm dependencies
+                var packageJsons = Directory.GetFiles(projectDir.FullName, "package.json", SearchOption.AllDirectories);
+                if (packageJsons.Length == 1)
+                {
+                    var packageJson = packageJsons[0];
+                    if (Verbose) $"Found {packageJson}".Print();
+
+                    var npmScript = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "npm.cmd" : "npm";
+                    if (GetExePath(npmScript, out var npmPath))
+                    {
+                        $"running npm install...".Print();
+                        PipeProcess(npmPath, "install", workDir: Path.GetDirectoryName(packageJson));
+                    }
+                    else
+                    {
+                        $"'npm' not found in PATH, skipping npm install.".Print();
+                    }
+                }
+                else if (Verbose) $"Found {packageJsons.Length} package.json".Print();
+                
                 "".Print();
                 $"{projectName} {repo} project created.".Print();
                 "".Print();
@@ -765,19 +796,93 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             return null;
         }
 
-        private static Regex ValidNameChars = new Regex("^[a-zA-Z_$][0-9a-zA-Z_$.]*$", RegexOptions.Compiled);
-        private static string[] IllegalNames = "CON|AUX|PRN|COM1|LP2|.|..".Split('|');
-        private static string[] IgnoreExtensions = "jpg|jpeg|png|gif|ico|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga|ogg|dll|exe|pdb|so|zip|key|snk|p12|swf|xap|class|doc|xls|ppt|sqlite|db".Split('|');
+        private static readonly Regex ValidNameChars = new Regex("^[a-zA-Z_$][0-9a-zA-Z_$.]*$", RegexOptions.Compiled);
+        private static readonly string[] IllegalNames = "CON|AUX|PRN|COM1|LP2|.|..".Split('|');
+        private static readonly string[] IgnoreExtensions = "jpg|jpeg|png|gif|ico|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga|ogg|dll|exe|pdb|so|zip|key|snk|p12|swf|xap|class|doc|xls|ppt|sqlite|db".Split('|');
 
-        private static string CamelToKebab(String str) => Regex.Replace((str ?? ""),"([a-z])([A-Z])","$1-$2").ToLower();
-        
-        private static Regex replaceRegEx = new Regex("MyApp", RegexOptions.Compiled | RegexOptions.Multiline);
-        private static Regex replaceKebabRegEx = new Regex("my-app", RegexOptions.Compiled | RegexOptions.Multiline);
-        
-        private static string ReplaceProjectString(string projectName, string projectNameKebab, string str) =>
-            str.Replace("MyApp", projectName).Replace("my-app", projectNameKebab);
+        private static string CamelToKebab(string str) => Regex.Replace((str ?? ""),"([a-z])([A-Z])","$1-$2").ToLower();
 
-        private static Encoding UTF8WithoutBOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes:true);
+        private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes:true);
+
+        public static void PipeProcess(string fileName, string arguments, string workDir = null, Action fn = null)
+        {
+            var process = new Process
+            {
+                StartInfo =
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                }
+            };
+            if (workDir != null)
+                process.StartInfo.WorkingDirectory = workDir;
+
+            using (process)
+            {
+                process.OutputDataReceived += (sender, data) => {
+                    Console.WriteLine(data.Data);
+                };
+                process.StartInfo.RedirectStandardError = true;
+                process.ErrorDataReceived += (sender, data) => {                    
+                    Console.Error.WriteLine(data.Data);
+                };
+                process.Start();
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                if (fn != null)
+                {
+                    fn();
+                    process.Kill();
+                }
+                else
+                {
+                    process.WaitForExit();
+                }
+                
+                process.Close();
+            }            
+        }
+
+        public static bool GetExePath(string exeName, out string fullPath)
+        {
+            try
+            {
+                var p = new Process
+                {
+                    StartInfo =
+                    {
+                        UseShellExecute = false,
+                        FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
+                            ? "where"  //Win 7/Server 2003+
+                            : "which", //macOS / Linux
+                        Arguments = exeName,
+                        RedirectStandardOutput = true
+                    }
+                };
+                p.Start();
+                var output = p.StandardOutput.ReadToEnd();
+                p.WaitForExit();
+
+                if (p.ExitCode == 0)
+                {
+                    // just return first match
+                    fullPath = output.Substring(0, output.IndexOf(Environment.NewLine, StringComparison.Ordinal));
+                    if (!string.IsNullOrEmpty(fullPath))
+                    {
+                        if (Verbose) $"Found path for '{exeName}' at '{fullPath}'".Print();
+                        return true;
+                    }
+                }
+            }
+            catch {}               
+            fullPath = null;
+            return false;
+        }
 
         private static void RenameProject(Func<string,string> replaceFn, DirectoryInfo projectDir)
         {
@@ -796,7 +901,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         if (Verbose) $"Replacing {file.FullName}".Print();
                         try
                         {
-                            File.WriteAllText(file.FullName, newContents, UTF8WithoutBOM);
+                            File.WriteAllText(file.FullName, newContents, Utf8WithoutBom);
                         }
                         catch (Exception ex)
                         {
