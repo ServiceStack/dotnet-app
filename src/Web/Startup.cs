@@ -129,7 +129,7 @@ namespace WebApp
                 if (arg.EndsWith(".dll") || arg.EndsWith(".exe"))
                 {
                     if (Events.RunNetCoreProcess == null)
-                        throw new NotSupportedException($"This {tool} tool does not suppport running processes");
+                        throw new NotSupportedException($"This {tool} tool does not support running processes");
 
                     runProcess = arg;
                     continue;
@@ -376,6 +376,25 @@ namespace WebApp
             }
 
             return CreateWebAppContext(ctx);
+        }
+
+        private static string DownloadCachedZipUrl(string zipUrl)
+        {
+            var invalidFileNameChars = Path.GetInvalidFileNameChars();
+            var safeFileName = new string(zipUrl.Where(c => !invalidFileNameChars.Contains(c)).ToArray());
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var cachedVersionPath = Path.Combine(homeDir, ".servicestack", "cache", safeFileName);
+
+            var isCached = File.Exists(cachedVersionPath);
+            if (Verbose) Console.WriteLine((isCached ? "Using cached release: " : "Using new release: ") + cachedVersionPath);
+
+            if (!isCached)
+            {
+                if (Verbose) $"Downloading {zipUrl}".Print();
+                new GithubGateway().DownloadFile(zipUrl, cachedVersionPath.AssertDirectory());
+            }
+
+            return cachedVersionPath;
         }
 
         public static void DeleteDirectory(string dirPath)
@@ -634,15 +653,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     var downloadUrl = new GithubGateway().GetSourceZipUrl(GitHubSource, repo);
                     $"Installing {repo}...".Print();
 
-                    var tmpFile = Path.GetTempFileName();
-                    if (Verbose) $"Downloading: {downloadUrl}".Print();
-                    new GithubGateway().DownloadFile(downloadUrl, tmpFile);
+                    var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
                     var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
                     DeleteDirectory(tmpDir);
 
-                    if (Verbose)
-                        $"ExtractToDirectory: {tmpFile} -> {tmpDir}".Print();
-                    ZipFile.ExtractToDirectory(tmpFile, tmpDir);
+                    if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
+                    ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
                     var installDir = Path.GetFullPath(repo);
 
                     if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {installDir}".Print();
@@ -703,15 +719,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var downloadUrl = new GithubGateway().GetSourceZipUrl(GitHubSourceTemplates, repo);
                 $"Installing {repo}...".Print();
 
-                var tmpFile = Path.GetTempFileName();
-                if (Verbose) $"Downloading: {downloadUrl}".Print();
-                new GithubGateway().DownloadFile(downloadUrl, tmpFile);
+                var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
                 var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
                 DeleteDirectory(tmpDir);
 
-                if (Verbose)
-                    $"ExtractToDirectory: {tmpFile} -> {tmpDir}".Print();
-                ZipFile.ExtractToDirectory(tmpFile, tmpDir);
+                if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
+                ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
                 var installDir = Path.GetFullPath(repo);
 
                 var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
