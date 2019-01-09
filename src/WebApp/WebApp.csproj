@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <Version>0.0.13</Version>
+    <Version>0.0.14</Version>
     <RuntimeIdentifiers>win-x64;win-x32;ubuntu.16.10-x64</RuntimeIdentifiers>
     <Platforms>x64;x86</Platforms>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
