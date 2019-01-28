@@ -533,6 +533,7 @@ Options:
     -d, --debug               Run in Debug mode for Development
     -r, --release             Run in Release mode for Production
     -s, --source              Change GitHub Source for App Directory
+        --clean               Delete downloaded caches
         --verbose             Display verbose logging
 
 This tool collects anonymous usage to determine the most used commands to improve your experience.
@@ -701,6 +702,15 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     checkUpdatesAndQuit = beginCheckUpdates();
                     $"Version: {GetVersion()}".Print();
                 }
+                else if (new[] { "/clean", "/clear" }.Contains(cmd))
+                {
+                    RegisterStat(tool, "clean");
+                    checkUpdatesAndQuit = beginCheckUpdates();
+                    var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    var cachesDir = Path.Combine(homeDir, ".servicestack", "cache");
+                    DeleteDirectory(cachesDir);
+                    $"All caches deleted in '{cachesDir}'".Print();
+                }
             }
             else if (args.Length == 2)
             {
@@ -818,7 +828,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
                 else if (Verbose) $"Found {slns.Length} *.sln".Print();
 
-                // Install npm dependencies
+                // Install npm dependencies (if any)
                 var packageJsons = Directory.GetFiles(projectDir.FullName, "package.json", SearchOption.AllDirectories);
                 if (packageJsons.Length == 1)
                 {
@@ -837,6 +847,26 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     }
                 }
                 else if (Verbose) $"Found {packageJsons.Length} package.json".Print();
+
+                // Install libman dependencies (if any)
+                var packageLibmans = Directory.GetFiles(projectDir.FullName, "libman.json", SearchOption.AllDirectories);
+                if (packageLibmans.Length == 1)
+                {
+                    var packageLibman = packageLibmans[0];
+                    if (Verbose) $"Found {packageLibman}".Print();
+
+                    if (GetExePath("libman", out var libmanPath))
+                    {
+                        $"running libman restore...".Print();
+                        PipeProcess(libmanPath, "restore", workDir: Path.GetDirectoryName(packageLibman));
+                    }
+                    else
+                    {
+                        $"'libman' not found in PATH, skipping 'libman restore'.".Print();
+                        $"Install 'libman cli' with: dotnet tool install -g Microsoft.Web.LibraryManager.CLI".Print();
+                    }
+                }
+                else if (Verbose) $"Found {packageLibmans.Length} libman.json".Print();
                 
                 "".Print();
                 $"{projectName} {repo} project created.".Print();
