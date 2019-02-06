@@ -4,6 +4,8 @@ title: Products
 
 <a id="back" href="javascript:history.back()">&#8592; Back</a>
 
+{{ 'id,category,supplier,nameContains' | importRequestParams }}
+
 {{ `select p.Id, 
            ProductName,
            c.CategoryName Category,

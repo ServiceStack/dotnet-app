@@ -5,6 +5,7 @@ title: Edit post
 <div class="page-edit">
 
 {{ 'assert-auth' | partial }}
+{{ 'postTitle,content' | importRequestParams }}
 
 {{ `SELECT * from Post p INNER JOIN UserInfo u on p.CreatedBy = u.UserName WHERE Slug = @slug ORDER BY p.Created DESC` 
     | dbSingle({ slug })

@@ -2,6 +2,7 @@
 title: Search Customers
 -->
 
+{{ 'id,city,country' | importRequestParams }}
 {{ limit ?? 20 | assignTo: limit }}
 
 {{ `select "Id", "CompanyName", "ContactName", "ContactTitle", "City", "Country" from "Customer"` | assignTo: sql }}

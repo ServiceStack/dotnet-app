@@ -5,6 +5,7 @@ title: New post
 <div class="page-edit">
 
 {{ 'assert-auth' | partial }}
+{{ 'postTitle,content' | importRequestParams }}
 
 {{#if isHttpPost }}
     {{ assignErrorAndContinueExecuting: ex }}

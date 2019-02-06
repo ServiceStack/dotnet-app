@@ -1,4 +1,5 @@
-{{ limit ?? 100 | assignTo: limit }}
+{{ 'id,city,country' | importRequestParams }}
+{{ qs.limit ?? 100 | assignTo: limit }}
 
 {{ 'select Id, CompanyName, ContactName, ContactTitle, City, Country from Customer' | assignTo: sql }}
 

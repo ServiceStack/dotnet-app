@@ -1,3 +1,4 @@
+{{ 'id,category,supplier,nameContains' | importRequestParams }}
 {{ limit ?? 100 | assignTo: limit }}
 
 {{ `select p."Id", 

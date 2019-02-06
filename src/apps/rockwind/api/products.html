@@ -1,4 +1,5 @@
-{{ limit ?? 100 | assignTo: limit }}
+{{ 'id,category,supplier,nameContains' | importRequestParams }}
+{{ qs.limit ?? 100 | assignTo: limit }}
 
 {{ `select p.Id, 
            ProductName,

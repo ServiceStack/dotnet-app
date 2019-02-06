@@ -4,6 +4,8 @@ title: Order Details
 
 <a id="back" href="javascript:history.back()">&#8592; Back</a>
 
+{{ 'id' | importRequestParams }}
+
 {{#if id}}
   {{ id | toInt | assignTo: id }}
   

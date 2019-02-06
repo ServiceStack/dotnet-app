@@ -4,6 +4,8 @@ title: Employee Details
 
 <a id="back" href="javascript:history.back()">&#8592; Back</a>
 
+{{ 'id' | importRequestParams }}
+
 {{#if id}}
 
     {{ "select * from Employee where Id = @id" | dbSingle({ id }) 

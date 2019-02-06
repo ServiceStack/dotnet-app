@@ -2,6 +2,8 @@
 title: Redis
 -->
 
+{{ 'limit,q,key,type,call,connection,host,port,db,password' | importRequestParams }}
+
 {{ limit ?? 100      | assignTo: limit }}
 {{ q     ?? ''       | assignTo: q }}
 {{ key   ?? ''       | assignTo: key }}
