@@ -629,7 +629,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                                 : parts[0];
                         }
 
-                        if (!fileName.EndsWith($".{dtosExt}"))
+                        if (!fileName.EndsWith(dtosExt))
                         {
                             fileName = $"{fileName}.{dtosExt}";
                         }
@@ -947,8 +947,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 throw new Exception($"File does not exist: {existingRefPath.Replace('\\', '/')}");
 
             var target = Path.GetFileName(existingRefPath);
-            var targetExt = target.SplitOnLast('.')[1];
-            var langExt = RefExt[lang].SplitOnLast('.')[1];
+            var targetExt = target.LastRightPart('.');
+            var langExt = RefExt[lang].LastRightPart('.');
             if (targetExt != langExt) 
                 throw new Exception($"Invalid file type: '{target}', expected '.{langExt}' source file");
 
