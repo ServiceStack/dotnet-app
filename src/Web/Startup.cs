@@ -1008,12 +1008,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
 
             var typesUrl = baseUrl.CombineWith($"/types/{lang}") + qs;
-            SaveReference(tool, lang, typesUrl, target);
+            SaveReference(tool, lang, typesUrl, existingRefPath);
         }
 
         private static void UpdateAllReferences(string tool, string lang, string dirPath, string dtosExt)
         {
-            var dtoRefs = Directory.GetFiles(dirPath, $"*.{dtosExt}", SearchOption.AllDirectories);
+            var dtoRefs = Directory.GetFiles(dirPath, $"*{dtosExt}", SearchOption.AllDirectories);
             if (dtoRefs.Length == 0)
                 throw new Exception($"No '{dtosExt}' ServiceStack References found in '{dirPath}'");
 
