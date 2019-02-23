@@ -9,12 +9,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Funq;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Hosting;
+using NUglify;
 using ServiceStack;
 using ServiceStack.IO;
 using ServiceStack.Auth;
@@ -25,6 +30,8 @@ using ServiceStack.OrmLite;
 using ServiceStack.Templates;
 using ServiceStack.Configuration;
 using ServiceStack.Azure.Storage;
+using ServiceStack.Html;
+using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 namespace WebApp
 {
@@ -89,6 +96,8 @@ namespace WebApp
         static string[] DebugArgs = { "/d", "-d", "/debug", "--debug" };
         static string[] ReleaseArgs = { "/r", "-r", "/release", "--release" };
 
+        public static string RunScript { get; set; }
+
         public static string InitDefaultGist { get; set; } = "5c9ee9031e53cd8f85bd0e14881ddaa8";
         public static string InitNginxGist { get; set; } = "38a125eede8228ddf40651e2529a5c70";
         public static string InitSupervisorGist { get; set; } = "2db295508517a4eed59906320e95d98a";
@@ -151,6 +160,12 @@ namespace WebApp
                         createShortcutFor = args[++i];
                     continue;
                 }
+                if (arg == "run")
+                {
+                    if (i + 1 < args.Length && args[i + 1].EndsWith(".html"))
+                        RunScript = args[++i];
+                    continue;
+                }                
                 if (arg == "publish")
                 {
                     publish = true;
@@ -189,6 +204,8 @@ namespace WebApp
                     $"Command: publish".Print();
                 if (publishExe)
                     $"Command: publish-exe".Print();
+                if (RunScript != null)
+                    $"Command: run {RunScript}".Print();
             }
 
             if (runProcess != null)
@@ -255,7 +272,7 @@ namespace WebApp
                 return null;
             }
 
-            if (appSettingsPath == null && createShortcutFor == null)
+            if (appSettingsPath == null && createShortcutFor == null && RunScript == null)
                 throw new Exception($"'{appSettingPaths[0]}' does not exist.\n\nView Help: {tool} --help");
 
             var usingWebSettings = File.Exists(appSettingsPath);
@@ -331,7 +348,6 @@ namespace WebApp
             {
                 RegisterStat(tool, "publish-exe");
                 
-
                 var zipUrl = new GithubGateway().GetSourceZipUrl("ServiceStack", "WebWin");
 
                 var cachedVersionPath = DownloadCachedZipUrl(zipUrl);
@@ -361,10 +377,44 @@ namespace WebApp
 
                 return null;
             }
+            
+            if (RunScript != null)
+            {
+                try 
+                { 
+                    RegisterStat(tool, RunScript, "run");
+                    var (contentRoot, useWebRoot) = GetDirectoryRoots(ctx);
+                    var builder = new WebHostBuilder()
+                        .UseFakeServer()
+                        .UseSetting(WebHostDefaults.SuppressStatusMessagesKey, "True")
+                        .UseContentRoot(contentRoot)
+                        .UseWebRoot(useWebRoot)
+                        .UseStartup<Startup>();
+
+                    using (var webHost = builder.Build())
+                    {
+                        var task = webHost.RunAsync();
+                    
+                        var appHost = WebTemplateUtils.AppHost;
+                        var feature = appHost.GetPlugin<TemplatePagesFeature>();
+                        var html = File.ReadAllText(RunScript);
+                        var page = feature.Pages.OneTimePage(html, ".html");
+                        var output = new PageResult(page).RenderToStringAsync().Result;
+                        output.Print();
+                    }
+                }
+                catch (Exception e)
+                {
+                    $"FAILED run {RunScript}".Print();
+                    e.Message.Print();
+                    e.ToString().Print();
+                }
+                return null;
+            }
 
             return CreateWebAppContext(ctx);
         }
-
+        
         private static string DownloadCachedZipUrl(string zipUrl)
         {
             var invalidFileNameChars = Path.GetInvalidFileNameChars();
@@ -446,7 +496,7 @@ namespace WebApp
             return (publishDir, publishAppDir, publishToolDir);
         }
 
-        private static WebAppContext CreateWebAppContext(WebAppContext ctx)
+        private static (string contentRoot, string useWebRoot) GetDirectoryRoots(WebAppContext ctx)
         {
             var appDir = ctx.AppDir;
             var contentRoot = "contentRoot".GetAppSettingPath(appDir) ?? appDir;
@@ -457,7 +507,12 @@ namespace WebApp
                 : contentRoot;
 
             var useWebRoot = "webRoot".GetAppSettingPath(appDir) ?? webRoot;
+            return (contentRoot, useWebRoot);
+        }
 
+        private static WebAppContext CreateWebAppContext(WebAppContext ctx)
+        {
+            var (contentRoot, useWebRoot) = GetDirectoryRoots(ctx);
             var builder = WebHost.CreateDefaultBuilder(ctx.Arguments)
                 .UseContentRoot(contentRoot)
                 .UseWebRoot(useWebRoot)
@@ -497,12 +552,13 @@ Usage:
   {tool} list                    List available Apps            (Alias 'l')
   {tool} gallery                 Open App Gallery in a Browser  (Alias 'g')
   {tool} install <name>          Install App                    (Alias 'i')
+  {tool} run <name>.html         Run Template Script within context of WebApp AppHost
 
   {tool} new                     List available Project Templates
   {tool} new <template> <name>   Create New Project From Template
 
-  {tool} <lang>                  Update all ServiceStack References in current directory
-  {tool} <file>                  Update existing ServiceStack Reference (e.g. TechStacks.dtos.cs)
+  {tool} <lang>                  Update all ServiceStack References in directory (recursive)
+  {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
   {tool} <lang>     <url> <file> Add ServiceStack Reference and save to file name
   {tool} csharp     <url>        Add C# ServiceStack Reference         (Alias 'cs')
   {tool} typescript <url>        Add TypeScript ServiceStack Reference (Alias 'ts')
@@ -1453,6 +1509,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
             }
         }
+    }
+
+    public class FakeServer : IServer {
+        public IFeatureCollection Features => new FeatureCollection();
+        public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public void Dispose() {}
+    }
+    public static class FakeServerWebHostBuilderExtensions {
+        public static IWebHostBuilder UseFakeServer(this IWebHostBuilder builder) => builder.ConfigureServices((builderContext, services) => services.AddSingleton<IServer, FakeServer>());
     }
 
     public class AppHost : AppHostBase
