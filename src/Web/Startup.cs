@@ -1420,6 +1420,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (markdownProvider != null)
                 ("Using markdown provider " + (useMarkdownDeep ? "MarkdownDeep" : "Markdig")).Print();
 
+            var useJsMin = "jsMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
+            if (!useJsMin)
+                Minifiers.JavaScript = new NUglifyJsMinifier();
+            var useCssMin = "cssMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
+            if (!useCssMin)
+                Minifiers.Css = new NUglifyCssMinifier();
+            var useHtmlMin = "htmlMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
+            if (!useHtmlMin)
+                Minifiers.Html = new NUglifyHtmlMinifier();
+
             var contextArgKeys = WebTemplateUtils.AppSettings.GetAllKeys().Where(x => x.StartsWith("args."));
             foreach (var key in contextArgKeys)
             {
@@ -1477,6 +1487,20 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             Markdig.MarkdownExtensions.UseAdvancedExtensions(new Markdig.MarkdownPipelineBuilder()).Build();
         public string Transform(string markdown) => Markdig.Markdown.ToHtml(markdown, Pipeline);
     }
+
+    public class NUglifyJsMinifier : ICompressor
+    {
+        public string Compress(string js) => Uglify.Js(js).Code;
+    }
+    public class NUglifyCssMinifier : ICompressor
+    {
+        public string Compress(string css) => Uglify.Css(css).Code;
+    }
+    public class NUglifyHtmlMinifier : ICompressor
+    {
+        public string Compress(string html) => Uglify.Html(html).Code;
+    }
+    
 
     public static class WebTemplateUtils
     {
