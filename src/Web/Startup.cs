@@ -122,6 +122,7 @@ namespace WebApp
             var publishExe = false;
             string createShortcutFor = null;
             string runProcess = null;
+            var runScriptArgs = new Dictionary<string, object>();
             var appSettingPaths = new[]
             {
                 "app.settings", "../app/app.settings", "app/app.settings",
@@ -162,8 +163,22 @@ namespace WebApp
                 }
                 if (arg == "run")
                 {
-                    if (i + 1 < args.Length && args[i + 1].EndsWith(".html"))
-                        RunScript = args[++i];
+                    var script = args[i + 1];
+                    if (i + 1 < args.Length && script.EndsWith(".html") || script.EndsWith(".ss"))
+                    {
+                        RunScript = script;
+                        i+=2; //'run' 'script.ss'
+                        for (; i < args.Length; i+=2)
+                        {
+                            var key = args[i];
+                            if (!key.FirstCharEquals('-') && key.FirstCharEquals('/'))
+                            {
+                                $"Unknown run script argument '{key}', argument example: -name value".Print();
+                                return null;
+                            }
+                            runScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
+                        }
+                    }
                     continue;
                 }                
                 if (arg == "publish")
@@ -205,7 +220,7 @@ namespace WebApp
                 if (publishExe)
                     $"Command: publish-exe".Print();
                 if (RunScript != null)
-                    $"Command: run {RunScript}".Print();
+                    $"Command: run {RunScript} {runScriptArgs.ToJsv()}".Print();
             }
 
             if (runProcess != null)
@@ -279,9 +294,18 @@ namespace WebApp
             if (Verbose || (usingWebSettings && !createShortcut && tool == "web" && instruction == null))
                 $"Using '{appSettingsPath}'".Print();
 
+            var dictionarySettings = new DictionarySettings();
+            if (RunScript != null)
+            {
+                var context = new TemplateContext().Init();
+                var page = context.OneTimePage(File.ReadAllText(RunScript), "html");
+                if (page.Args.Count > 0)
+                    dictionarySettings = new DictionarySettings(page.Args.ToStringDictionary());
+            }
+            
             WebTemplateUtils.AppSettings = new MultiAppSettings(usingWebSettings
                     ? new TextFileSettings(appSettingsPath)
-                    : new DictionarySettings(),
+                    : dictionarySettings,
                 new EnvironmentVariableSettings());
 
             var bind = "bind".GetAppSetting("localhost");
@@ -377,7 +401,6 @@ namespace WebApp
 
                 return null;
             }
-            
             if (RunScript != null)
             {
                 try 
@@ -399,7 +422,9 @@ namespace WebApp
                         var feature = appHost.GetPlugin<TemplatePagesFeature>();
                         var html = File.ReadAllText(RunScript);
                         var page = feature.Pages.OneTimePage(html, ".html");
-                        var output = new PageResult(page).RenderToStringAsync().Result;
+                        var output = new PageResult(page) {
+                            Args = runScriptArgs,
+                        }.RenderToStringAsync().Result;
                         output.Print();
                     }
                 }
@@ -1587,7 +1612,14 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (value?.StartsWith("$") == true)
             {
                 var envValue = Environment.GetEnvironmentVariable(value.Substring(1));
-                if (!string.IsNullOrEmpty(envValue)) return envValue;
+                if (!string.IsNullOrEmpty(envValue)) 
+                    return envValue;
+                if (value.StartsWith("$HOME"))
+                    return value.Replace("$HOME", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                if (value.StartsWith("$UserProfile"))
+                    return value.Replace("$UserProfile", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                if (value.StartsWith("$AppData"))
+                    return value.Replace("$AppData", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
             }
             return value;
         }

@@ -1,0 +1,73 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp2.1</TargetFramework>
+        <Version>0.0.16</Version>
+        <AssemblyName>Run</AssemblyName>
+        <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+        <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+        <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+        <PreserveCompilationContext>false</PreserveCompilationContext>
+        <Authors>ServiceStack</Authors>
+        <Company>ServiceStack</Company>
+        <Copyright>Copyright © 2008-present ServiceStack</Copyright>
+        <PackageTags>ServiceStack .NET Core WebApps Windows OSX Linux</PackageTags>
+        <Description>Easily view and deploy any ServiceStack .NET Core Web App (Windows, OSX, Linux)</Description>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <PackageLicenseUrl>https://servicestack.net/terms</PackageLicenseUrl>
+        <PackageProjectUrl>https://github.com/NetCoreWebApps/WebApp</PackageProjectUrl>
+        <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.2" />
+        <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
+        <PackageReference Include="Mysql.Data" Version="8.0.15" />
+        <PackageReference Include="Npgsql" Version="4.0.4" />
+        <PackageReference Include="Markdig" Version="0.15.7" />
+        <PackageReference Include="NUglify" Version="1.5.12" />
+
+        <PackageReference Include="ServiceStack.Interfaces" Version="5.*" />
+        <PackageReference Include="ServiceStack.Text" Version="5.*" />
+        <PackageReference Include="ServiceStack.Client" Version="5.*" />
+        <PackageReference Include="ServiceStack.Common" Version="5.*" />
+        <PackageReference Include="ServiceStack" Version="5.*" />
+        <PackageReference Include="ServiceStack.Server" Version="5.*" />
+        <PackageReference Include="ServiceStack.OrmLite" Version="5.*" />
+        <PackageReference Include="ServiceStack.OrmLite.Sqlite" Version="5.*" />
+        <PackageReference Include="ServiceStack.OrmLite.SqlServer" Version="5.*" />
+        <PackageReference Include="ServiceStack.OrmLite.MySql" Version="5.*" />
+        <PackageReference Include="ServiceStack.OrmLite.PostgreSQL" Version="5.*" />
+        <PackageReference Include="ServiceStack.Redis" Version="5.*" />
+        <PackageReference Include="ServiceStack.Aws" Version="5.*" />
+        <PackageReference Include="ServiceStack.Azure" Version="5.*" />
+        <PackageReference Include="ServiceStack.Api.OpenApi" Version="5.*" />
+
+        <!-- <ProjectReference Include="..\..\..\..\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack\src\ServiceStack.Client\ServiceStack.Client.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack\src\ServiceStack.Common\ServiceStack.Common.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack\src\ServiceStack\ServiceStack.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack\src\ServiceStack.Server\ServiceStack.Server.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack\src\ServiceStack.Api.OpenApi\ServiceStack.Api.OpenApi.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite\ServiceStack.OrmLite.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite\ServiceStack.OrmLite.Sqlite.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.SqlServer\ServiceStack.OrmLite.SqlServer.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.MySql\ServiceStack.OrmLite.MySql.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.PostgreSQL\ServiceStack.OrmLite.PostgreSQL.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack.Redis\src\ServiceStack.Redis\ServiceStack.Redis.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.csproj" />
+        <ProjectReference Include="..\..\..\..\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.csproj" /> -->
+
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Include="..\Web\Startup.cs">
+        <Link>Startup.cs</Link>
+      </Compile>
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="script.ss" />
+    </ItemGroup>    
+</Project>
