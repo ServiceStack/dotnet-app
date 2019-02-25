@@ -1,9 +1,11 @@
 <!--
-db: sqlite
-db.connection: ~/../apps/northwind.sqlite
+db sqlite
+db.connection ~/../apps/northwind.sqlite
 -->
 
-Result = {{ 1 + 1 }}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+<style>body {padding:1em} caption{caption-side:top;}</style>
+<h1 class="py-2">Order Report #{{id}}</h1>
 
 {{ `SELECT o.Id, OrderDate, CustomerId, Freight, e.Id as EmployeeId, s.CompanyName as ShipVia, 
            ShipAddress, ShipCity, ShipPostalCode, ShipCountry
