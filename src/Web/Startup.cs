@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Funq;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Azure.Amqp.Serialization;
 using Microsoft.Extensions.Hosting;
 using NUglify;
 using ServiceStack;
@@ -98,10 +99,7 @@ namespace WebApp
 
         public static string RunScript { get; set; }
 
-        public static string InitDefaultGist { get; set; } = "5c9ee9031e53cd8f85bd0e14881ddaa8";
-        public static string InitNginxGist { get; set; } = "38a125eede8228ddf40651e2529a5c70";
-        public static string InitSupervisorGist { get; set; } = "2db295508517a4eed59906320e95d98a";
-        public static string InitDockerGist { get; set; } = "54fbb66fa39740ad1c865a59b5ed2e31";
+        public static string ApplyGistsId { get; set; } = "848265c83327bb6c9c3ce94de7c42751";
 
         public static string ToolFavIcon = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "favicon.ico");
 
@@ -116,6 +114,8 @@ namespace WebApp
                 GitHubSourceTemplates = Environment.GetEnvironmentVariable("APP_SOURCE_TEMPLATES");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_GALLERY")))
                 GalleryUrl = Environment.GetEnvironmentVariable("APP_GALLERY");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_GISTS")))
+                ApplyGistsId = Environment.GetEnvironmentVariable("APP_SOURCE_GISTS");
 
             var createShortcut = false;
             var publish = false;
@@ -581,7 +581,8 @@ Usage:
   {tool} list                    List available Apps            (Alias 'l')
   {tool} gallery                 Open App Gallery in a Browser  (Alias 'g')
   {tool} install <name>          Install App                    (Alias 'i')
-  {tool} run <name>.html         Run Template Script within context of WebApp AppHost
+
+  {tool} run <name>.ss           Run Script within context of AppHost (or .html)
 
   {tool} new                     List available Project Templates
   {tool} new <template> <name>   Create New Project From Template
@@ -605,9 +606,9 @@ Usage:
   {tool} shortcut                Create Shortcut for App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
 
-  {tool} init                    Create basic .NET Core Web App
-  {tool} init nginx              Create nginx example config
-  {tool} init supervisor         Create supervisor example config
+  {tool} +                       Show available gists
+  {tool} +<name>                 Write gist files locally, e.g:
+  {tool} init                    Create empty .NET Core ServiceStack Web App
   {tool} gist <gist-id>          Write all Gist text files to current directory
 {additional}
   dotnet tool update -g {tool}   Update to latest version
@@ -775,11 +776,25 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     var openUrl = Events?.OpenBrowser ?? OpenBrowser;
                     openUrl(GalleryUrl);
                 }
-                else if (arg == "init")
+                else if (arg[0] == '+')
                 {
-                    RegisterStat(tool, "init");
-                    WriteGistFile(InitDefaultGist);
-                    return new Instruction { Command = "init", Handled = true };
+                    RegisterStat(tool, "+");
+                    
+                    var gistsIndex = new GithubGateway().GetGistFiles(ApplyGistsId)
+                        .FirstOrDefault(x => x.Key == "index.md");
+                    
+                    if (gistsIndex.Key == null)
+                        throw new NotSupportedException($"Could not find 'index.md' file in gist '{ApplyGistsId}'");
+
+                    var links = GistLink.Parse(gistsIndex.Value);
+                    
+                    if (arg == "+")
+                        PrintGistLinks(tool, links);
+                    else
+                        $"Writing {arg.Substring(1)}...".Print();
+                        
+                    //WriteGistFile(ApplyGistsId);
+                    return new Instruction { Command = "+", Handled = true };
                 }
                 else if (new[] { "/h", "?", "/?", "/help" }.Contains(cmd))
                 {
@@ -838,20 +853,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         AppDir = installDir,
                         AppSettingsPath = appSettingsPath,
                     };
-                }
-                if (arg == "init")
-                {
-                    var gist = args[1];
-                    RegisterStat(tool, gist, "init");
-                    var id = gist == "nginx"
-                        ? InitNginxGist
-                        : (gist.StartsWith("supervisor"))
-                            ? InitSupervisorGist
-                            : gist == "docker"
-                                ? InitDockerGist
-                                : throw new Exception($"Unknown init name '{gist}'");
-                    WriteGistFile(id);
-                    return new Instruction { Command = "init", Handled = true };
                 }
                 if (arg == "gist")
                 {
@@ -1012,6 +1013,58 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"vbnet", "dtos.vb"},
             {"typescript.d", "dtos.d.ts"},
         };
+
+        class GistLink
+        {
+            public string Name { get; set; }
+            public string Url { get; set; }
+            public string User { get; set; }
+            public string To { get; set; }
+            public string Description { get; set; }
+
+            public static List<GistLink> Parse(string md)
+            {
+                var to = new List<GistLink>();
+
+                if (!string.IsNullOrEmpty(md))
+                {
+                    foreach (var strLine in md.ReadLines())
+                    {
+                        var line = strLine.AsSpan();
+                        if (!line.TrimStart().StartsWith("- ["))
+                            continue;
+                        
+                        line.SplitOnFirst('[', out _, out var startName);
+                        startName.SplitOnFirst(']', out var name, out var endName);
+                        endName.SplitOnFirst('(', out _, out var startUrl);
+                        startUrl.SplitOnFirst(')', out var url, out var endUrl);
+
+                        var afterModifiers = endUrl.ParseJsToken(out var token);
+
+                        var toPath = (token is JsObjectExpression obj ?
+                            obj.Properties.FirstOrDefault(x => x.Key is JsIdentifier key && key.Name == "to")?.Value as JsLiteral : null)?.Value?.ToString();
+                       
+                        if (name == null || toPath == null || url == null)
+                            continue;
+                        
+                        var link = new GistLink {
+                            Name = name.ToString(),
+                            Url = url.ToString(),
+                            To = toPath,
+                            Description = afterModifiers.Trim().ToString(),
+                            User = url.LastLeftPart('/').LastRightPart('/').ToString()
+                        };
+
+                        if (link.User == "gistlyn" || link.User == "mythz")
+                            link.User = "ServiceStack";
+                        
+                        to.Add(link);
+                    }
+                }
+
+                return to;
+            }
+        }
 
         public static void SaveReference(string tool, string lang, string typesUrl, string filePath)
         {
@@ -1289,7 +1342,28 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     $" {i++.ToString().PadLeft(3, ' ')}. {repo.Name.PadRight(padName, ' ')} {repo.Description}".Print();
                 }
             }
+            
+            "".Print();
+        }
 
+        private static void PrintGistLinks(string tool, List<GistLink> links)
+        {
+            "".Print();
+            var i = 1;
+            var padName = links.OrderByDescending(x => x.Name.Length).First().Name.Length + 1;
+            var padTo = links.OrderByDescending(x => x.To.Length).First().To.Length + 1;
+            var padBy = links.OrderByDescending(x => x.User.Length).First().User.Length + 1;
+
+            foreach (var link in links)
+            {
+                $" {i++.ToString().PadLeft(3, ' ')}. {link.Name.PadRight(padName, ' ')} by @{link.User.PadRight(padBy, ' ')} to: {link.To.PadRight(padTo, ' ')} {link.Description}".Print();
+            }
+
+            "".Print();
+
+            $"Usage: {tool} +<name>".Print();
+            $"       {tool} +<name> <ProjectName>".Print();
+            
             "".Print();
         }
 
