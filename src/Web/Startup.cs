@@ -422,17 +422,16 @@ namespace WebApp
                         var feature = appHost.GetPlugin<TemplatePagesFeature>();
                         var html = File.ReadAllText(RunScript);
                         var page = feature.Pages.OneTimePage(html, ".html");
-                        var output = new PageResult(page) {
-                            Args = runScriptArgs,
-                        }.RenderToStringAsync().Result;
+                        var pageResult = new PageResult(page);
+                        runScriptArgs.Each(entry => pageResult.Args[entry.Key] = entry.Value);
+                        var output = pageResult.RenderToStringAsync().Result;
                         output.Print();
                     }
                 }
                 catch (Exception e)
                 {
-                    $"FAILED run {RunScript}".Print();
-                    e.Message.Print();
-                    e.ToString().Print();
+                    $"FAILED run {RunScript} {runScriptArgs.ToJsv()}".Print();
+                    throw;
                 }
                 return null;
             }
@@ -1615,11 +1614,14 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (!string.IsNullOrEmpty(envValue)) 
                     return envValue;
                 if (value.StartsWith("$HOME"))
-                    return value.Replace("$HOME", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-                if (value.StartsWith("$UserProfile"))
-                    return value.Replace("$UserProfile", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-                if (value.StartsWith("$AppData"))
-                    return value.Replace("$AppData", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+                    return value.Replace("$HOME", Environment.ExpandEnvironmentVariables("%USERPROFILE%"));
+
+                var pos = value.IndexOfAny(new[]{'/','\\',':',';'});
+                var envName = pos >= 0 
+                    ? value.Substring(1, pos - 1) 
+                    : value.Substring(1);
+                if (Enum.TryParse<Environment.SpecialFolder>(envName, out var specialFolder))
+                    return value.Replace("$" + specialFolder, Environment.GetFolderPath(specialFolder));
             }
             return value;
         }
