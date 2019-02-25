@@ -163,22 +163,27 @@ namespace WebApp
                 }
                 if (arg == "run")
                 {
+                    if (i + 1 >= args.Length)
+                        throw new ArgumentException("Script name required for 'run' command");
+
                     var script = args[i + 1];
-                    if (i + 1 < args.Length && script.EndsWith(".html") || script.EndsWith(".ss"))
+                    if (!(script.EndsWith(".html") || script.EndsWith(".ss")))
+                        throw new ArgumentException("Only .ss or .html scripts can be run");
+                        
+                    RunScript = script;
+                    i += 2; //'run' 'script.ss'
+                    for (; i < args.Length; i += 2)
                     {
-                        RunScript = script;
-                        i+=2; //'run' 'script.ss'
-                        for (; i < args.Length; i+=2)
+                        var key = args[i];
+                        if (!key.FirstCharEquals('-') && key.FirstCharEquals('/'))
                         {
-                            var key = args[i];
-                            if (!key.FirstCharEquals('-') && key.FirstCharEquals('/'))
-                            {
-                                $"Unknown run script argument '{key}', argument example: -name value".Print();
-                                return null;
-                            }
-                            runScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
+                            $"Unknown run script argument '{key}', argument example: -name value".Print();
+                            return null;
                         }
+
+                        runScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
                     }
+
                     continue;
                 }                
                 if (arg == "publish")
@@ -428,7 +433,7 @@ namespace WebApp
                         output.Print();
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     $"FAILED run {RunScript} {runScriptArgs.ToJsv()}".Print();
                     throw;
