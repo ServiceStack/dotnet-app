@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using ServiceStack;
 
 namespace WebApp
 {
@@ -17,6 +18,7 @@ namespace WebApp
             } 
             catch (Exception ex)
             {
+                ex = ex.UnwrapIfSingleException();
                 Console.WriteLine(Startup.Verbose ? ex.ToString() : ex.Message);
             }
         }

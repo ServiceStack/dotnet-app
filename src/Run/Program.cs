@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using ServiceStack;
 using WebApp;
 
 namespace Run
@@ -18,6 +19,7 @@ namespace Run
             } 
             catch (Exception ex)
             {
+                ex = ex.UnwrapIfSingleException();
                 Console.WriteLine(Startup.Verbose ? ex.ToString() : ex.Message);
             }
         }

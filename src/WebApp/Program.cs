@@ -71,6 +71,7 @@ namespace WebApp
             } 
             catch (Exception ex)
             {
+                ex = ex.UnwrapIfSingleException();
                 Console.WriteLine(Startup.Verbose ? ex.ToString() : ex.Message);
                 return -1;
             }
