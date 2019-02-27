@@ -3,35 +3,35 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2016
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Text", "..\..\..\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj", "{62325193-82A8-4DF0-A039-0F2472738349}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Text", "..\..\..\..\Source\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj", "{62325193-82A8-4DF0-A039-0F2472738349}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Interfaces", "..\..\..\ServiceStack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj", "{C08C4959-9399-400D-99B1-81715DAD3290}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Interfaces", "..\..\..\..\Source\ServiceStack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj", "{C08C4959-9399-400D-99B1-81715DAD3290}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Client", "..\..\..\ServiceStack\src\ServiceStack.Client\ServiceStack.Client.csproj", "{9D82711F-B34A-49BB-ADA7-B59CA828CE0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Client", "..\..\..\..\Source\ServiceStack\src\ServiceStack.Client\ServiceStack.Client.Source.csproj", "{9D82711F-B34A-49BB-ADA7-B59CA828CE0E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Common", "..\..\..\ServiceStack\src\ServiceStack.Common\ServiceStack.Common.csproj", "{C29EA0D0-0A16-4D5B-86A7-2C9246A00667}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Common", "..\..\..\..\Source\ServiceStack\src\ServiceStack.Common\ServiceStack.Common.Source.csproj", "{C29EA0D0-0A16-4D5B-86A7-2C9246A00667}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack", "..\..\..\ServiceStack\src\ServiceStack\ServiceStack.csproj", "{12410F27-8E1A-4B2E-ACB8-D9BEEC924484}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack", "..\..\..\..\Source\ServiceStack\src\ServiceStack\ServiceStack.Source.csproj", "{12410F27-8E1A-4B2E-ACB8-D9BEEC924484}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Server", "..\..\..\ServiceStack\src\ServiceStack.Server\ServiceStack.Server.csproj", "{382BAA63-6A95-4DED-A26B-882C23F17000}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Server", "..\..\..\..\Source\ServiceStack\src\ServiceStack.Server\ServiceStack.Server.Source.csproj", "{382BAA63-6A95-4DED-A26B-882C23F17000}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Api.OpenApi", "..\..\..\ServiceStack\src\ServiceStack.Api.OpenApi\ServiceStack.Api.OpenApi.csproj", "{6D14AC7A-993A-4DA9-BD74-F383EE24AA36}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Api.OpenApi", "..\..\..\..\Source\ServiceStack\src\ServiceStack.Api.OpenApi\ServiceStack.Api.OpenApi.Source.csproj", "{6D14AC7A-993A-4DA9-BD74-F383EE24AA36}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite", "..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite\ServiceStack.OrmLite.csproj", "{82D1F689-09CD-476E-8B1F-5FE5BC7AD650}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite", "..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite\ServiceStack.OrmLite.Source.csproj", "{82D1F689-09CD-476E-8B1F-5FE5BC7AD650}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.Sqlite", "..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite\ServiceStack.OrmLite.Sqlite.csproj", "{0B9DEE27-2982-4D50-8B6C-4C897DB8208C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.Sqlite", "..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite\ServiceStack.OrmLite.Sqlite.Source.csproj", "{0B9DEE27-2982-4D50-8B6C-4C897DB8208C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.SqlServer", "..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.SqlServer\ServiceStack.OrmLite.SqlServer.csproj", "{207248AC-1632-45D2-B1DC-CC6C44025970}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.SqlServer", "..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.SqlServer\ServiceStack.OrmLite.SqlServer.Source.csproj", "{207248AC-1632-45D2-B1DC-CC6C44025970}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.MySql", "..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.MySql\ServiceStack.OrmLite.MySql.csproj", "{35A86BAC-B428-4C38-A9C0-4DB27F1A5DAA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.MySql", "..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.MySql\ServiceStack.OrmLite.MySql.Source.csproj", "{35A86BAC-B428-4C38-A9C0-4DB27F1A5DAA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.PostgreSQL", "..\..\..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.PostgreSQL\ServiceStack.OrmLite.PostgreSQL.csproj", "{6EBA67C2-E436-478F-9B75-C8B58D7B553F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.PostgreSQL", "..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.PostgreSQL\ServiceStack.OrmLite.PostgreSQL.Source.csproj", "{6EBA67C2-E436-478F-9B75-C8B58D7B553F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Redis", "..\..\..\ServiceStack.Redis\src\ServiceStack.Redis\ServiceStack.Redis.csproj", "{134B728D-439A-41FC-BB6A-E2FEF8E28870}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Redis", "..\..\..\..\Source\ServiceStack.Redis\src\ServiceStack.Redis\ServiceStack.Redis.Source.csproj", "{134B728D-439A-41FC-BB6A-E2FEF8E28870}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Aws", "..\..\..\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.csproj", "{17B75985-36ED-470B-BDA9-1F55142EAEB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Aws", "..\..\..\..\Source\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.Source.csproj", "{17B75985-36ED-470B-BDA9-1F55142EAEB3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Azure", "..\..\..\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.csproj", "{33ABFFFA-044D-46E4-BDA9-DBB2391E05F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.Azure", "..\..\..\..\Source\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.Source.csproj", "{33ABFFFA-044D-46E4-BDA9-DBB2391E05F2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.CefGlue.Win64", "..\..\..\ServiceStack.CefGlue\src\ServiceStack.CefGlue.Win64\ServiceStack.CefGlue.Win64.csproj", "{07DB90BB-87D2-498D-A836-A6E3DABE03A7}"
 EndProject

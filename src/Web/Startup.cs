@@ -789,12 +789,17 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     var links = GistLink.Parse(gistsIndex.Value);
                     
                     if (arg == "+")
+                    {
                         PrintGistLinks(tool, links);
+                        checkUpdatesAndQuit = beginCheckUpdates();
+                    }
                     else
+                    {
                         $"Writing {arg.Substring(1)}...".Print();
-                        
-                    //WriteGistFile(ApplyGistsId);
-                    return new Instruction { Command = "+", Handled = true };
+
+                        //WriteGistFile(ApplyGistsId);
+                        return new Instruction { Command = "+", Handled = true };
+                    }
                 }
                 else if (new[] { "/h", "?", "/?", "/help" }.Contains(cmd))
                 {
@@ -1363,8 +1368,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             $"Usage: {tool} +<name>".Print();
             $"       {tool} +<name> <ProjectName>".Print();
-            
-            "".Print();
         }
 
         public static void WriteGistFile(string gistId)
