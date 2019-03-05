@@ -18,8 +18,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Funq;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.Azure.Amqp.Serialization;
-using Microsoft.Extensions.Hosting;
 using NUglify;
 using ServiceStack;
 using ServiceStack.IO;
@@ -28,10 +26,11 @@ using ServiceStack.Text;
 using ServiceStack.Data;
 using ServiceStack.Redis;
 using ServiceStack.OrmLite;
-using ServiceStack.Templates;
 using ServiceStack.Configuration;
 using ServiceStack.Azure.Storage;
 using ServiceStack.Html;
+using ServiceStack.OrmLite.PostgreSQL;
+using ServiceStack.Script;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 namespace WebApp
@@ -98,6 +97,7 @@ namespace WebApp
         static string[] ReleaseArgs = { "/r", "-r", "/release", "--release" };
 
         public static string RunScript { get; set; }
+        public static bool WatchScript { get; set; }
 
         public static string ApplyGistsId { get; set; } = "848265c83327bb6c9c3ce94de7c42751";
 
@@ -161,7 +161,7 @@ namespace WebApp
                         createShortcutFor = args[++i];
                     continue;
                 }
-                if (arg == "run")
+                if (arg == "run" || arg == "watch")
                 {
                     if (i + 1 >= args.Length)
                         throw new ArgumentException("Script name required for 'run' command");
@@ -171,6 +171,7 @@ namespace WebApp
                         throw new ArgumentException("Only .ss or .html scripts can be run");
                         
                     RunScript = script;
+                    WatchScript = arg == "watch";
                     i += 2; //'run' 'script.ss'
                     for (; i < args.Length; i += 2)
                     {
@@ -302,7 +303,7 @@ namespace WebApp
             var dictionarySettings = new DictionarySettings();
             if (RunScript != null)
             {
-                var context = new TemplateContext().Init();
+                var context = new ScriptContext().Init();
                 var page = context.OneTimePage(File.ReadAllText(RunScript), "html");
                 if (page.Args.Count > 0)
                     dictionarySettings = new DictionarySettings(page.Args.ToStringDictionary());
@@ -408,35 +409,84 @@ namespace WebApp
             }
             if (RunScript != null)
             {
-                try 
-                { 
-                    RegisterStat(tool, RunScript, "run");
-                    var (contentRoot, useWebRoot) = GetDirectoryRoots(ctx);
-                    var builder = new WebHostBuilder()
-                        .UseFakeServer()
-                        .UseSetting(WebHostDefaults.SuppressStatusMessagesKey, "True")
-                        .UseContentRoot(contentRoot)
-                        .UseWebRoot(useWebRoot)
-                        .UseStartup<Startup>();
-
-                    using (var webHost = builder.Build())
-                    {
-                        var task = webHost.RunAsync();
-                    
-                        var appHost = WebTemplateUtils.AppHost;
-                        var feature = appHost.GetPlugin<TemplatePagesFeature>();
+                void ExecScript(SharpPagesFeature feature)
+                {
+                    try 
+                    { 
                         var html = File.ReadAllText(RunScript);
                         var page = feature.Pages.OneTimePage(html, ".html");
                         var pageResult = new PageResult(page);
                         runScriptArgs.Each(entry => pageResult.Args[entry.Key] = entry.Value);
                         var output = pageResult.RenderToStringAsync().Result;
                         output.Print();
+    
+                        if (pageResult.LastFilterError != null)
+                        {
+                            $"FAILED run {RunScript} {runScriptArgs.ToJsv()}:".Print();
+                            pageResult.LastFilterStackTrace.Map(x => "   at " + x)
+                                .Join(Environment.NewLine).Print();
+    
+                            "".Print();
+                            pageResult.LastFilterError.Message.Print();
+                            pageResult.LastFilterError.ToString().Print();
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        Verbose = true;
+                        $"FAILED run {RunScript} {runScriptArgs.ToJsv()}:".Print();
+                        throw;
                     }
                 }
-                catch (Exception)
+                
+                RegisterStat(tool, RunScript, WatchScript ? "watch" : "run");
+                var (contentRoot, useWebRoot) = GetDirectoryRoots(ctx);
+                var builder = new WebHostBuilder()
+                    .UseFakeServer()
+                    .UseSetting(WebHostDefaults.SuppressStatusMessagesKey, "True")
+                    .UseContentRoot(contentRoot)
+                    .UseWebRoot(useWebRoot)
+                    .UseStartup<Startup>();
+
+                using (var webHost = builder.Build())
                 {
-                    $"FAILED run {RunScript} {runScriptArgs.ToJsv()}".Print();
-                    throw;
+                    var task = webHost.RunAsync();
+                    
+                    var appHost = WebTemplateUtils.AppHost;
+                    var feature = appHost.GetPlugin<SharpPagesFeature>();
+
+                    var script = new FileInfo(RunScript);
+                    var lastWriteAt = DateTime.MinValue;
+                    
+                    if (WatchScript)
+                    {
+                        $"Watching '{RunScript}' (Ctrl+C to stop):".Print();
+
+                        while (true)
+                        {
+                            do
+                            {
+                                await Task.Delay(100);
+                                script.Refresh();
+                            } while(script.LastWriteTimeUtc == lastWriteAt);
+
+                            try
+                            {
+                                Console.Clear();
+                                ExecScript(feature);
+                            }
+                            catch (Exception ex)
+                            {
+                                ex = ex.UnwrapIfSingleException();
+                                Console.WriteLine(ex.ToString());
+                            }
+                            lastWriteAt = script.LastWriteTimeUtc;
+                        }
+                    }
+                    else
+                    {
+                        ExecScript(feature);
+                    }
                 }
                 return null;
             }
@@ -481,7 +531,7 @@ namespace WebApp
             }
             else
             {
-                filePath = Path.Combine(Path.GetDirectoryName(filePath), new TemplateDefaultFilters().generateSlug(Path.GetFileName(filePath)));
+                filePath = Path.Combine(Path.GetDirectoryName(filePath), new DefaultScripts().generateSlug(Path.GetFileName(filePath)));
                 var cmd = filePath + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".bat" : ".sh");
 
                 var openBrowserCmd = string.IsNullOrEmpty(ctx?.StartUrl) || targetPath.EndsWith(".exe") ? "" : 
@@ -859,6 +909,20 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         AppSettingsPath = appSettingsPath,
                     };
                 }
+//                if (arg == "init")
+//                {
+//                    var gist = args[1];
+//                    RegisterStat(tool, gist, "init");
+//                    var id = gist == "nginx"
+//                        ? InitNginxGist
+//                        : (gist.StartsWith("supervisor"))
+//                            ? InitSupervisorGist
+//                            : gist == "docker"
+//                                ? InitDockerGist
+//                                : throw new Exception($"Unknown init name '{gist}'");
+//                    WriteGistFile(id);
+//                    return new Instruction { Command = "init", Handled = true };
+//                }
                 if (arg == "gist")
                 {
                     var gist = args[1];
@@ -1396,7 +1460,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 {
                     var featureTypes = features.Split(',').Map(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
 
-                    featureTypes.Remove(nameof(TemplatePagesFeature)); //already added
+                    featureTypes.Remove(nameof(SharpPagesFeature)); //already added
                     var featureIndex = featureTypes.ToArray();
                     var registerPlugins = new IPlugin[featureTypes.Count];
 
@@ -1459,7 +1523,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 WebTemplateUtils.VirtualFiles = new FileSystemVirtualFiles(env.ContentRootPath);
 
                 var assemblies = new List<Assembly>();
-                var vfs = "files".GetAppSetting().GetVirtualFiles(config:"files.config".GetAppSetting());
+                var filesConfig = "files.config".GetAppSetting();               
+                var vfs = "files".GetAppSetting().GetVirtualFiles(config:filesConfig);
                 var pluginsDir = (vfs ?? WebTemplateUtils.VirtualFiles).GetDirectory("plugins");
                 if (pluginsDir != null)
                 {
@@ -1535,29 +1600,38 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             appHost.Config.DebugMode = GetDebugMode();
             appHost.Config.ForbiddenPaths.Add("/plugins");
 
-            var feature = appHost.GetPlugin<TemplatePagesFeature>();
+            var feature = appHost.GetPlugin<SharpPagesFeature>();
             if (feature != null)
-                "Using existing TemplatePagesFeature from appHost".Print();
+                "Using existing SharpPagesFeature from appHost".Print();
 
             if (feature == null)
             {
-                feature = (nameof(TemplatePagesFeature).GetAppSetting() != null
-                    ? (TemplatePagesFeature)typeof(TemplatePagesFeature).CreatePlugin()
-                    : new TemplatePagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
+                feature = (nameof(SharpPagesFeature).GetAppSetting() != null
+                    ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
+                    : new SharpPagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
             }
 
             var dbFactory = "db".GetAppSetting().GetDbFactory(connectionString:"db.connection".GetAppSetting());
             if (dbFactory != null)
             {
                 appHost.Container.Register<IDbConnectionFactory>(dbFactory);
-                feature.TemplateFilters.Add(new TemplateDbFiltersAsync());
+                feature.ScriptMethods.Add(new DbScriptsAsync());
+                
+                dbFactory.RegisterDialectProvider("sqlite", SqliteDialect.Provider);
+                dbFactory.RegisterDialectProvider("sqlserver", SqlServerDialect.Provider);
+                dbFactory.RegisterDialectProvider("sqlserver2012", SqlServer2012Dialect.Provider);
+                dbFactory.RegisterDialectProvider("sqlserver2014", SqlServer2014Dialect.Provider);
+                dbFactory.RegisterDialectProvider("sqlserver2016", SqlServer2016Dialect.Provider);
+                dbFactory.RegisterDialectProvider("sqlserver2017", SqlServer2017Dialect.Provider);
+                dbFactory.RegisterDialectProvider("mysql", MySqlDialect.Provider);
+                dbFactory.RegisterDialectProvider("postgresql", PostgreSqlDialect.Provider);
             }
 
             var redisConnString = "redis.connection".GetAppSetting();
             if (redisConnString != null)
             {
                 appHost.Container.Register<IRedisClientsManager>(c => new RedisManagerPool(redisConnString));
-                feature.TemplateFilters.Add(new TemplateRedisFilters { 
+                feature.ScriptMethods.Add(new RedisScripts { 
                     RedisManager = appHost.Container.Resolve<IRedisClientsManager>()
                 });
             }
@@ -1568,11 +1642,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             var defaultFileCacheExpirySecs = "defaultFileCacheExpirySecs".GetAppSetting();
             if (defaultFileCacheExpirySecs != null)
-                feature.Args[TemplateConstants.DefaultFileCacheExpiry] = TimeSpan.FromSeconds(defaultFileCacheExpirySecs.ConvertTo<int>());
+                feature.Args[ScriptConstants.DefaultFileCacheExpiry] = TimeSpan.FromSeconds(defaultFileCacheExpirySecs.ConvertTo<int>());
 
             var defaultUrlCacheExpirySecs = "defaultUrlCacheExpirySecs".GetAppSetting();
             if (defaultUrlCacheExpirySecs != null)
-                feature.Args[TemplateConstants.DefaultUrlCacheExpiry] = TimeSpan.FromSeconds(defaultUrlCacheExpirySecs.ConvertTo<int>());
+                feature.Args[ScriptConstants.DefaultUrlCacheExpiry] = TimeSpan.FromSeconds(defaultUrlCacheExpirySecs.ConvertTo<int>());
 
             var markdownProvider = "markdownProvider".GetAppSetting();
             var useMarkdownDeep = markdownProvider?.EqualsIgnoreCase("MarkdownDeep") == true;
@@ -1740,7 +1814,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public static IVirtualPathProvider GetVirtualFiles(this string provider, string config)
         {
-            if (provider == null) return null;
+            if (provider == null) 
+                return null;
+            
+            if (config == null)
+                throw new Exception("Missing app setting 'files.config'");
+            
             switch (provider.ToLower())
             {
                 case "fs":
@@ -1768,8 +1847,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 case "azureblob":
                 case "azureblobvirtualfiles":
                     var azureConfig = config.FromJsv<AzureConfig>();
-                    var storageAccount = Microsoft.WindowsAzure.Storage.CloudStorageAccount.Parse(ResolveValue(azureConfig.ConnectionString));
-                    var container = storageAccount.CreateCloudBlobClient().GetContainerReference(ResolveValue(azureConfig.ContainerName));
+                    var storageAccount = Microsoft.WindowsAzure.Storage.CloudStorageAccount.Parse(azureConfig.ConnectionString.ResolveValue());
+                    var container = storageAccount.CreateCloudBlobClient().GetContainerReference(azureConfig.ContainerName.ResolveValue());
                     container.CreateIfNotExists();
                     return new AzureBlobVirtualFiles(container);
             }
@@ -1780,7 +1859,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         {
             if (dbProvider == null || connectionString == null)
                 return null;
-
+            
             switch (dbProvider.ToLower())
             {
                 case "sqlite":
