@@ -331,7 +331,7 @@ Alternatively you can force a JSON Response by specifying it with:
 The [/preview.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/preview.html) page uses this to force a plain-text response with:
 
 ```
-{{ content  | evalTemplate({use:{plugins:'MarkdownTemplatePlugin'}}) | assignTo:response }}
+{{ content  | evalTemplate({use:{plugins:'MarkdownScriptPlugin'}}) | assignTo:response }}
 {{ response | return({ contentType:'text/plain' }) }}
 ```
 
@@ -634,7 +634,7 @@ To the [/preview.html](https://github.com/NetCoreWebApps/Blog/blob/master/app/pr
 Template Content its sent and returns the output:
 
 ```
-{{ content  | evalTemplate({use:{plugins:'MarkdownTemplatePlugin'}}) | assignTo:response }}
+{{ content  | evalTemplate({use:{plugins:'MarkdownScriptPlugin'}}) | assignTo:response }}
 {{ response | return({ contentType:'text/plain' }) }}
 ```
 
