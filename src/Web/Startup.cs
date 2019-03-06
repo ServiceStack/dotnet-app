@@ -633,6 +633,7 @@ Usage:
   {tool} install <name>          Install App                    (Alias 'i')
 
   {tool} run <name>.ss           Run Script within context of AppHost (or .html)
+  {tool} watch <name>.ss         Watch Script within context of AppHost (or .html)
 
   {tool} new                     List available Project Templates
   {tool} new <template> <name>   Create New Project From Template
@@ -831,10 +832,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     RegisterStat(tool, "+");
                     
                     var gistsIndex = new GithubGateway().GetGistFiles(ApplyGistsId)
-                        .FirstOrDefault(x => x.Key == "index.md");
+                        .FirstOrDefault(x => x.Key == "apply.md");
                     
                     if (gistsIndex.Key == null)
-                        throw new NotSupportedException($"Could not find 'index.md' file in gist '{ApplyGistsId}'");
+                        throw new NotSupportedException($"Could not find 'apply.md' file in gist '{ApplyGistsId}'");
 
                     var links = GistLink.Parse(gistsIndex.Value);
                     
