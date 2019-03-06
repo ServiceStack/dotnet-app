@@ -625,16 +625,6 @@ Version:  {GetVersion()}
 
 Usage:   
   
-  {tool}                         Run App in App folder using local app.settings
-  {tool} path/to/app.settings    Run App at folder containing specified app.settings
-{runProcess}
-  {tool} list                    List available Apps            (Alias 'l')
-  {tool} gallery                 Open App Gallery in a Browser  (Alias 'g')
-  {tool} install <name>          Install App                    (Alias 'i')
-
-  {tool} run <name>.ss           Run Script within context of AppHost (or .html)
-  {tool} watch <name>.ss         Watch Script within context of AppHost (or .html)
-
   {tool} new                     List available Project Templates
   {tool} new <template> <name>   Create New Project From Template
 
@@ -651,16 +641,26 @@ Usage:
   {tool} vbnet      <url>        Add VB.NET ServiceStack Reference     (Alias 'vb')
   {tool} tsd        <url>        Add TypeScript Definition ServiceStack Reference
 
+  {tool} +                       Show available gists
+  {tool} +<name>                 Write gist files locally, e.g:
+  {tool} +init                   Create empty .NET Core ServiceStack Web App
+  {tool} gist <gist-id>          Write all Gist text files to current directory
+
+  {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
+  {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
+
+  {tool}                         Run App in App folder using local app.settings
+  {tool} path/to/app.settings    Run App at folder containing specified app.settings
+{runProcess}
+  {tool} list                    List available Apps            (Alias 'l')
+  {tool} gallery                 Open App Gallery in a Browser  (Alias 'g')
+  {tool} install <name>          Install App                    (Alias 'i')
+
   {tool} publish                 Package App to /publish ready for deployment (.NET Core Required)
   {tool} publish-exe             Package self-contained .exe App to /publish  (.NET Core Embedded)
 
   {tool} shortcut                Create Shortcut for App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
-
-  {tool} +                       Show available gists
-  {tool} +<name>                 Write gist files locally, e.g:
-  {tool} init                    Create empty .NET Core ServiceStack Web App
-  {tool} gist <gist-id>          Write all Gist text files to current directory
 {additional}
   dotnet tool update -g {tool}   Update to latest version
 

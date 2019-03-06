@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 cat ../apps/bare/web.settings | sed "/debug/s/ .*/ false/" > ../apps/web/web.bare.settings
 
 cat ../apps/blog/web.release.settings > ../apps/web/web.blog.settings
