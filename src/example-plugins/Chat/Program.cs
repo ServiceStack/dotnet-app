@@ -51,7 +51,7 @@ namespace Chat
 
         public override void Configure(Container container)
         {
-            Plugins.AddIfNotExists(new TemplatePagesFeature()); //Already added if it's running as a Web App
+            Plugins.AddIfNotExists(new SharpPagesFeature()); //Already added if it's running as a Web App
 
             Plugins.Add(new ServerEventsFeature());
 

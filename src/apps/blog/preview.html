@@ -1,7 +1,5 @@
 API /preview
-  * content : string - ServiceStack Templates to evaluate
+  * content : string - #Script to evaluate
 
-{{ content  | evalTemplate({use:{plugins:'MarkdownTemplatePlugin'}}) | assignTo:response }}
+{{ qs.content  | evalTemplate({use:{plugins:'MarkdownScriptPlugin'}}) | assignTo:response }}
 {{ response | return({ contentType:'text/plain' }) }}
-  
-//TODO: opt-in safe plugins/features in new context

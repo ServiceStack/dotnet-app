@@ -5,7 +5,7 @@ db.connection blog.sqlite
 
 features AuthFeature
 AuthFeature.AuthProviders TwitterAuthProvider
-TemplatePagesFeature { TemplatesAdminRole: 'AllowAnon' }
+SharpPagesFeature { TemplatesAdminRole: 'AllowAnon' }
 
 oauth.RedirectUrl http://localhost:5000/
 oauth.CallbackUrl http://localhost:5000/auth/{0}

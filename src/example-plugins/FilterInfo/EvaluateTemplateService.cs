@@ -24,7 +24,7 @@ namespace FilterInfo
 
         public async Task<string> Any(EvaluateTemplate request)
         {
-            var feature = HostContext.GetPlugin<TemplatePagesFeature>();
+            var feature = HostContext.GetPlugin<SharpPagesFeature>();
             var context = new TemplateContext {
                 TemplateFilters = { 
                     new FilterInfoFilters(), 
