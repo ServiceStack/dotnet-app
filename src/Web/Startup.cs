@@ -2154,7 +2154,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public async Task<List<GithubRepo>> GetSourceReposAsync(string orgName)
         {
             var repos = (await GetUserAndOrgReposAsync(orgName))
-                .OrderByDescending(x => x.Stargazers_Count)
+                .OrderBy(x => x.Name)
                 .ToList();
             return repos;
         }
