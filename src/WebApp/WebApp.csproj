@@ -53,7 +53,7 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
     <PackageReference Include="Mysql.Data" Version="8.0.15" />
     <PackageReference Include="Npgsql" Version="4.0.4" />
-    <PackageReference Include="Markdig" Version="0.15.7" />
+    <PackageReference Include="Markdig" Version="0.16.0" />
     <PackageReference Include="NUglify" Version="1.5.12" />
 
     <PackageReference Include="ServiceStack.CefGlue.Win64" Version="5.*" />
