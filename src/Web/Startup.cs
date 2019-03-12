@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -18,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Funq;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore.Internal;
 using NUglify;
 using ServiceStack;
 using ServiceStack.IO;
@@ -28,6 +30,7 @@ using ServiceStack.Redis;
 using ServiceStack.OrmLite;
 using ServiceStack.Configuration;
 using ServiceStack.Azure.Storage;
+using ServiceStack.FluentValidation.Internal;
 using ServiceStack.Html;
 using ServiceStack.OrmLite.PostgreSQL;
 using ServiceStack.Script;
@@ -90,6 +93,7 @@ namespace WebApp
         static string[] SourceArgs = { "/s", "-s", "/source", "--source" };
 
         public static bool Verbose { get; set; }
+        public static bool Silent { get; set; }
         static string[] VerboseArgs = { "/verbose", "--verbose" };
 
         public static bool? DebugMode { get; set; }
@@ -98,8 +102,11 @@ namespace WebApp
 
         public static string RunScript { get; set; }
         public static bool WatchScript { get; set; }
+        
+        public static bool ForceApproval { get; set; }
+        static string[] ForceArgs = { "/f", "-f", "/force", "--force" };
 
-        public static string ApplyGistsId { get; set; } = "848265c83327bb6c9c3ce94de7c42751";
+        public static string GistLinksId { get; set; } = "f3fa8c016bbd253badc61d80afe399d9";
 
         public static string ToolFavIcon = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "favicon.ico");
 
@@ -115,7 +122,7 @@ namespace WebApp
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_GALLERY")))
                 GalleryUrl = Environment.GetEnvironmentVariable("APP_GALLERY");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_GISTS")))
-                ApplyGistsId = Environment.GetEnvironmentVariable("APP_SOURCE_GISTS");
+                GistLinksId = Environment.GetEnvironmentVariable("APP_SOURCE_GISTS");
 
             var createShortcut = false;
             var publish = false;
@@ -152,6 +159,11 @@ namespace WebApp
                 if (SourceArgs.Contains(arg))
                 {
                     GitHubSource = GitHubSourceTemplates = args[++i];
+                    continue;
+                }
+                if (ForceArgs.Contains(arg))
+                {
+                    ForceApproval = true;
                     continue;
                 }
                 if (arg == "shortcut")
@@ -643,7 +655,8 @@ Usage:
 
   {tool} +                       Show available gists
   {tool} +<name>                 Write gist files locally, e.g:
-  {tool} +init                   Create empty .NET Core ServiceStack Web App
+  {tool} +init                   Create empty .NET Core 2.2 ServiceStack App
+  {tool} + #<tag>                Search available gists
   {tool} gist <gist-id>          Write all Gist text files to current directory
 
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
@@ -670,6 +683,7 @@ Options:
     -d, --debug               Run in Debug mode for Development
     -r, --release             Run in Release mode for Production
     -s, --source              Change GitHub Source for App Directory
+    -f, --force               Quiet mode, always approve, never prompt
         --clean               Delete downloaded caches
         --verbose             Display verbose logging
 
@@ -788,6 +802,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
                 return new Instruction { Handled = true };
             }
+            
             if (args.Length == 1)
             {
                 if (RefExt.Values.Any(ext => arg.EndsWith(ext)))
@@ -829,28 +844,42 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
                 else if (arg[0] == '+')
                 {
-                    RegisterStat(tool, "+");
-                    
-                    var gistsIndex = new GithubGateway().GetGistFiles(ApplyGistsId)
-                        .FirstOrDefault(x => x.Key == "apply.md");
-                    
-                    if (gistsIndex.Key == null)
-                        throw new NotSupportedException($"Could not find 'apply.md' file in gist '{ApplyGistsId}'");
-
-                    var links = GistLink.Parse(gistsIndex.Value);
-                    
                     if (arg == "+")
                     {
-                        PrintGistLinks(tool, links);
+                        RegisterStat(tool, arg);
+                        PrintGistLinks(tool, GetGistApplyLinks());
                         checkUpdatesAndQuit = beginCheckUpdates();
                     }
                     else
                     {
-                        $"Writing {arg.Substring(1)}...".Print();
+                        RegisterStat(tool, arg, "+");
 
-                        //WriteGistFile(ApplyGistsId);
-                        return new Instruction { Command = "+", Handled = true };
+                        var gistAliases = arg.Substring(1).Split('+');
+                        foreach (var gistAlias in gistAliases)
+                        {
+                            var links = GetGistApplyLinks();
+                            var gistLink = GistLink.Get(links, gistAlias);
+                            if (gistLink == null)
+                            {
+                                $"No match found for '{gistAlias}', available gists:".Print();
+                                PrintGistLinks(tool, links);
+                                checkUpdatesAndQuit = beginCheckUpdates();
+                                break;
+                            }
+
+                            WriteGistFile(gistLink.Url, gistAlias, to: gistLink.To, projectName: null, getUserApproval: UserInputYesNo);
+                        }
+                        
+                        if (checkUpdatesAndQuit == null)
+                            return new Instruction { Command = "+", Handled = true };
                     }
+                }
+                else if (arg == "init") //backwards compat, create Sharp App
+                {
+                    RegisterStat(tool, arg);
+                    Silent = true;
+                    WriteGistFile("5c9ee9031e53cd8f85bd0e14881ddaa8", null, ".", null, null);
+                    return new Instruction { Command = "init", Handled = true };
                 }
                 else if (new[] { "/h", "?", "/?", "/help" }.Contains(cmd))
                 {
@@ -910,25 +939,47 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         AppSettingsPath = appSettingsPath,
                     };
                 }
-//                if (arg == "init")
-//                {
-//                    var gist = args[1];
-//                    RegisterStat(tool, gist, "init");
-//                    var id = gist == "nginx"
-//                        ? InitNginxGist
-//                        : (gist.StartsWith("supervisor"))
-//                            ? InitSupervisorGist
-//                            : gist == "docker"
-//                                ? InitDockerGist
-//                                : throw new Exception($"Unknown init name '{gist}'");
-//                    WriteGistFile(id);
-//                    return new Instruction { Command = "init", Handled = true };
-//                }
+                if (arg[0] == '+')
+                {
+                    if (args[1][0] == '#')
+                    {
+                        RegisterStat(tool, arg + args[1], "+");
+                        PrintGistLinks(tool, GetGistApplyLinks(), args[1].Substring(1));
+                        return new Instruction { Command = "+", Handled = true };
+                    }
+                    
+                    RegisterStat(tool, arg + "-project", "+");
+
+                    var links = GetGistApplyLinks();
+                    var gistAliases = arg.Substring(1).Split('+');
+                    foreach (var gistAlias in gistAliases)
+                    {
+                        var gistLink = GistLink.Get(links, gistAlias);
+                        if (gistLink == null)
+                        {
+                            $"No match found for '{gistAlias}', available gists:".Print();
+                            PrintGistLinks(tool, links);
+                            checkUpdatesAndQuit = beginCheckUpdates();
+                            break;
+                        }
+                    }
+                    if (checkUpdatesAndQuit == null)
+                    {
+                        foreach (var gistAlias in gistAliases)
+                        {
+                            var gistLink = GistLink.Get(links, gistAlias);
+                            WriteGistFile(gistLink.Url, gistAlias, to:gistLink.To, projectName:args[1], getUserApproval:UserInputYesNo);
+                            ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
+                        }
+                        
+                        return new Instruction { Command = "+", Handled = true };
+                    }
+                }
                 if (arg == "gist")
                 {
                     var gist = args[1];
                     RegisterStat(tool, gist, "gist");
-                    WriteGistFile(gist);
+                    WriteGistFile(gist, gistAlias:null, to:".", projectName:null, getUserApproval:UserInputYesNo);
                     return new Instruction { Command = "gist", Handled = true };
                 }
                 if (arg == "new")
@@ -939,99 +990,133 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
             else if (args.Length == 3)
             {
-                var repo = args[1];
-                var projectName = args[2];
-                AssertValidProjectName(projectName, tool);
-
-                RegisterStat(tool, repo, "new");
-
-                var downloadUrl = new GithubGateway().GetSourceZipUrl(GitHubSourceTemplates, repo);
-                $"Installing {repo}...".Print();
-
-                var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
-                var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
-                DeleteDirectory(tmpDir);
-
-                if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
-                ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
-                var installDir = Path.GetFullPath(repo);
-
-                var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
-                if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {projectDir.FullName}".Print();
-                DeleteDirectory(projectDir.FullName);
-                Directory.Move(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
-
-                var projectNameKebab = CamelToKebab(projectName);
-                RenameProject(str => str.Replace("MyApp", projectName).Replace("my-app", projectNameKebab), projectDir);
-
-                // Restore Solution
-                var slns = Directory.GetFiles(projectDir.FullName, "*.sln", SearchOption.AllDirectories);
-                if (slns.Length == 1)
+                if (arg == "new")
                 {
-                    var sln = slns[0];
-                    if (Verbose) $"Found {sln}".Print();
+                    var repo = args[1];
+                    var parts = repo.Split('+');
+                    string[] gistAliases = null; 
+                    if (parts.Length > 1)
+                    {
+                        repo = parts[0];
+                        gistAliases = parts.Skip(1).ToArray();
+                        
+                        var links = GetGistApplyLinks();
+                        foreach (var gistAlias in gistAliases)
+                        {
+                            var gistLink = GistLink.Get(links, gistAlias);
+                            if (gistLink == null)
+                            {
+                                $"No match found for '{gistAlias}', available gists:".Print();
+                                PrintGistLinks(tool, links);
+                                return new Instruction { Command = "new+", Handled = true };
+                            }
+                        }
+                    }
                     
-                    if (GetExePath("nuget", out var nugetPath))
+                    var projectName = args[2];
+                    AssertValidProjectName(projectName, tool);
+    
+                    RegisterStat(tool, repo, "new");
+    
+                    var downloadUrl = new GithubGateway().GetSourceZipUrl(GitHubSourceTemplates, repo);
+                    $"Installing {repo}...".Print();
+    
+                    var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
+                    var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
+                    DeleteDirectory(tmpDir);
+    
+                    if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
+                    ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
+                    var installDir = Path.GetFullPath(repo);
+    
+                    var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
+                    if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {projectDir.FullName}".Print();
+                    DeleteDirectory(projectDir.FullName);
+                    Directory.Move(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
+    
+                    RenameProject(str => ReplaceMyApp(str, projectName), projectDir);
+    
+                    // Restore Solution
+                    var slns = Directory.GetFiles(projectDir.FullName, "*.sln", SearchOption.AllDirectories);
+                    if (slns.Length == 1)
                     {
-                        $"running nuget restore...".Print();
-                        PipeProcess(nugetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
+                        var sln = slns[0];
+                        if (Verbose) $"Found {sln}".Print();
+                        
+                        if (GetExePath("nuget", out var nugetPath))
+                        {
+                            $"running nuget restore...".Print();
+                            PipeProcess(nugetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
+                        }
+                        else if (GetExePath("dotnet", out var dotnetPath))
+                        {
+                            $"running dotnet restore...".Print();
+                            PipeProcess(dotnetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
+                        }
+                        else
+                        {
+                            $"'nuget' or 'dotnet' not found in PATH, skipping restore.".Print();
+                        }
                     }
-                    else if (GetExePath("dotnet", out var dotnetPath))
+                    else if (Verbose) $"Found {slns.Length} *.sln".Print();
+    
+                    // Install npm dependencies (if any)
+                    var packageJsons = Directory.GetFiles(projectDir.FullName, "package.json", SearchOption.AllDirectories);
+                    if (packageJsons.Length == 1)
                     {
-                        $"running dotnet restore...".Print();
-                        PipeProcess(dotnetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
+                        var packageJson = packageJsons[0];
+                        if (Verbose) $"Found {packageJson}".Print();
+    
+                        var npmScript = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "npm.cmd" : "npm";
+                        if (GetExePath(npmScript, out var npmPath))
+                        {
+                            $"running npm install...".Print();
+                            PipeProcess(npmPath, "install", workDir: Path.GetDirectoryName(packageJson));
+                        }
+                        else
+                        {
+                            $"'npm' not found in PATH, skipping npm install.".Print();
+                        }
                     }
-                    else
+                    else if (Verbose) $"Found {packageJsons.Length} package.json".Print();
+    
+                    // Install libman dependencies (if any)
+                    var packageLibmans = Directory.GetFiles(projectDir.FullName, "libman.json", SearchOption.AllDirectories);
+                    if (packageLibmans.Length == 1)
                     {
-                        $"'nuget' or 'dotnet' not found in PATH, skipping restore.".Print();
+                        var packageLibman = packageLibmans[0];
+                        if (Verbose) $"Found {packageLibman}".Print();
+    
+                        if (GetExePath("libman", out var libmanPath))
+                        {
+                            $"running libman restore...".Print();
+                            PipeProcess(libmanPath, "restore", workDir: Path.GetDirectoryName(packageLibman));
+                        }
+                        else
+                        {
+                            $"'libman' not found in PATH, skipping 'libman restore'.".Print();
+                            $"Install 'libman cli' with: dotnet tool install -g Microsoft.Web.LibraryManager.CLI".Print();
+                        }
                     }
+                    else if (Verbose) $"Found {packageLibmans.Length} libman.json".Print();
+                    
+                    "".Print();
+
+                    if (gistAliases != null)
+                    {
+                        var links = GetGistApplyLinks();
+                        foreach (var gistAlias in gistAliases)
+                        {
+                            var gistLink = GistLink.Get(links, gistAlias);
+                            WriteGistFile(gistLink.Url, gistAlias, to:gistLink.To, projectName:projectName, getUserApproval:null);
+                        }
+                    }
+                    
+                    $"{projectName} {repo} project created.".Print();
+                    "".Print();
+                    return new Instruction { Handled = true };
+                    
                 }
-                else if (Verbose) $"Found {slns.Length} *.sln".Print();
-
-                // Install npm dependencies (if any)
-                var packageJsons = Directory.GetFiles(projectDir.FullName, "package.json", SearchOption.AllDirectories);
-                if (packageJsons.Length == 1)
-                {
-                    var packageJson = packageJsons[0];
-                    if (Verbose) $"Found {packageJson}".Print();
-
-                    var npmScript = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "npm.cmd" : "npm";
-                    if (GetExePath(npmScript, out var npmPath))
-                    {
-                        $"running npm install...".Print();
-                        PipeProcess(npmPath, "install", workDir: Path.GetDirectoryName(packageJson));
-                    }
-                    else
-                    {
-                        $"'npm' not found in PATH, skipping npm install.".Print();
-                    }
-                }
-                else if (Verbose) $"Found {packageJsons.Length} package.json".Print();
-
-                // Install libman dependencies (if any)
-                var packageLibmans = Directory.GetFiles(projectDir.FullName, "libman.json", SearchOption.AllDirectories);
-                if (packageLibmans.Length == 1)
-                {
-                    var packageLibman = packageLibmans[0];
-                    if (Verbose) $"Found {packageLibman}".Print();
-
-                    if (GetExePath("libman", out var libmanPath))
-                    {
-                        $"running libman restore...".Print();
-                        PipeProcess(libmanPath, "restore", workDir: Path.GetDirectoryName(packageLibman));
-                    }
-                    else
-                    {
-                        $"'libman' not found in PATH, skipping 'libman restore'.".Print();
-                        $"Install 'libman cli' with: dotnet tool install -g Microsoft.Web.LibraryManager.CLI".Print();
-                    }
-                }
-                else if (Verbose) $"Found {packageLibmans.Length} libman.json".Print();
-                
-                "".Print();
-                $"{projectName} {repo} project created.".Print();
-                "".Print();
-                return new Instruction { Handled = true };
             }
 
             if (checkUpdatesAndQuit != null)
@@ -1056,6 +1141,25 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             }            
             return null;
+        }
+
+        private static ConcurrentDictionary<string,List<GistLink>> GistLinksCache = 
+            new ConcurrentDictionary<string, List<GistLink>>();
+
+        private static List<GistLink> GetGistApplyLinks() => GetGistLinks(GistLinksId,"apply.md");
+
+        private static List<GistLink> GetGistLinks(string gistId, string name)
+        {
+            var gistsIndex = new GithubGateway().GetGistFiles(gistId)
+                .FirstOrDefault(x => x.Key == name);
+
+            if (gistsIndex.Key == null)
+                throw new NotSupportedException($"Could not find '{name}' file in gist '{GistLinksId}'");
+
+            return GistLinksCache.GetOrAdd(gistId+":"+name, key => {
+                var links = GistLink.Parse(gistsIndex.Value);
+                return links;                
+            });
         }
 
         private static readonly Dictionary<string,string> RefAlias = new Dictionary<string, string>
@@ -1091,6 +1195,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             public string User { get; set; }
             public string To { get; set; }
             public string Description { get; set; }
+            
+            public string[] Tags { get; set; }
+            
+            public string ToTagsString() => Tags == null ? "" : $"[" + string.Join(",",Tags) + "]";
 
             public static List<GistLink> Parse(string md)
             {
@@ -1113,6 +1221,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                         var toPath = (token is JsObjectExpression obj ?
                             obj.Properties.FirstOrDefault(x => x.Key is JsIdentifier key && key.Name == "to")?.Value as JsLiteral : null)?.Value?.ToString();
+
+                        string tags = null;
+                        afterModifiers = afterModifiers.TrimStart();
+                        if (afterModifiers.StartsWith("`"))
+                        {
+                            afterModifiers = afterModifiers.Advance(1);
+                            var pos = afterModifiers.IndexOf('`');
+                            tags = afterModifiers.Substring(0, pos);
+                            afterModifiers = afterModifiers.Advance(pos + 1);
+                        }
                        
                         if (name == null || toPath == null || url == null)
                             continue;
@@ -1122,7 +1240,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             Url = url.ToString(),
                             To = toPath,
                             Description = afterModifiers.Trim().ToString(),
-                            User = url.LastLeftPart('/').LastRightPart('/').ToString()
+                            User = url.LastLeftPart('/').LastRightPart('/').ToString(),
+                            Tags = tags?.Split(',').Map(x => x.Trim()).ToArray(),
                         };
 
                         if (link.User == "gistlyn" || link.User == "mythz")
@@ -1133,6 +1252,24 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
 
                 return to;
+            }
+
+            public static GistLink Get(List<GistLink> links, string gistAlias)
+            {
+                var sanitizedAlias = gistAlias.Replace("-", "");
+                var gistLink = links.FirstOrDefault(x => x.Name.Replace("-","").EqualsIgnoreCase(sanitizedAlias));
+                return gistLink;
+            }
+
+            public bool MatchesTag(string tagName)
+            {
+                if (Tags == null)
+                    return false;
+                
+                var searchTags = tagName.Split(',').Map(x => x.Trim());
+                return searchTags.Count == 1  
+                    ? Tags.Any(x => x.EqualsIgnoreCase(tagName))
+                    : Tags.Any(x => searchTags.Any(x.EqualsIgnoreCase));
             }
         }
 
@@ -1328,6 +1465,24 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             fullPath = null;
             return false;
         }
+        
+        static string ReplaceMyApp(string input, string projectName)
+        {
+            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(projectName))
+                return input;
+            
+            var projectNameKebab = CamelToKebab(projectName);
+            var splitPascalCase = projectName.SplitPascalCase();
+            var ret = input
+                .Replace("My App", splitPascalCase)
+                .Replace("MyApp", projectName)
+                .Replace("my-app", projectNameKebab);
+
+            if (!Env.IsWindows)
+                ret = ret.Replace("\r", "");
+            
+            return ret;
+        }
 
         private static void RenameProject(Func<string,string> replaceFn, DirectoryInfo projectDir)
         {
@@ -1416,34 +1571,226 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             "".Print();
         }
 
-        private static void PrintGistLinks(string tool, List<GistLink> links)
+        private static void PrintGistLinks(string tool, List<GistLink> links, string tag=null)
         {
             "".Print();
+
+            var tags = links.Where(x => x.Tags != null).SelectMany(x => x.Tags).Distinct().OrderBy(x => x).ToList();
+
+            if (!string.IsNullOrEmpty(tag))
+            {
+                links = links.Where(x => x.MatchesTag(tag)).ToList();
+                var plural = tag.Contains(',') ? "s" : "";
+                $"Results matching tag{plural} [{tag}]:".Print();
+                "".Print();
+            }
+
             var i = 1;
             var padName = links.OrderByDescending(x => x.Name.Length).First().Name.Length + 1;
             var padTo = links.OrderByDescending(x => x.To.Length).First().To.Length + 1;
             var padBy = links.OrderByDescending(x => x.User.Length).First().User.Length + 1;
+            var padDesc = links.OrderByDescending(x => x.Description.Length).First().Description.Length + 1;
 
             foreach (var link in links)
             {
-                $" {i++.ToString().PadLeft(3, ' ')}. {link.Name.PadRight(padName, ' ')} by @{link.User.PadRight(padBy, ' ')} to: {link.To.PadRight(padTo, ' ')} {link.Description}".Print();
+                $" {i++.ToString().PadLeft(3, ' ')}. {link.Name.PadRight(padName, ' ')} by @{link.User.PadRight(padBy, ' ')} {link.Description.PadRight(padDesc, ' ')} to: {link.To.PadRight(padTo, ' ')} {link.ToTagsString()}".Print();
             }
 
             "".Print();
 
-            $"Usage: {tool} +<name>".Print();
-            $"       {tool} +<name> <ProjectName>".Print();
+            $" Usage:  {tool} +<name>".Print();
+            $"         {tool} +<name> <UseName>".Print();
+            
+            "".Print();
+
+            var tagSearch = "#<tag>";
+            $"Search:  {tool} + {tagSearch.PadRight(Math.Max(padName-9,0), ' ')} Available tags: {string.Join(", ", tags)}".Print();
+
+            "".Print();
+        }
+        
+        public static List<string> HostFiles = new List<string> {
+               "appsettings.json",
+               "Web.config",
+               "App.config",
+               "Startup.cs",
+               "Program.cs"
+        };
+
+        public static string ResolveBasePath(string to, string exSuffix="")
+        {
+            if (to == "." || string.IsNullOrEmpty(to))
+                return Environment.CurrentDirectory;
+            
+            if (to.IndexOf("..", StringComparison.Ordinal) >= 0)
+                throw new NotSupportedException($"Invalid location '{to}'{exSuffix}");
+
+            if (to.StartsWith("/"))
+                if (Env.IsWindows)
+                    throw new NotSupportedException($"Cannot write to '{to}' on Windows{exSuffix}");
+                else
+                    return to;
+            
+            if (to.IndexOf(":\\", StringComparison.Ordinal) >= 0)
+                if (!Env.IsWindows)
+                    throw new NotSupportedException($"Cannot write to '{to}'{exSuffix}");
+                else
+                    return to;
+
+            if (to[0] == '$')
+            {
+                if (to.StartsWith("$HOST"))
+                {
+                    foreach (var hostFile in HostFiles)
+                    {
+                        var matchingFiles = Directory.GetFiles(Environment.CurrentDirectory, hostFile, SearchOption.AllDirectories);
+                        if (matchingFiles.Length > 0)
+                        {
+                            var dirName = Path.GetDirectoryName(matchingFiles[0]);
+                            return dirName;
+                        }
+                    }
+
+                    var hostFiles = string.Join(", ", HostFiles); 
+                    throw new NotSupportedException($"Couldn't find host project location containing any of {hostFiles}{exSuffix}");
+                }
+                
+                if (to.StartsWith("$HOME"))
+                    return to.Replace("$HOME", Env.IsWindows 
+                        ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) 
+                        : Environment.GetEnvironmentVariable("HOME"));
+
+                var folderValues = EnumUtils.GetValues<Environment.SpecialFolder>();
+                foreach (var specialFolder in folderValues)
+                {
+                    if (to.StartsWith(specialFolder.ToString()))
+                        return to.Replace("$" + specialFolder,
+                            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                }
+            }
+            else
+            {
+                if (to.EndsWith("/"))
+                {
+                    var dirName = to.Substring(0, to.Length - 2);
+                    var matchingDirs = Directory.GetDirectories(Environment.CurrentDirectory, dirName, SearchOption.AllDirectories);
+                    if (matchingDirs.Length == 0)
+                        throw new NotSupportedException($"Unable to find Directory named '{dirName}'{exSuffix}");
+                    return matchingDirs[0];
+                }
+                else
+                {
+                    var matchingFiles = Directory.GetFiles(Environment.CurrentDirectory, to, SearchOption.AllDirectories);
+                    if (matchingFiles.Length == 0)
+                        throw new NotSupportedException($"Unable to find File named '{to}'{exSuffix}");
+
+                    var dirName = Path.GetDirectoryName(matchingFiles[0]);
+                    return dirName;
+                }
+            }
+            
+            throw new NotSupportedException($"Unknown location '{to}'{exSuffix}");
         }
 
-        public static void WriteGistFile(string gistId)
+        public static void WriteGistFile(string gistId, string gistAlias, string to, string projectName, Func<bool> getUserApproval = null)
         {
-            var gistFiles = new GithubGateway().GetGistFiles(gistId);
-            foreach (var entry in gistFiles)
+            var gistLinkUrl = $"https://gist.github.com/{gistId}";
+            if (gistId.IsUrl())
             {
-                if (Verbose) $"Writing {entry.Key}...".Print();
-                File.WriteAllText(entry.Key, entry.Value);
+                gistLinkUrl = gistId;
+                gistId = gistId.LastRightPart('/');
+            }
+            
+            var gistFiles = new GithubGateway().GetGistFiles(gistId);
+            var resolvedFiles = new List<KeyValuePair<string,string>>();
+            foreach (var gistFile in gistFiles)
+            {
+                if (gistFile.Key.IndexOf("..", StringComparison.Ordinal) >= 0)
+                    throw new Exception($"Invalid file name '{gistFile.Key}' from '{gistLinkUrl}'");
+
+                var alias = !string.IsNullOrEmpty(gistAlias)
+                    ? $"'{gistAlias}' "
+                    : "";
+                var exSuffix = $" required by {alias}({gistLinkUrl})";
+                var basePath = ResolveBasePath(to, exSuffix);
+                try
+                {
+                    var useFileName = ReplaceMyApp(gistFile.Key, projectName);
+                    bool noOverride = false;
+                    if (useFileName.EndsWith("?"))
+                    {
+                        noOverride = true;
+                        useFileName = useFileName.Substring(0, useFileName.Length - 1);
+                    }
+
+                    var resolvedFile = Path.GetFullPath(useFileName, basePath.Replace("\\","/"));
+                    if (noOverride && File.Exists(resolvedFile))
+                    {
+                        if (Verbose) $"Skipping existing optional file: {resolvedFile}".Print();
+                        continue;
+                    }
+                    
+                    resolvedFiles.Add(KeyValuePair.Create(resolvedFile, ReplaceMyApp(gistFile.Value, projectName)));
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Cannot write file '{gistFile.Key}' from '{gistLinkUrl}': {ex.Message}", ex);
+                }
+            }
+
+            var label = !string.IsNullOrEmpty(gistAlias)
+                ? $"'{gistAlias}' "
+                : "";
+            
+            var sb = new StringBuilder();
+
+            foreach (var resolvedFile in resolvedFiles)
+            {
+                sb.AppendLine("  " + resolvedFile.Key);
+            }
+
+            var silentMode = getUserApproval == null;
+            if (!silentMode)
+            {
+                if (!ForceApproval)
+                {
+                    sb.Insert(0, $"Write files from {label}({gistLinkUrl}) to:{Environment.NewLine}");
+                    sb.AppendLine()
+                        .AppendLine("Proceed? (n/Y):");
+    
+                    sb.ToString().Print();
+    
+                    if (!getUserApproval())
+                        throw new Exception("Operation cancelled by user.");
+                }
+                else
+                {
+                    sb.Insert(0, $"Writing files from {label}({gistLinkUrl}) to:{Environment.NewLine}");
+                    sb.ToString().Print();                
+                }
+            }
+            
+            foreach (var resolvedFile in resolvedFiles)
+            {
+                if (Verbose) $"Writing {resolvedFile.Key}...".Print();
+                var dir = Path.GetDirectoryName(resolvedFile.Key);
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                File.WriteAllText(resolvedFile.Key, resolvedFile.Value);
             }
         }
+
+        public static Func<bool> UserInputYesNo { get; set; } = UseConsoleRead;
+
+        public static bool UseConsoleRead()
+        {
+            var keyInfo = Console.ReadKey(intercept:true);
+            return keyInfo.Key == ConsoleKey.Enter || keyInfo.Key == ConsoleKey.Y;
+        }
+
+        public static bool ApproveUserInputRequests() => true;
+        public static bool DenyUserInputRequests() => false;
 
         IHostingEnvironment env;
         public Startup(IHostingEnvironment env) => this.env = env;
@@ -2069,6 +2416,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
             }
         }
+
+        public static bool IsUrl(this string gistId) => gistId.IndexOf("://", StringComparison.Ordinal) >= 0;
     }
 
     public class GithubRepo
@@ -2193,7 +2542,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public string GetJson(string route)
         {
-            var apiUrl = GithubApiBaseUrl.CombineWith(route);
+            var apiUrl = !route.IsUrl() 
+                ? GithubApiBaseUrl.CombineWith(route)
+                : route;
             if (Startup.Verbose) $"API: {apiUrl}".Print();
 
             return apiUrl.GetJsonFromUrl(req => req.UserAgent = UserAgent);
@@ -2289,32 +2640,35 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public void DownloadFile(string downloadUrl, string fileName)
         {
-            var webclient = new WebClient();
-            webclient.Headers.Add(HttpHeaders.UserAgent, UserAgent);
-            webclient.DownloadFile(downloadUrl, fileName);
+            var webClient = new WebClient();
+            webClient.Headers.Add(HttpHeaders.UserAgent, UserAgent);
+            webClient.DownloadFile(downloadUrl, fileName);
         }
+        
+        ConcurrentDictionary<string,Dictionary<string, string>> GistFilesCache = 
+            new ConcurrentDictionary<string, Dictionary<string, string>>();
 
         public Dictionary<string, string> GetGistFiles(string gistId)
         {
-            var json = GetJson($"/gists/{gistId}");
-            var response = JSON.parse(json);
-            if (response is Dictionary<string, object> obj &&
-                obj.TryGetValue("files", out var oFiles) && 
-                oFiles is Dictionary<string, object> files)
-            {
-                var to = new Dictionary<string,string>();
-
-                foreach (var entry in files)
+            return GistFilesCache.GetOrAdd(gistId, gistKey => {
+                var json = GetJson($"/gists/{gistKey}");
+                var response = JSON.parse(json);
+                if (response is Dictionary<string, object> obj &&
+                    obj.TryGetValue("files", out var oFiles) && 
+                    oFiles is Dictionary<string, object> files)
                 {
-                    var meta = (Dictionary<string,object>)entry.Value;
-                    to[entry.Key] = (string) meta["content"];
+                    var to = new Dictionary<string,string>();
+                    foreach (var entry in files)
+                    {
+                        var meta = (Dictionary<string,object>)entry.Value;
+                        to[entry.Key] = (string) meta["content"];
+                    }
+                    return to;
                 }
 
-                return to;
-            }
-
-            throw new NotSupportedException($"Invalid gist response returned for '{gistId}'");
+                throw new NotSupportedException($"Invalid gist response returned for '{gistKey}'");
+            });
         }
     }
-
+    
 }

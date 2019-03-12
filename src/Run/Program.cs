@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using NUnit.Framework;
 using ServiceStack;
 using WebApp;
 
@@ -22,6 +24,124 @@ namespace Run
                 ex = ex.UnwrapIfSingleException();
                 Console.WriteLine(Startup.Verbose ? ex.ToString() : ex.Message);
             }
+        }
+    }
+
+    [TestFixture]
+    class Tests
+    {
+        public Tests()
+        {
+            Startup.Verbose = true;
+            Startup.UserInputYesNo = Startup.ApproveUserInputRequests;
+            //Startup.UserInputYesNo = Startup.DenyUserInputRequests;
+        }
+
+        void CreateHostProject()
+        {
+//            Directory.Delete("wip", recursive:true);
+            Directory.CreateDirectory("wip\\MyProject");
+            File.WriteAllText("wip\\MyProject\\appsettings.json","");
+        }
+
+        [Test]
+        public async Task Run_web()
+        {
+            await Startup.CreateWebHost("web", new[]{ "/h" });
+        }
+        
+        [Test]
+        public async Task Run_plus()
+        {
+            await Startup.CreateWebHost("web", new[]{ "+" });
+        }
+        
+        [Test]
+        public async Task Run_plus_tag_sharp()
+        {
+            await Startup.CreateWebHost("web", new[]{ "+", "#sharp" });
+        }
+        
+        [Test]
+        public async Task Run_plus_tag_project()
+        {
+            await Startup.CreateWebHost("web", new[]{ "+", "#project" });
+        }
+        
+        [Test]
+        public async Task Run_plus_tag_project_sharp()
+        {
+            await Startup.CreateWebHost("web", new[]{ "+", "#project,sharp" });
+        }
+
+        [Test]
+        public async Task Run_init()
+        {
+            Directory.CreateDirectory("wip\\spirals");
+            Directory.SetCurrentDirectory("wip\\spirals");
+            await Startup.CreateWebHost("web", new[]{ "init" });
+        }
+
+        [Test]
+        public async Task Run_plus_nginx()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("web", new[]{ "+nginx" });
+        }
+
+        [Test]
+        public async Task Run_plus_validation_contacts()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("web", new[]{ "+validation-contacts" });
+        }
+
+        [Test]
+        public async Task Run_plus_validation_contacts_with_project()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("web", new[]{ "/f", "+validation-contacts", "TheProject" });
+        }
+
+        [Test]
+        public async Task Run_plus_auth_memory_plus_validation_contacts_with_project()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("web", new[]{ "+auth-memory+validation-contacts", "TheProject" });
+        }
+
+        [Test]
+        public async Task Run_from_scratch_bootstrap_validation_contacts_with_project()
+        {
+            Directory.CreateDirectory("wip\\FromScratch");
+            Directory.SetCurrentDirectory("wip\\FromScratch");
+            await Startup.CreateWebHost("web", new[]{ "+init+bootstrap-sharp+validation-contacts", "TheProject" });
+        }
+
+        [Test]
+        public async Task Run_from_scratch_lts_bootstrap_validation_contacts_with_project()
+        {
+            Directory.CreateDirectory("wip\\FromScratch");
+            Directory.SetCurrentDirectory("wip\\FromScratch");
+            await Startup.CreateWebHost("web", new[]{ "+init-lts+bootstrap-sharp+validation-contacts", "TheProject" });
+        }
+
+        [Test]
+        public async Task Run_creating_new_web_project()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("web", new[]{ "new", "web+auth-memory+validation-contacts", "TheProject" });
+        }
+
+        [Test]
+        public async Task Run_creating_new_project_with_validation_contacts()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("web", new[]{ "new", "web+bootstrap-sharp+auth-memory+validation-contacts", "TheProject" });
         }
     }
 }
