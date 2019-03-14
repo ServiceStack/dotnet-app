@@ -130,6 +130,7 @@ namespace WebApp
             string createShortcutFor = null;
             string runProcess = null;
             var runScriptArgs = new Dictionary<string, object>();
+            var runSharpApp = false;
             var appSettingPaths = new[]
             {
                 "app.settings", "../app/app.settings", "app/app.settings",
@@ -176,9 +177,20 @@ namespace WebApp
                 if (arg == "run" || arg == "watch")
                 {
                     if (i + 1 >= args.Length)
-                        throw new ArgumentException("Script name required for 'run' command");
+                    {
+                        runSharpApp = true;
+                        continue;
+                    }
 
                     var script = args[i + 1];
+                    if (script.EndsWith(".settings"))
+                    {
+                        runSharpApp = true;
+                        appSettingPaths = new[] { script };
+                        i++;
+                        continue;
+                    }
+
                     if (!(script.EndsWith(".html") || script.EndsWith(".ss")))
                         throw new ArgumentException("Only .ss or .html scripts can be run");
                         
@@ -271,6 +283,12 @@ namespace WebApp
                     appSettingsPath = fullPath;
                     break;
                 }
+            }
+
+            if (!runSharpApp && dotnetArgs.Count == 0 && appSettingsPath == null)
+            {
+                PrintUsage(tool);
+                return null;
             }
 
             var appDir = appSettingsPath != null 
@@ -662,17 +680,17 @@ Usage:
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
   {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
 
-  {tool}                         Run App in App folder using local app.settings
-  {tool} path/to/app.settings    Run App at folder containing specified app.settings
+  {tool} run                     Run Sharp App in App folder using local app.settings
+  {tool} run path/app.settings   Run Sharp App at folder containing specified app.settings
 {runProcess}
-  {tool} list                    List available Apps            (Alias 'l')
-  {tool} gallery                 Open App Gallery in a Browser  (Alias 'g')
-  {tool} install <name>          Install App                    (Alias 'i')
+  {tool} list                    List available Sharp Apps            (Alias 'l')
+  {tool} gallery                 Open Sharp App Gallery in a Browser  (Alias 'g')
+  {tool} install <name>          Install Sharp App                    (Alias 'i')
 
-  {tool} publish                 Package App to /publish ready for deployment (.NET Core Required)
-  {tool} publish-exe             Package self-contained .exe App to /publish  (.NET Core Embedded)
+  {tool} publish                 Package Sharp App to /publish ready for deployment (.NET Core Required)
+  {tool} publish-exe             Package self-contained .exe Sharp App to /publish  (.NET Core Embedded)
 
-  {tool} shortcut                Create Shortcut for App
+  {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
 {additional}
   dotnet tool update -g {tool}   Update to latest version
@@ -1614,7 +1632,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                "Web.config",
                "App.config",
                "Startup.cs",
-               "Program.cs"
+               "Program.cs",
+               "*.csproj",
         };
 
         public static string ResolveBasePath(string to, string exSuffix="")
@@ -1703,6 +1722,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             
             var gistFiles = new GithubGateway().GetGistFiles(gistId);
             var resolvedFiles = new List<KeyValuePair<string,string>>();
+            KeyValuePair<string, string>? initFile = null;
+
             foreach (var gistFile in gistFiles)
             {
                 if (gistFile.Key.IndexOf("..", StringComparison.Ordinal) >= 0)
@@ -1711,10 +1732,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var alias = !string.IsNullOrEmpty(gistAlias)
                     ? $"'{gistAlias}' "
                     : "";
-                var exSuffix = $" required by {alias}({gistLinkUrl})";
+                var exSuffix = $" required by {alias}{gistLinkUrl}";
                 var basePath = ResolveBasePath(to, exSuffix);
                 try
                 {
+                    if (gistFile.Key == "_init")
+                    {
+                        initFile = KeyValuePair.Create(gistFile.Key, gistFile.Value);
+                        continue;
+                    }
+
                     var useFileName = ReplaceMyApp(gistFile.Key, projectName);
                     bool noOverride = false;
                     if (useFileName.EndsWith("?"))
@@ -1743,7 +1770,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 : "";
             
             var sb = new StringBuilder();
-
             foreach (var resolvedFile in resolvedFiles)
             {
                 sb.AppendLine("  " + resolvedFile.Key);
@@ -1754,7 +1780,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {
                 if (!ForceApproval)
                 {
-                    sb.Insert(0, $"Write files from {label}({gistLinkUrl}) to:{Environment.NewLine}");
+                    sb.Insert(0, $"Write files from {label}{gistLinkUrl} to:{Environment.NewLine}");
                     sb.AppendLine()
                         .AppendLine("Proceed? (n/Y):");
     
@@ -1765,13 +1791,67 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
                 else
                 {
-                    sb.Insert(0, $"Writing files from {label}({gistLinkUrl}) to:{Environment.NewLine}");
+                    sb.Insert(0, $"Writing files from {label}{gistLinkUrl} to:{Environment.NewLine}");
                     sb.ToString().Print();                
+                }
+            }
+
+            if (initFile != null)
+            {
+                var hostDir = ResolveBasePath(to, $" required by {gistLinkUrl}");
+
+                var lines = initFile.Value.Value.ReadLines();
+                foreach (var line in lines)
+                {
+                    if (line.TrimStart().StartsWith("#"))
+                        continue;
+                    
+                    var cmd = line.Trim();
+                    if (!cmd.StartsWith("nuget") && !cmd.StartsWith("dotnet"))
+                    {
+                        if (Verbose) $"Command '{cmd}' not supported".Print();
+                        continue;
+                    }
+
+                    if (cmd.IndexOfAny(new[]{ '"', '\'', '&', ';', '$', '@', '|', '>' }) >= 0)
+                    {
+                        $"Command contains illegal characters, ignoring: '{cmd}'".Print();
+                        continue;
+                    }
+
+                    if (cmd.StartsWith("nuget"))
+                    {
+                        if (GetExePath("nuget", out var nugetPath))
+                        {
+                            cmd.Print();
+                            var cmdArgs = cmd.RightPart(' ');
+                            PipeProcess(nugetPath, cmdArgs, workDir: hostDir);                        
+                        }
+                        else
+                        {
+                            $"'nuget' not found in PATH, skipping: '{cmd}'".Print();                            
+                        }
+                    }
+                    else if (cmd.StartsWith("dotnet"))
+                    {
+                        if (GetExePath("dotnet", out var dotnetPath))
+                        {
+                            cmd.Print();
+                            var cmdArgs = cmd.RightPart(' ');
+                            PipeProcess(dotnetPath, cmdArgs, workDir: hostDir);                        
+                        }
+                        else
+                        {
+                            $"'dotnet' not found in PATH, skipping: '{cmd}'".Print();                            
+                        }
+                    }                    
                 }
             }
             
             foreach (var resolvedFile in resolvedFiles)
             {
+                if (resolvedFile.Key == "_init") 
+                    continue;
                 if (Verbose) $"Writing {resolvedFile.Key}...".Print();
                 var dir = Path.GetDirectoryName(resolvedFile.Key);
                 if (!Directory.Exists(dir))

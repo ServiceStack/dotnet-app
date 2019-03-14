@@ -47,6 +47,24 @@ namespace Run
         [Test]
         public async Task Run_web()
         {
+            await Startup.CreateWebHost("web", new string[]{ });
+        }
+
+        [Test]
+        public async Task Run_web_run()
+        {
+            await Startup.CreateWebHost("web", new[]{ "run" });
+        }
+
+        [Test]
+        public async Task Run_web_run_path_appsettings()
+        {
+            await Startup.CreateWebHost("web", new[]{ "run", "path/app.settings" });
+        }
+
+        [Test]
+        public async Task Run_web_help()
+        {
             await Startup.CreateWebHost("web", new[]{ "/h" });
         }
         
@@ -143,5 +161,30 @@ namespace Run
             Directory.SetCurrentDirectory("wip");
             await Startup.CreateWebHost("web", new[]{ "new", "web+bootstrap-sharp+auth-memory+validation-contacts", "TheProject" });
         }
+
+        [Test]
+        public async Task Run_vue_lite_lib()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip\\MyProject");
+            await Startup.CreateWebHost("web", new[]{ "+vue-lite-lib", "TheProject" });
+        }
+
+        [Test]
+        public async Task Run_react_lite_lib()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip\\MyProject");
+            await Startup.CreateWebHost("web", new[]{ "+react-lite-lib", "TheProject" });
+        }
+
+        [Test]
+        public async Task Run_creating_new_init()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip\\MyProject");
+            await Startup.CreateWebHost("web", new[]{ "+init+bootstrap-sharp+validation-contacts+auth-sqlite", "TheProject" });
+        }
+
     }
 }
