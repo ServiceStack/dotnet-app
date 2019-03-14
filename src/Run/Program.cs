@@ -51,6 +51,18 @@ namespace Run
         }
 
         [Test]
+        public async Task Run_web_new()
+        {
+            await Startup.CreateWebHost("web", new[]{ "new" });
+        }
+
+        [Test]
+        public async Task Run_web_list()
+        {
+            await Startup.CreateWebHost("web", new[]{ "list" });
+        }
+
+        [Test]
         public async Task Run_web_run()
         {
             await Startup.CreateWebHost("web", new[]{ "run" });

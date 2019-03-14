@@ -88,8 +88,8 @@ namespace WebApp
 
         public static string GalleryUrl { get; set; } = "https://servicestack.net/apps/gallery";
 
-        public static string GitHubSource { get; set; } = "NetCoreWebApps";
-        public static string GitHubSourceTemplates { get; set; } = "NetCoreTemplates;NetFrameworkTemplates;NetFrameworkCoreTemplates";
+        public static string GitHubSource { get; set; } = "sharp-apps Sharp Apps";
+        public static string GitHubSourceTemplates { get; set; } = "NetCoreTemplates .NET Core C# Templates;NetFrameworkTemplates .NET Framework C# Templates;NetFrameworkCoreTemplates ASP.NET Core Framework Templates";
         static string[] SourceArgs = { "/s", "-s", "/source", "--source" };
 
         public static bool Verbose { get; set; }
@@ -1569,7 +1569,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         private static async Task PrintSources(string[] sources)
         {
-            var sourceTasks = sources.Map(source => (source, new GithubGateway().GetSourceReposAsync(source)));
+            var sourceRepos = new Dictionary<string,string>();
+            sources.Each(x => sourceRepos[x.LeftPart(' ')] = x.RightPart(' '));
+            
+            var sourceTasks = sourceRepos.Map(source => (source.Value, new GithubGateway().GetSourceReposAsync(source.Key)));
 
             foreach (var sourceTask in sourceTasks)
             {
