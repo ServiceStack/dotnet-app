@@ -80,6 +80,26 @@ namespace WebApp
         public Action<string> OpenBrowser { get; set; }
         public Action<WebAppContext> HandleUnknownCommand { get; set; }
         public Action<WebAppContext> RunNetCoreProcess { get; set; }
+        
+        public Func<DialogOptions,DialogResult> SelectFolder { get; set; }
+    }
+    
+    public class DialogOptions
+    {
+        public int? Flags { get; set; }
+        public string Title { get; set; }
+        public string Filter { get; set; }
+        public string InitialDir { get; set; }
+        public string DefaultExt { get; set; }
+        public bool IsFolderPicker { get; set; }
+    }
+
+    public class DialogResult
+    {
+        public string FolderPath { get; set; }
+        public string FileTitle { get; set; }
+        
+        public bool Ok { get; set; }
     }
 
     public class Startup
@@ -230,6 +250,34 @@ namespace WebApp
                 {
                     DebugMode = false;
                     continue;
+                }
+                if (arg == "openfolder" && arg == "false")
+                {
+                    if (Events.SelectFolder != null)
+                    {
+                        var result = Events.SelectFolder(new DialogOptions {
+                            Title = "Select a Folder",
+                            InitialDir = "c:\\src",
+                            IsFolderPicker = true,
+                            Filter = "Folder only\0$$$.$$$\0\0",
+                            //DefaultExt = "txt",
+                            //Filter = "Log files\0*.log\0Batch files\0*.bat\0"
+                        });
+                        if (result.Ok)
+                        {
+                            result.FolderPath.Print();
+                            result.FileTitle.Print();
+                        }
+                        else
+                        {
+                            $"No folder selected.".Print();
+                        }
+                    }
+                    else
+                    {
+                        $"Events.OpenFolder == null".Print();
+                    }
+                    return null;
                 }
                 dotnetArgs.Add(arg);
             }
@@ -1575,6 +1623,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             var sourceTasks = sourceRepos.Map(source => (source.Value, new GithubGateway().GetSourceReposAsync(source.Key)));
 
             foreach (var sourceTask in sourceTasks)
+                
             {
                 var (source, task) = sourceTask;
                 var repos = await task;
