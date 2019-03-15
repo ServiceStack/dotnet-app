@@ -56,6 +56,22 @@
     <PackageReference Include="Markdig" Version="0.16.0" />
     <PackageReference Include="NUglify" Version="1.5.12" />
 
+    <PackageReference Include="ServiceStack.Interfaces" Version="5.*" />
+    <PackageReference Include="ServiceStack.Text" Version="5.*" />
+    <PackageReference Include="ServiceStack.Client" Version="5.*" />
+    <PackageReference Include="ServiceStack.Common" Version="5.*" />
+    <PackageReference Include="ServiceStack" Version="5.*" />
+    <PackageReference Include="ServiceStack.Server" Version="5.*" />
+    <PackageReference Include="ServiceStack.OrmLite" Version="5.*" />
+    <PackageReference Include="ServiceStack.OrmLite.Sqlite" Version="5.*" />
+    <PackageReference Include="ServiceStack.OrmLite.SqlServer" Version="5.*" />
+    <PackageReference Include="ServiceStack.OrmLite.MySql" Version="5.*" />
+    <PackageReference Include="ServiceStack.OrmLite.PostgreSQL" Version="5.*" />
+    <PackageReference Include="ServiceStack.Redis" Version="5.*" />
+    <PackageReference Include="ServiceStack.Aws" Version="5.*" />
+    <PackageReference Include="ServiceStack.Azure" Version="5.*" />
+    <PackageReference Include="ServiceStack.Api.OpenApi" Version="5.*" />
+
     <PackageReference Include="ServiceStack.CefGlue.Win64" Version="5.*" />
 
 
