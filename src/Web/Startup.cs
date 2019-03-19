@@ -251,34 +251,34 @@ namespace WebApp
                     DebugMode = false;
                     continue;
                 }
-                if (arg == "openfolder" && arg == "false")
-                {
-                    if (Events.SelectFolder != null)
-                    {
-                        var result = Events.SelectFolder(new DialogOptions {
-                            Title = "Select a Folder",
-                            InitialDir = "c:\\src",
-                            IsFolderPicker = true,
-                            Filter = "Folder only\0$$$.$$$\0\0",
-                            //DefaultExt = "txt",
-                            //Filter = "Log files\0*.log\0Batch files\0*.bat\0"
-                        });
-                        if (result.Ok)
-                        {
-                            result.FolderPath.Print();
-                            result.FileTitle.Print();
-                        }
-                        else
-                        {
-                            $"No folder selected.".Print();
-                        }
-                    }
-                    else
-                    {
-                        $"Events.OpenFolder == null".Print();
-                    }
-                    return null;
-                }
+//                if (arg == "openfolder")
+//                {
+//                    if (Events.SelectFolder != null)
+//                    {
+//                        var result = Events.SelectFolder(new DialogOptions {
+//                            Title = "Select a Folder",
+//                            InitialDir = "c:\\src",
+//                            IsFolderPicker = true,
+//                            Filter = "Folder only\0$$$.$$$\0\0",
+//                            //DefaultExt = "txt",
+//                            //Filter = "Log files\0*.log\0Batch files\0*.bat\0"
+//                        });
+//                        if (result.Ok)
+//                        {
+//                            result.FolderPath.Print();
+//                            result.FileTitle.Print();
+//                        }
+//                        else
+//                        {
+//                            $"No folder selected.".Print();
+//                        }
+//                    }
+//                    else
+//                    {
+//                        $"Events.OpenFolder == null".Print();
+//                    }
+//                    return null;
+//                }
                 dotnetArgs.Add(arg);
             }
 
@@ -333,7 +333,7 @@ namespace WebApp
                 }
             }
 
-            if (!runSharpApp && dotnetArgs.Count == 0 && appSettingsPath == null)
+            if (!runSharpApp && RunScript == null && dotnetArgs.Count == 0 && appSettingsPath == null)
             {
                 PrintUsage(tool);
                 return null;
@@ -531,7 +531,9 @@ namespace WebApp
                     var task = webHost.RunAsync();
                     
                     var appHost = WebTemplateUtils.AppHost;
-                    var feature = appHost.GetPlugin<SharpPagesFeature>();
+                    if (StartupException != null) throw StartupException;
+                    
+                    var feature = appHost.AssertPlugin<SharpPagesFeature>();
 
                     var script = new FileInfo(RunScript);
                     var lastWriteAt = DateTime.MinValue;
@@ -2075,98 +2077,108 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             app.UseServiceStack(appHost);
         }
 
+        private static Exception StartupException = null;
+
         public void ConfigureAppHost(ServiceStackHost appHost)
         {
-            appHost.Config.DebugMode = GetDebugMode();
-            appHost.Config.ForbiddenPaths.Add("/plugins");
-
-            var feature = appHost.GetPlugin<SharpPagesFeature>();
-            if (feature != null)
-                "Using existing SharpPagesFeature from appHost".Print();
-
-            if (feature == null)
-            {
-                feature = (nameof(SharpPagesFeature).GetAppSetting() != null
-                    ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
-                    : new SharpPagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
-            }
-
-            var dbFactory = "db".GetAppSetting().GetDbFactory(connectionString:"db.connection".GetAppSetting());
-            if (dbFactory != null)
-            {
-                appHost.Container.Register<IDbConnectionFactory>(dbFactory);
-                feature.ScriptMethods.Add(new DbScriptsAsync());
-                
-                dbFactory.RegisterDialectProvider("sqlite", SqliteDialect.Provider);
-                dbFactory.RegisterDialectProvider("sqlserver", SqlServerDialect.Provider);
-                dbFactory.RegisterDialectProvider("sqlserver2012", SqlServer2012Dialect.Provider);
-                dbFactory.RegisterDialectProvider("sqlserver2014", SqlServer2014Dialect.Provider);
-                dbFactory.RegisterDialectProvider("sqlserver2016", SqlServer2016Dialect.Provider);
-                dbFactory.RegisterDialectProvider("sqlserver2017", SqlServer2017Dialect.Provider);
-                dbFactory.RegisterDialectProvider("mysql", MySqlDialect.Provider);
-                dbFactory.RegisterDialectProvider("postgresql", PostgreSqlDialect.Provider);
-            }
-
-            var redisConnString = "redis.connection".GetAppSetting();
-            if (redisConnString != null)
-            {
-                appHost.Container.Register<IRedisClientsManager>(c => new RedisManagerPool(redisConnString));
-                feature.ScriptMethods.Add(new RedisScripts { 
-                    RedisManager = appHost.Container.Resolve<IRedisClientsManager>()
-                });
-            }
-
-           var checkForModifiedPagesAfterSecs = "checkForModifiedPagesAfterSecs".GetAppSetting();
-            if (checkForModifiedPagesAfterSecs != null)
-                feature.CheckForModifiedPagesAfter = TimeSpan.FromSeconds(checkForModifiedPagesAfterSecs.ConvertTo<int>());
-
-            var defaultFileCacheExpirySecs = "defaultFileCacheExpirySecs".GetAppSetting();
-            if (defaultFileCacheExpirySecs != null)
-                feature.Args[ScriptConstants.DefaultFileCacheExpiry] = TimeSpan.FromSeconds(defaultFileCacheExpirySecs.ConvertTo<int>());
-
-            var defaultUrlCacheExpirySecs = "defaultUrlCacheExpirySecs".GetAppSetting();
-            if (defaultUrlCacheExpirySecs != null)
-                feature.Args[ScriptConstants.DefaultUrlCacheExpiry] = TimeSpan.FromSeconds(defaultUrlCacheExpirySecs.ConvertTo<int>());
-
-            var markdownProvider = "markdownProvider".GetAppSetting();
-            var useMarkdownDeep = markdownProvider?.EqualsIgnoreCase("MarkdownDeep") == true;
-            MarkdownConfig.Transformer = useMarkdownDeep
-                ? new MarkdownDeep.MarkdownDeepTransformer()
-                : (IMarkdownTransformer) new MarkdigTransformer();
-            if (markdownProvider != null)
-                ("Using markdown provider " + (useMarkdownDeep ? "MarkdownDeep" : "Markdig")).Print();
-
-            var useJsMin = "jsMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
-            if (!useJsMin)
-                Minifiers.JavaScript = new NUglifyJsMinifier();
-            var useCssMin = "cssMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
-            if (!useCssMin)
-                Minifiers.Css = new NUglifyCssMinifier();
-            var useHtmlMin = "htmlMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
-            if (!useHtmlMin)
-                Minifiers.Html = new NUglifyHtmlMinifier();
-
-            var contextArgKeys = WebTemplateUtils.AppSettings.GetAllKeys().Where(x => x.StartsWith("args."));
-            foreach (var key in contextArgKeys)
-            {
-                var name = key.RightPart('.');
-                var value = key.GetAppSetting();
-
-                feature.Args[name] = value.StartsWith("{") || value.StartsWith("[")
-                    ? JS.eval(value)
-                    : value;
-            }
-
-            appHost.Plugins.Add(feature);
-
-            IPlugin[] registerPlugins = Plugins;
-            if (registerPlugins != null)
-            {
-                foreach (var plugin in registerPlugins)
+            try 
+            { 
+                appHost.Config.DebugMode = GetDebugMode();
+                appHost.Config.ForbiddenPaths.Add("/plugins");
+    
+                var feature = appHost.GetPlugin<SharpPagesFeature>();
+                if (feature != null)
+                    "Using existing SharpPagesFeature from appHost".Print();
+    
+                if (feature == null)
                 {
-                    appHost.Plugins.RemoveAll(x => x.GetType() == plugin.GetType());
-                    appHost.Plugins.Add(plugin);
+                    feature = (nameof(SharpPagesFeature).GetAppSetting() != null
+                        ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
+                        : new SharpPagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
                 }
+    
+                var dbFactory = "db".GetAppSetting().GetDbFactory(connectionString:"db.connection".GetAppSetting());
+                if (dbFactory != null)
+                {
+                    appHost.Container.Register<IDbConnectionFactory>(dbFactory);
+                    feature.ScriptMethods.Add(new DbScriptsAsync());
+                    
+                    dbFactory.RegisterDialectProvider("sqlite", SqliteDialect.Provider);
+                    dbFactory.RegisterDialectProvider("sqlserver", SqlServerDialect.Provider);
+                    dbFactory.RegisterDialectProvider("sqlserver2012", SqlServer2012Dialect.Provider);
+                    dbFactory.RegisterDialectProvider("sqlserver2014", SqlServer2014Dialect.Provider);
+                    dbFactory.RegisterDialectProvider("sqlserver2016", SqlServer2016Dialect.Provider);
+                    dbFactory.RegisterDialectProvider("sqlserver2017", SqlServer2017Dialect.Provider);
+                    dbFactory.RegisterDialectProvider("mysql", MySqlDialect.Provider);
+                    dbFactory.RegisterDialectProvider("postgresql", PostgreSqlDialect.Provider);
+                }
+    
+                var redisConnString = "redis.connection".GetAppSetting();
+                if (redisConnString != null)
+                {
+                    appHost.Container.Register<IRedisClientsManager>(c => new RedisManagerPool(redisConnString));
+                    feature.ScriptMethods.Add(new RedisScripts { 
+                        RedisManager = appHost.Container.Resolve<IRedisClientsManager>()
+                    });
+                }
+    
+               var checkForModifiedPagesAfterSecs = "checkForModifiedPagesAfterSecs".GetAppSetting();
+                if (checkForModifiedPagesAfterSecs != null)
+                    feature.CheckForModifiedPagesAfter = TimeSpan.FromSeconds(checkForModifiedPagesAfterSecs.ConvertTo<int>());
+    
+                var defaultFileCacheExpirySecs = "defaultFileCacheExpirySecs".GetAppSetting();
+                if (defaultFileCacheExpirySecs != null)
+                    feature.Args[ScriptConstants.DefaultFileCacheExpiry] = TimeSpan.FromSeconds(defaultFileCacheExpirySecs.ConvertTo<int>());
+    
+                var defaultUrlCacheExpirySecs = "defaultUrlCacheExpirySecs".GetAppSetting();
+                if (defaultUrlCacheExpirySecs != null)
+                    feature.Args[ScriptConstants.DefaultUrlCacheExpiry] = TimeSpan.FromSeconds(defaultUrlCacheExpirySecs.ConvertTo<int>());
+    
+                var markdownProvider = "markdownProvider".GetAppSetting();
+                var useMarkdownDeep = markdownProvider?.EqualsIgnoreCase("MarkdownDeep") == true;
+                MarkdownConfig.Transformer = useMarkdownDeep
+                    ? new MarkdownDeep.MarkdownDeepTransformer()
+                    : (IMarkdownTransformer) new MarkdigTransformer();
+                if (markdownProvider != null)
+                    ("Using markdown provider " + (useMarkdownDeep ? "MarkdownDeep" : "Markdig")).Print();
+    
+                var useJsMin = "jsMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
+                if (!useJsMin)
+                    Minifiers.JavaScript = new NUglifyJsMinifier();
+                var useCssMin = "cssMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
+                if (!useCssMin)
+                    Minifiers.Css = new NUglifyCssMinifier();
+                var useHtmlMin = "htmlMinifier".GetAppSetting()?.EqualsIgnoreCase("servicestack") == true;
+                if (!useHtmlMin)
+                    Minifiers.Html = new NUglifyHtmlMinifier();
+    
+                var contextArgKeys = WebTemplateUtils.AppSettings.GetAllKeys().Where(x => x.StartsWith("args."));
+                foreach (var key in contextArgKeys)
+                {
+                    var name = key.RightPart('.');
+                    var value = key.GetAppSetting();
+    
+                    feature.Args[name] = value.StartsWith("{") || value.StartsWith("[")
+                        ? JS.eval(value)
+                        : value;
+                }
+    
+                appHost.Plugins.Add(feature);
+    
+                IPlugin[] registerPlugins = Plugins;
+                if (registerPlugins != null)
+                {
+                    foreach (var plugin in registerPlugins)
+                    {
+                        appHost.Plugins.RemoveAll(x => x.GetType() == plugin.GetType());
+                        appHost.Plugins.Add(plugin);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                StartupException = ex;
+                throw;
             }
         }
     }
