@@ -68,6 +68,38 @@ namespace Run
             await Startup.CreateWebHost("web", new[]{ "run" });
         }
 
+        private static void SetProjectCurrentDirectory() => Directory.SetCurrentDirectory("..\\..\\..\\");
+
+        [Test]
+        public async Task Run_web_run_script_html()
+        {
+            //web run script.html -id 10643 > 10643.html && start 10643.html
+            SetProjectCurrentDirectory();
+            await Startup.CreateWebHost("web", new[]{ "run", "script.html", "-id", "10643" });
+        }
+
+        [Test]
+        public async Task Run_web_run_script_ss()
+        {
+            //web run script.html -id 10643 > 10643.html && start 10643.html
+            SetProjectCurrentDirectory();
+            await Startup.CreateWebHost("web", new[]{ "run", "script.ss", "-id", "10643" });
+        }
+
+        [Test]
+        public async Task Run_web_run_script_aws()
+        {
+            SetProjectCurrentDirectory();
+            await Startup.CreateWebHost("web", new[]{ "run", "script-aws.ss" });
+        }
+
+        [Test]
+        public async Task Run_web_run_script_azure()
+        {
+            SetProjectCurrentDirectory();
+            await Startup.CreateWebHost("web", new[]{ "run", "script-azure.ss" });
+        }
+
         [Test]
         public async Task Run_web_run_path_appsettings()
         {
