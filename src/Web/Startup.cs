@@ -540,16 +540,24 @@ namespace WebApp
                     
                     if (WatchScript)
                     {
+                        bool breakLoop = false;
+                        
+                        Console.CancelKeyPress += delegate { breakLoop = true; };
+                        
                         $"Watching '{RunScript}' (Ctrl+C to stop):".Print();
 
                         while (true)
                         {
                             do
                             {
+                                if (breakLoop)
+                                    break;
                                 await Task.Delay(100);
                                 script.Refresh();
                             } while(script.LastWriteTimeUtc == lastWriteAt);
 
+                            if (breakLoop)
+                                break;
                             try
                             {
                                 Console.Clear();
