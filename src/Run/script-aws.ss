@@ -5,9 +5,10 @@ files s3
 files.config {AccessKey:$AWS_S3_ACCESS_KEY,SecretKey:$AWS_S3_SECRET_KEY,Region:us-east-1,Bucket:rockwind}
 -->
 
-{{ end | dbTableNamesWithRowCounts | textDump({ caption: 'Tables' }) }}
+{{ dbTableNamesWithRowCounts | textDump({ caption: 'Tables' }) }}
 
-{{ `select * from "Product" order by "UnitPrice" desc LIMIT 5` | dbSelect | textDump({ headerStyle:'None' }) }}
+{{ `SELECT "Id", "CustomerId", "EmployeeId", "OrderDate" from "Order" ORDER BY "Id" DESC ${sqlLimit(5)}`
+   | dbSelect | textDump({ caption: 'Last 5 Orders', headerStyle:'None' }) }}
 
 {{ contentAllRootDirectories | map => `${it.Name}/`
    | union(map(contentAllRootFiles, x => x.Name))

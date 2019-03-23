@@ -7,6 +7,9 @@ files.config {ConnectionString:$AZURE_BLOB_CONNECTION_STRING,ContainerName:rockw
 
 {{ dbTableNamesWithRowCounts | textDump({ caption: 'Tables' }) }}
 
+{{ `SELECT "Id", "CustomerId", "EmployeeId", "OrderDate" from "Order" ORDER BY "Id" DESC ${sqlLimit(5)}`
+   | dbSelect | textDump({ caption: 'Last 5 Orders', headerStyle:'None' }) }}
+
 {{ contentAllRootDirectories | map => `${it.Name}/` 
    | union(map(contentAllRootFiles, x => x.Name))
    | textDump({ caption: 'Root Files and Folders' }) }}

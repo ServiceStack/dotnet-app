@@ -77,6 +77,7 @@
     <ItemGroup>
       <Content Include="script-aws.ss" />
       <Content Include="script-azure.ss" />
+      <Content Include="script-minify.ss" />
       <Content Include="script.html" />
       <Content Include="script.ss" />
     </ItemGroup>    
