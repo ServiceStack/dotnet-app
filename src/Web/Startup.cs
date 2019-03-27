@@ -1875,6 +1875,21 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         continue;
                     }
 
+                    if (cmd.StartsWith("nuget") && !(cmd.StartsWith("nuget add") || 
+                                                     cmd.StartsWith("nuget restore") ||
+                                                     cmd.StartsWith("nuget update")))
+                    {
+                        if (Verbose) $"Command '{cmd}' not allowed".Print();
+                        continue;
+                    }
+                    if (cmd.StartsWith("dotnet") && !(cmd.StartsWith("dotnet add ") || 
+                                                      cmd.StartsWith("dotnet restore ") || 
+                                                      cmd.Equals("dotnet restore")))
+                    {
+                        if (Verbose) $"Command '{cmd}' not allowed".Print();
+                        continue;
+                    }
+
                     if (cmd.IndexOfAny(new[]{ '"', '\'', '&', ';', '$', '@', '|', '>' }) >= 0)
                     {
                         $"Command contains illegal characters, ignoring: '{cmd}'".Print();
