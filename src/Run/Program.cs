@@ -231,6 +231,14 @@ namespace Run
         }
 
         [Test]
+        public async Task Run_creating_new_sqlite()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip\\MyProject");
+            await Startup.CreateWebHost("web", new[]{ "+init+sqlite", "TheProject" });
+        }
+
+        [Test]
         public async Task Run_clean()
         {
             CreateHostProject();
@@ -244,6 +252,22 @@ namespace Run
             CreateHostProject();
             Directory.SetCurrentDirectory("wip");
             await Startup.CreateWebHost("web", new[]{ "new", "react-lite", "rl" });
+        }
+
+        [Test]
+        public async Task Run_apply_init_authsqlserver_sqlite_default_project()
+        {
+            Directory.CreateDirectory("wip\\TestSqlite");
+            Directory.SetCurrentDirectory("wip\\TestSqlite");
+            await Startup.CreateWebHost("web", new[]{ "+init+bootstrap-sharp+sqlite+auth-db" });
+        }
+
+        [Test]
+        public async Task Run_apply_init_authsqlserver_sqlite_default_project_rename()
+        {
+            Directory.CreateDirectory("wip\\test-sqlite");
+            Directory.SetCurrentDirectory("wip\\test-sqlite");
+            await Startup.CreateWebHost("web", new[]{ "+init+bootstrap-sharp+auth-sqlserver+sqlite" });
         }
 
     }

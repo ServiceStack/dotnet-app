@@ -942,8 +942,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                                 checkUpdatesAndQuit = beginCheckUpdates();
                                 break;
                             }
-
-                            WriteGistFile(gistLink.Url, gistAlias, to: gistLink.To, projectName: null, getUserApproval: UserInputYesNo);
+                            
+                            var currentDirName = new DirectoryInfo(Environment.CurrentDirectory).Name;
+                            WriteGistFile(gistLink.Url, gistAlias, to: gistLink.To, projectName: currentDirName, getUserApproval: UserInputYesNo);
                         }
                         
                         if (checkUpdatesAndQuit == null)
@@ -1673,7 +1674,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             foreach (var link in links)
             {
-                $" {i++.ToString().PadLeft(3, ' ')}. {link.Name.PadRight(padName, ' ')} by @{link.User.PadRight(padBy, ' ')} {link.Description.PadRight(padDesc, ' ')} to: {link.To.PadRight(padTo, ' ')} {link.ToTagsString()}".Print();
+                $" {i++.ToString().PadLeft(3, ' ')}. {link.Name.PadRight(padName, ' ')} {link.Description.PadRight(padDesc, ' ')} to: {link.To.PadRight(padTo, ' ')} by @{link.User.PadRight(padBy, ' ')} {link.ToTagsString()}".Print();
             }
 
             "".Print();
@@ -1773,8 +1774,31 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             throw new NotSupportedException($"Unknown location '{to}'{exSuffix}");
         }
 
+        public static string SanitizeProjectName(string projectName)
+        {
+            if (string.IsNullOrEmpty(projectName))
+                return null;
+
+            var sepChars = new[] { ' ', '-', '+', '_' };
+            if (projectName.IndexOfAny(sepChars) == -1)
+                return projectName;
+            
+            var sb = new StringBuilder();
+            var words = projectName.Split(sepChars);
+            foreach (var word in words)
+            {
+                if (string.IsNullOrEmpty(word))
+                    continue;
+
+                sb.Append(char.ToUpper(word[0])).Append(word.Substring(1));
+            }
+
+            return sb.ToString();
+        }
+
         public static void WriteGistFile(string gistId, string gistAlias, string to, string projectName, Func<bool> getUserApproval = null)
         {
+            projectName = SanitizeProjectName(projectName);
             var gistLinkUrl = $"https://gist.github.com/{gistId}";
             if (gistId.IsUrl())
             {
