@@ -230,5 +230,21 @@ namespace Run
             await Startup.CreateWebHost("web", new[]{ "+init+bootstrap-sharp+validation-contacts+auth-sqlite", "TheProject" });
         }
 
+        [Test]
+        public async Task Run_clean()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("web", new[]{ "/clean" });
+        }
+
+        [Test]
+        public async Task Run_creating_new_react_lite()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("web", new[]{ "new", "react-lite", "rl" });
+        }
+
     }
 }

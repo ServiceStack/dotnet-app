@@ -2643,7 +2643,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public string GetSourceZipUrl(string orgNames, string name)
         {
-            var orgs = orgNames.Split(';');
+            var orgs = orgNames.Split(';')
+                .Map(x => x.LeftPart(' '));
             foreach (var orgName in orgs)
             {
                 var repoFullName = UnwrapRepoFullName(orgName, name);
