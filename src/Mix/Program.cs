@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using ServiceStack;
 
@@ -11,8 +13,7 @@ namespace Web
         {
             try
             {
-                var host = (await Startup.CreateWebHost("web", args))?.Build();
-                host?.Run();
+                await Startup.Mix(args);
             } 
             catch (Exception ex)
             {

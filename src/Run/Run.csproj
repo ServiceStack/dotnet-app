@@ -70,9 +70,8 @@
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.Source.csproj" />
     </ItemGroup>
     <ItemGroup>
-      <Compile Include="..\Web\Startup.cs">
-        <Link>Startup.cs</Link>
-      </Compile>
+      <Compile Include="..\Web\Startup.cs" Link="Startup.cs" />
+      <Compile Include="..\Web\Startup.Mix.cs" Link="Startup.Mix.cs" />
     </ItemGroup>
     <ItemGroup>
       <Content Include="script-aws.ss" />

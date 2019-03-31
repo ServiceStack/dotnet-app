@@ -45,6 +45,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ServiceStack", "ServiceStac
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Run", "Run\Run.csproj", "{6FCBC2EF-AFF7-4698-B1D7-3C2EAB1FA9A5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mix", "Mix\Mix.csproj", "{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -293,6 +295,18 @@ Global
 		{6FCBC2EF-AFF7-4698-B1D7-3C2EAB1FA9A5}.Release|x64.Build.0 = Release|Any CPU
 		{6FCBC2EF-AFF7-4698-B1D7-3C2EAB1FA9A5}.Release|x86.ActiveCfg = Release|Any CPU
 		{6FCBC2EF-AFF7-4698-B1D7-3C2EAB1FA9A5}.Release|x86.Build.0 = Release|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Debug|x64.Build.0 = Debug|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Debug|x86.Build.0 = Debug|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Release|x64.ActiveCfg = Release|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Release|x64.Build.0 = Release|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Release|x86.ActiveCfg = Release|Any CPU
+		{3BD267C2-499B-42B1-AE30-7EA9CA3A4DE9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

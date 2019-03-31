@@ -270,5 +270,32 @@ namespace Run
             await Startup.CreateWebHost("web", new[]{ "+init+bootstrap-sharp+auth-sqlserver+sqlite" });
         }
 
+        [Test]
+        public async Task Mix_help()
+        {
+            await Startup.Mix(new string[0]);
+        }
+        
+        [Test]
+        public async Task Mix_search_db()
+        {
+            await Startup.Mix(new []{ "#db" });
+        }
+        
+        [Test]
+        public async Task Mix_search_project_db()
+        {
+            await Startup.Mix(new []{ "#project,db" });
+        }
+
+        [Test]
+        public async Task Mix_init_bootstrap_sharp()
+        {
+            var dir = "wip\\MixText";
+            try { Directory.Delete(dir, recursive: true); } catch {}
+            Directory.CreateDirectory(dir);
+            Directory.SetCurrentDirectory(dir);
+            await Startup.Mix(new[] { "init", "bootstrap-sharp" });
+        }
     }
 }

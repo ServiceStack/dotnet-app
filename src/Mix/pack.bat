@@ -1,0 +1,1 @@
+dotnet pack Mix.csproj -c release -o nupkg
