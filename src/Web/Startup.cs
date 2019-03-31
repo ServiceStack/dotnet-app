@@ -36,7 +36,7 @@ using ServiceStack.OrmLite.PostgreSQL;
 using ServiceStack.Script;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
-namespace WebApp
+namespace Web
 {
     public class WebAppContext
     {

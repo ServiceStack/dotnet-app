@@ -10,7 +10,7 @@ using ServiceStack;
 using ServiceStack.CefGlue;
 using ServiceStack.Text;
 
-namespace WebApp
+namespace Web
 {
     public class Program
     {

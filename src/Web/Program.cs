@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using ServiceStack;
 
-namespace WebApp
+namespace Web
 {
     public class Program
     {

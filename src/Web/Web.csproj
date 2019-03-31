@@ -6,9 +6,6 @@
     <IsPackable>true</IsPackable>
     <PackageId>web</PackageId>
     <PackAsTool>true</PackAsTool>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <PreserveCompilationContext>false</PreserveCompilationContext>
     <Authors>ServiceStack</Authors>
     <Company>ServiceStack</Company>
@@ -17,7 +14,7 @@
     <Description>Easily view and deploy any ServiceStack .NET Core Web App (Windows, OSX, Linux)</Description>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://servicestack.net/terms</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/NetCoreWebApps/WebApp</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/ServiceStack/dotnet-app</PackageProjectUrl>
     <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>

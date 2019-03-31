@@ -3,7 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace WebApp
+namespace Web
 {
     public class Shortcut
     {

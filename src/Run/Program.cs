@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using NUnit.Framework;
 using ServiceStack;
-using WebApp;
+using Web;
 
 namespace Run
 {
