@@ -515,9 +515,31 @@ namespace Web
 
         public static bool ApplyGists(string tool, string[] gistAliases)
         {
+            var links = GetGistApplyLinks();
+            
+            var hasNums = gistAliases.Any(x => int.TryParse(x, out _));
+
+            if (hasNums)
+            {
+                var resolvedAliases = new List<string>();
+                foreach (var gistAlias in gistAliases)
+                {
+                    if (!int.TryParse(gistAlias, out var index))
+                    {
+                        resolvedAliases.Add(gistAlias);
+                        continue;
+                    }
+
+                    if (index <= 0 || index > links.Count)
+                        throw new ArgumentOutOfRangeException($"Invalid Index '{index}'. Valid Range: 1...{links.Count - 1}");
+                
+                    resolvedAliases.Add(links[index-1].Name);
+                }
+                gistAliases = resolvedAliases.ToArray();
+            }
+            
             foreach (var gistAlias in gistAliases)
             {
-                var links = GetGistApplyLinks();
                 var gistLink = GistLink.Get(links, gistAlias);
                 if (gistLink == null)
                 {
@@ -528,6 +550,7 @@ namespace Web
                             
                 var currentDirName = new DirectoryInfo(Environment.CurrentDirectory).Name;
                 WriteGistFile(gistLink.Url, gistAlias, to: gistLink.To, projectName: currentDirName, getUserApproval: UserInputYesNo);
+                ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
             }
             return true;
         }

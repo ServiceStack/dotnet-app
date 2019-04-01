@@ -906,9 +906,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         RegisterStat(tool, arg, "+");
 
                         var gistAliases = arg.Substring(1).Split('+');
-                        
-                        if (checkUpdatesAndQuit == null)
+                        if (ApplyGists(tool, gistAliases))
                             return new Instruction { Command = "+", Handled = true };
+
+                        checkUpdatesAndQuit = beginCheckUpdates();
                     }
                 }
                 else if (arg == "init") //backwards compat, create Sharp App
@@ -988,30 +989,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     
                     RegisterStat(tool, arg + "-project", "+");
 
-                    var links = GetGistApplyLinks();
                     var gistAliases = arg.Substring(1).Split('+');
-                    foreach (var gistAlias in gistAliases)
-                    {
-                        var gistLink = GistLink.Get(links, gistAlias);
-                        if (gistLink == null)
-                        {
-                            $"No match found for '{gistAlias}', available gists:".Print();
-                            PrintGistLinks(tool, links);
-                            checkUpdatesAndQuit = beginCheckUpdates();
-                            break;
-                        }
-                    }
-                    if (checkUpdatesAndQuit == null)
-                    {
-                        foreach (var gistAlias in gistAliases)
-                        {
-                            var gistLink = GistLink.Get(links, gistAlias);
-                            WriteGistFile(gistLink.Url, gistAlias, to:gistLink.To, projectName:args[1], getUserApproval:UserInputYesNo);
-                            ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
-                        }
-                        
+                    if (ApplyGists(tool, gistAliases))
                         return new Instruction { Command = "+", Handled = true };
-                    }
+
+                    checkUpdatesAndQuit = beginCheckUpdates();
                 }
                 if (arg == "gist")
                 {
@@ -1142,6 +1124,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                     if (gistAliases != null)
                     {
+                        Directory.SetCurrentDirectory(projectDir.FullName);
                         var links = GetGistApplyLinks();
                         foreach (var gistAlias in gistAliases)
                         {

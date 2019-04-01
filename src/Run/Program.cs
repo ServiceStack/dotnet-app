@@ -1,11 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using NUnit.Framework;
 using ServiceStack;
+using ServiceStack.IO;
 using Web;
 
 namespace Run
@@ -37,10 +39,43 @@ namespace Run
             //Startup.UserInputYesNo = Startup.DenyUserInputRequests;
         }
 
+        static void RetryExec(Action fn, int retryTimes=5)
+        {
+            while (retryTimes-- > 0)
+            {
+                try
+                {
+                    fn();
+                    return;
+                }
+                catch
+                {
+                    Thread.Sleep(200);
+                }
+            }
+        }
+
+        private static void DeleteDirectory(string dir)
+        {
+            RetryExec(() => FileSystemVirtualFiles.DeleteDirectoryRecursive(dir));
+        }
+
+        private static void DeleteAndCreateDirectory(string dir)
+        {
+            DeleteDirectory(dir);
+            Directory.CreateDirectory(dir);
+        }
+
+        private static void DeleteCreateAndSetDirectory(string dir)
+        {
+            DeleteDirectory(dir);
+            RetryExec(() => Directory.CreateDirectory(dir));
+            RetryExec(() => Directory.SetCurrentDirectory(dir));
+        }
+
         void CreateHostProject()
         {
-//            Directory.Delete("wip", recursive:true);
-            Directory.CreateDirectory("wip\\MyProject");
+            DeleteAndCreateDirectory("wip\\MyProject");
             File.WriteAllText("wip\\MyProject\\appsettings.json","");
         }
 
@@ -257,16 +292,14 @@ namespace Run
         [Test]
         public async Task Run_apply_init_authsqlserver_sqlite_default_project()
         {
-            Directory.CreateDirectory("wip\\TestSqlite");
-            Directory.SetCurrentDirectory("wip\\TestSqlite");
+            DeleteCreateAndSetDirectory("wip\\TestSqlite");
             await Startup.CreateWebHost("web", new[]{ "+init+bootstrap-sharp+sqlite+auth-db" });
         }
 
         [Test]
         public async Task Run_apply_init_authsqlserver_sqlite_default_project_rename()
         {
-            Directory.CreateDirectory("wip\\test-sqlite");
-            Directory.SetCurrentDirectory("wip\\test-sqlite");
+            DeleteCreateAndSetDirectory("wip\\test-sqlite");
             await Startup.CreateWebHost("web", new[]{ "+init+bootstrap-sharp+auth-sqlserver+sqlite" });
         }
 
@@ -291,11 +324,27 @@ namespace Run
         [Test]
         public async Task Mix_init_bootstrap_sharp()
         {
-            var dir = "wip\\MixText";
-            try { Directory.Delete(dir, recursive: true); } catch {}
-            Directory.CreateDirectory(dir);
-            Directory.SetCurrentDirectory(dir);
+            DeleteCreateAndSetDirectory("wip\\MixText");
             await Startup.Mix(new[] { "init", "bootstrap-sharp" });
         }
+
+        [Test]
+        public async Task Mix_init_bootstrap_sharp_indexes()
+        {
+            DeleteCreateAndSetDirectory("wip\\MixText");
+            await Startup.Mix(new[] { "1", "5" });
+        }
+
+        [Test]
+        public async Task Mix_init_bootstrap_sharp_indexes_invalid()
+        {
+            DeleteCreateAndSetDirectory("wip\\MixText");
+            try
+            {
+                await Startup.Mix(new[] { "0", "1000" });
+            }
+            catch (ArgumentOutOfRangeException) {}
+        }
+
     }
 }
