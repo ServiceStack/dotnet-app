@@ -1,3 +1,4 @@
-dotnet pack WebApp.csproj -c release -o nupkg
+REM dotnet pack WebApp.csproj -c release -o nupkg
+CALL pack.bat
 dotnet tool uninstall -g app
 dotnet tool install --add-source .\nupkg -g app

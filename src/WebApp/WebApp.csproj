@@ -37,16 +37,16 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="locales\*.*" CopyToOutputDirectory="Always" />
-    <None Include="swiftshader\*.*" CopyToOutputDirectory="Always" />
-    <None Include="*.pak" CopyToOutputDirectory="Always" />
-    <None Include="*.lib" CopyToOutputDirectory="Always" />
-    <None Include="*.dat" CopyToOutputDirectory="Always" />
-    <None Include="*.dll" CopyToOutputDirectory="Always" />
-    <None Include="*.bin" CopyToOutputDirectory="Always" />
-    <None Include="*.exe" CopyToOutputDirectory="Always" />
-  </ItemGroup>
+  <!--<ItemGroup>-->
+    <!--<None Include="locales\*.*" CopyToOutputDirectory="Always" />-->
+    <!--<None Include="swiftshader\*.*" CopyToOutputDirectory="Always" />-->
+    <!--<None Include="*.pak" CopyToOutputDirectory="Always" />-->
+    <!--<None Include="*.lib" CopyToOutputDirectory="Always" />-->
+    <!--<None Include="*.dat" CopyToOutputDirectory="Always" />-->
+    <!--<None Include="*.dll" CopyToOutputDirectory="Always" />-->
+    <!--<None Include="*.bin" CopyToOutputDirectory="Always" />-->
+    <!--<None Include="*.exe" CopyToOutputDirectory="Always" />-->
+  <!--</ItemGroup>-->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
@@ -74,7 +74,6 @@
     <PackageReference Include="ServiceStack.Api.OpenApi" Version="5.*" />
 
     <PackageReference Include="ServiceStack.CefGlue.Win64" Version="5.*" />
-
 
     <!-- <ProjectReference Include="..\..\..\..\ServiceStack.CefGlue\src\ServiceStack.CefGlue.Win64\ServiceStack.CefGlue.Win64.csproj" />
     <PackageReference Include="WinApi" Version="4.*" /> -->
