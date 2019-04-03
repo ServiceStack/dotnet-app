@@ -31,12 +31,6 @@
     <Compile Include="..\Web\Startup.Mix.cs" Link="Startup.Mix.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="favicon.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
   <!--<ItemGroup>-->
     <!--<None Include="locales\*.*" CopyToOutputDirectory="Always" />-->
     <!--<None Include="swiftshader\*.*" CopyToOutputDirectory="Always" />-->
@@ -73,10 +67,13 @@
     <PackageReference Include="ServiceStack.Azure" Version="5.*" />
     <PackageReference Include="ServiceStack.Api.OpenApi" Version="5.*" />
 
-    <PackageReference Include="ServiceStack.CefGlue.Win64" Version="5.*" />
+    <PackageReference Include="ServiceStack.CefGlue" Version="5.*" />
+    <PackageReference Include="WinApi" Version="4.*" />
+
+    <!--<PackageReference Include="ServiceStack.CefGlue.Win64" Version="5.*" ExcludeAssets="All" />-->
 
     <!-- <ProjectReference Include="..\..\..\..\ServiceStack.CefGlue\src\ServiceStack.CefGlue.Win64\ServiceStack.CefGlue.Win64.csproj" />
-    <PackageReference Include="WinApi" Version="4.*" /> -->
+     -->
 
     <!-- <PackageReference Include="ServiceStack.Interfaces" Version="5.*" />
     <PackageReference Include="ServiceStack.Text" Version="5.*" />
@@ -110,6 +107,16 @@
     <ProjectReference Include="..\..\..\..\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.csproj" />
     <ProjectReference Include="..\..\..\..\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.csproj" /> -->
 
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="nupkg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="favicon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
