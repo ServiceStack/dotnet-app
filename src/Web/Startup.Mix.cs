@@ -24,10 +24,13 @@ namespace Web
         public static bool Silent { get; set; }
         static string[] VerboseArgs = {"/verbose", "--verbose"};
 
+        static string[] SourceArgs = { "/s", "-s", "/source", "--source" };
+
         public static bool ForceApproval { get; set; }
         static string[] ForceArgs = { "/f", "-f", "/force", "--force" };
 
-        static string[] SourceArgs = { "/s", "-s", "/source", "--source" };
+        public static bool IgnoreSslErrors { get; set; }
+        private static string[] IgnoreSslErrorsArgs = {"/ignore-ssl-errors", "--ignore-ssl-errors"};
 
         public static Func<bool> UserInputYesNo { get; set; } = UseConsoleRead;
 
@@ -60,7 +63,7 @@ namespace Web
             try
             {
                 $"https://servicestack.net/stats/{type}/record?name={name}&source={tool}&version={GetVersion()}"
-                    .GetBytesFromUrlAsync();
+                    .GetBytesFromUrlAsync(requestFilter:req => req.ApplyRequestFilters());
             }
             catch { }
         }
@@ -246,10 +249,11 @@ namespace Web
             public GithubRepo Parent { get; set; } // only on single result, e.g: /repos/NetCoreWebApps/bare
         }
 
+        public static string UserAgent = typeof(GithubGateway).Namespace.LeftPart('.');
+
         public partial class GithubGateway
         {
             public const string GithubApiBaseUrl = "https://api.github.com/";
-            public static string UserAgent = typeof(GithubGateway).Namespace.LeftPart('.');
 
             public string UnwrapRepoFullName(string orgName, string name)
             {
@@ -359,7 +363,7 @@ namespace Web
                     : route;
                 if (Startup.Verbose) $"API: {apiUrl}".Print();
 
-                return apiUrl.GetJsonFromUrl(req => req.UserAgent = UserAgent);
+                return apiUrl.GetJsonFromUrl(req => req.ApplyRequestFilters());
             }
 
             public T GetJson<T>(string route) => GetJson(route).FromJson<T>();
@@ -373,7 +377,7 @@ namespace Web
                 {
                     if (Startup.Verbose) $"API: {nextUrl}".Print();
 
-                    results = nextUrl.GetJsonFromUrl(req => req.UserAgent = UserAgent,
+                    results = nextUrl.GetJsonFromUrl(req => req.ApplyRequestFilters(),
                             responseFilter: res => {
                                 var links = ParseLinkUrls(res.Headers["Link"]);
                                 links.TryGetValue("next", out nextUrl);
@@ -397,7 +401,7 @@ namespace Web
                 {
                     if (Startup.Verbose) $"API: {nextUrl}".Print();
 
-                    results = (await nextUrl.GetJsonFromUrlAsync(req => req.UserAgent = UserAgent,
+                    results = (await nextUrl.GetJsonFromUrlAsync(req => req.ApplyRequestFilters(),
                             responseFilter: res => {
                                 var links = ParseLinkUrls(res.Headers["Link"]);
                                 links.TryGetValue("next", out nextUrl);
@@ -939,24 +943,30 @@ namespace Web
                     Verbose = true;
                     continue;
                 }
-                if (ForceArgs.Contains(arg))
-                {
-                    ForceApproval = true;
-                    continue;
-                }
                 if (SourceArgs.Contains(arg))
                 {
                     GistLinksId = args[++i];
                     continue;
                 }
-
+                if (ForceArgs.Contains(arg))
+                {
+                    ForceApproval = true;
+                    continue;
+                }
+                if (IgnoreSslErrorsArgs.Contains(arg))
+                {
+                    IgnoreSslErrors = true;
+                    continue;
+                }
+                
+                    
                 dotnetArgs.Add(arg);
             }
 
             var tool = "mix";
             Task<string> checkUpdatesAndQuit = null;
             Task<string> beginCheckUpdates() =>
-                $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync();
+                $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync(req => req.ApplyRequestFilters());
             
             if (dotnetArgs.Count == 0)
             {
@@ -1008,6 +1018,28 @@ namespace Web
             }
 
             return retVal.ToString().Trim();
+        }
+
+        public static void ApplyRequestFilters(this HttpWebRequest req)
+        {
+            req.UserAgent = Startup.UserAgent;
+
+            if (Startup.IgnoreSslErrors)
+            {
+                req.ServerCertificateValidationCallback = (webReq, cert, chain, errors) => true;
+            }
+        }
+
+        public static void HandleProgramExceptions(this Exception ex)
+        {
+            ex = ex.UnwrapIfSingleException();
+            Console.WriteLine(Startup.Verbose ? ex.ToString() : ex.Message);
+
+            if (ex.Message.IndexOf("SSL connection", StringComparison.Ordinal) >= 0)
+            {
+                Console.WriteLine("");
+                Console.WriteLine("SSL Connection Errors can be ignored with care using switch: --ignore-ssl-errors");
+            }
         }
     }
 }

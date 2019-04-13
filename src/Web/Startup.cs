@@ -749,6 +749,7 @@ Options:
     -f, --force               Quiet mode, always approve, never prompt
         --clean               Delete downloaded caches
         --verbose             Display verbose logging
+        --ignore-ssl-errors   Ignore SSL Errors
 
 This tool collects anonymous usage to determine the most used commands to improve your experience.
 To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using your favorite shell.";
@@ -800,7 +801,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             var cmd = Regex.Replace(args[0], "^-+", "/");
 
             Task<string> checkUpdatesAndQuit = null;
-            Task<string> beginCheckUpdates() => $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync();
+            Task<string> beginCheckUpdates() => $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync(requestFilter:req => req.ApplyRequestFilters());
                         
             var arg = args[0];
             if (RefAlias.Keys.Contains(arg) || RefAlias.Values.Contains(arg))
@@ -1181,7 +1182,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             RegisterStat(tool, lang, exists ? "updateref" : "addref");
 
             if (Verbose) $"API: {typesUrl}".Print();
-            var dtos = typesUrl.GetStringFromUrl();
+            var dtos = typesUrl.GetStringFromUrl(requestFilter:req => req.ApplyRequestFilters());
 
             if (dtos.IndexOf("Options:", StringComparison.Ordinal) == -1) 
                 throw new Exception($"Invalid Response from {typesUrl}");
