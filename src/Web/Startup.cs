@@ -573,7 +573,9 @@ namespace Web
         
         private static string DownloadCachedZipUrl(string zipUrl)
         {
-            var invalidFileNameChars = Path.GetInvalidFileNameChars();
+            var invalidFileNameChars = new HashSet<char>(Path.GetInvalidFileNameChars()) {
+                ':'
+            };
             var safeFileName = new string(zipUrl.Where(c => !invalidFileNameChars.Contains(c)).ToArray());
             var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var cachedVersionPath = Path.Combine(homeDir, ".servicestack", "cache", safeFileName);
