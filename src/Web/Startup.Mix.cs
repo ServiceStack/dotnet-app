@@ -262,14 +262,15 @@ namespace Web
                     var repo = GetJson<GithubRepo>($"/repos/{orgName}/{name}");
                     if (repo.Fork)
                     {
-                        if (Startup.Verbose)
+                        
+                        if (Startup.Verbose) $"'{orgName}/{repo.Name}' is a fork.".Print();
+                        if (repo.Parent == null)
                         {
-                            $"'{orgName}/{repo.Name}' is a fork.".Print();
-                            if (repo.Parent == null)
-                                $"Could not find parent fork for '{orgName}/{repo.Name}', using '{repo.Full_Name}'"
-                                    .Print();
-                            else
-                                return repo.Parent.Full_Name;
+                            if (Startup.Verbose) $"Could not find parent fork for '{orgName}/{repo.Name}', using '{repo.Full_Name}'".Print(); 
+                        }
+                        else
+                        {
+                            return repo.Parent.Full_Name;
                         }
                     }
 

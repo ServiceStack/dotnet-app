@@ -459,9 +459,8 @@ namespace Web
                 var (publishDir, publishAppDir, publishToolDir) = GetPublishDirs("win", appDir);
                 var toolDir = new DirectoryInfo(tmpDir).GetDirectories().First().FullName;
 
-                if (Verbose) $"Directory Move: {toolDir} -> {publishToolDir}".Print();
                 DeleteDirectory(publishToolDir);
-                Directory.Move(toolDir, publishToolDir);
+                MoveDirectory(toolDir, publishToolDir);
 
                 CreatePublishShortcut(ctx, publishDir, publishAppDir, publishToolDir, "win.exe");
                 appDir.CopyAllTo(publishAppDir, excludePaths: new[] { publishToolDir });
@@ -590,6 +589,20 @@ namespace Web
             }
 
             return cachedVersionPath;
+        }
+        public static void MoveDirectory(string fromPath, string toPath)
+        {
+            if (Verbose) $"Directory Move: {fromPath} -> {toPath}".Print();
+            try
+            {
+                Directory.Move(fromPath, toPath);
+            }
+            catch (IOException ex) //Source and destination path must have identical roots. Move will not work across volumes.
+            {
+                if (Verbose) $"Directory Move failed: '{ex.Message}', trying COPY Directory...".Print();
+                if (Verbose) $"Directory Copy: {fromPath} -> {toPath}".Print();
+                fromPath.CopyAllTo(toPath);
+            }
         }
 
         public static void DeleteDirectory(string dirPath)
@@ -963,7 +976,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                     if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {installDir}".Print();
                     DeleteDirectory(installDir);
-                    Directory.Move(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, installDir);
+                    MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, installDir);
 
                     "".Print();
                     $"Installation successful, run with:".Print();
@@ -1055,7 +1068,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
                     if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {projectDir.FullName}".Print();
                     DeleteDirectory(projectDir.FullName);
-                    Directory.Move(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
+                    MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
     
                     RenameProject(str => ReplaceMyApp(str, projectName), projectDir);
     
@@ -1333,8 +1346,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (newDirName != projectDir.Name && projectDir.Parent != null)
             {
                 var newDirPath = Path.Combine(projectDir.Parent.FullName, newDirName);
-                if (Verbose) $"Moving Directory {projectDir.FullName} -> {newDirPath}".Print();
-                Directory.Move(projectDir.FullName, newDirPath);
+                MoveDirectory(projectDir.FullName, newDirPath);
             }
         }
         
