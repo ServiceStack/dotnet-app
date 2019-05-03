@@ -24,6 +24,7 @@
     <PackageProjectUrl>https://github.com/ServiceStack/dotnet-app</PackageProjectUrl>
     <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
     <LangVersion>latest</LangVersion>
+    <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -41,6 +42,12 @@
     <!--<None Include="*.bin" CopyToOutputDirectory="Always" />-->
     <!--<None Include="*.exe" CopyToOutputDirectory="Always" />-->
   <!--</ItemGroup>-->
+  <!--<Target Name="CopyLinkedContentFiles" BeforeTargets="Build">-->
+    <!--<Copy SourceFiles="%(Content.Identity)"-->
+          <!--DestinationFiles="$(OutputPath)\%(Content.Link)"-->
+          <!--SkipUnchangedFiles="true"-->
+          <!--OverwriteReadOnlyFiles="true" />-->
+  <!--</Target>-->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
