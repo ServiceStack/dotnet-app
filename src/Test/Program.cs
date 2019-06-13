@@ -306,33 +306,39 @@ namespace Run
         [Test]
         public async Task Mix_help()
         {
-            await Startup.Mix(new string[0]);
+            await Startup.Mix("mix", new string[0]);
+        }
+        
+        [Test]
+        public async Task WebMix_help()
+        {
+            await Startup.CreateWebHost("web mix", new[]{ "mix" });
         }
         
         [Test]
         public async Task Mix_search_db()
         {
-            await Startup.Mix(new []{ "#db" });
+            await Startup.Mix("mix", new []{ "#db" });
         }
         
         [Test]
         public async Task Mix_search_project_db()
         {
-            await Startup.Mix(new []{ "#project,db" });
+            await Startup.Mix("mix", new []{ "#project,db" });
         }
 
         [Test]
         public async Task Mix_init_bootstrap_sharp()
         {
             DeleteCreateAndSetDirectory("wip\\MixText");
-            await Startup.Mix(new[] { "init", "bootstrap-sharp" });
+            await Startup.Mix("mix", new[] { "init", "bootstrap-sharp" });
         }
 
         [Test]
         public async Task Mix_init_bootstrap_sharp_indexes()
         {
             DeleteCreateAndSetDirectory("wip\\MixText");
-            await Startup.Mix(new[] { "1", "5" });
+            await Startup.Mix("mix", new[] { "1", "5" });
         }
 
         [Test]
@@ -341,7 +347,7 @@ namespace Run
             DeleteCreateAndSetDirectory("wip\\MixText");
             try
             {
-                await Startup.Mix(new[] { "0", "1000" });
+                await Startup.Mix("mix", new[] { "0", "1000" });
             }
             catch (ArgumentOutOfRangeException) {}
         }

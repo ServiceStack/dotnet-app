@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <Version>0.0.25</Version>
+    <Version>0.0.28</Version>
     <AssemblyName>web</AssemblyName>
     <IsPackable>true</IsPackable>
     <PackageId>web</PackageId>
@@ -59,5 +59,8 @@
     <ProjectReference Include="..\..\..\..\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.csproj" />
     <ProjectReference Include="..\..\..\..\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.csproj" /> -->
    
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="nupkg" />
   </ItemGroup>
 </Project>

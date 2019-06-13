@@ -121,6 +121,13 @@ namespace Web
         public static async Task<WebAppContext> CreateWebHost(string tool, string[] args, WebAppEvents events = null)
         {
             Events = events;
+
+            if (args.Length > 0 && args[0] == "mix")
+            {
+                await Mix($"{tool} mix", args.Skip(1).ToArray());
+                return null;
+            }
+            
             var dotnetArgs = new List<string>();
 
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE")))
@@ -131,6 +138,7 @@ namespace Web
                 GalleryUrl = Environment.GetEnvironmentVariable("APP_GALLERY");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_GISTS")))
                 GistLinksId = Environment.GetEnvironmentVariable("APP_SOURCE_GISTS");
+            
             InitMix();
 
             var createShortcut = false;
@@ -445,7 +453,7 @@ namespace Web
             {
                 RegisterStat(tool, "publish-exe");
                 
-                var zipUrl = new GithubGateway().GetSourceZipUrl("ServiceStack", "WebWin");
+                var zipUrl = GitHubUtils.Gateway.GetSourceZipUrl("ServiceStack", "WebWin");
 
                 var cachedVersionPath = DownloadCachedZipUrl(zipUrl);
 
@@ -585,7 +593,7 @@ namespace Web
             if (!isCached)
             {
                 if (Verbose) $"Downloading {zipUrl}".Print();
-                new GithubGateway().DownloadFile(zipUrl, cachedVersionPath.AssertDirectory());
+                GitHubUtils.Gateway.DownloadFile(zipUrl, cachedVersionPath.AssertDirectory());
             }
 
             return cachedVersionPath;
@@ -729,10 +737,10 @@ Usage:
   {tool} vbnet      <url>        Add VB.NET ServiceStack Reference     (Alias 'vb')
   {tool} tsd        <url>        Add TypeScript Definition ServiceStack Reference
 
-  {tool} +                       Show available gists
-  {tool} +<name>                 Write gist files locally, e.g:
-  {tool} +init                   Create empty .NET Core 2.2 ServiceStack App
-  {tool} + #<tag>                Search available gists
+  {tool} mix                     Show available gists to mixin         (Alias '+')
+  {tool} mix <name>              Write gist files locally, e.g:        (Alias +init)
+  {tool} mix init                Create empty .NET Core ServiceStack App
+  {tool} mix #<tag>              Search available gists
   {tool} gist <gist-id>          Write all Gist text files to current directory
 
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
@@ -963,7 +971,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     var repo = args[1];
                     RegisterStat(tool, repo, "install");
 
-                    var downloadUrl = new GithubGateway().GetSourceZipUrl(GitHubSource, repo);
+                    var downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(GitHubSource, repo);
                     $"Installing {repo}...".Print();
 
                     var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
@@ -1054,7 +1062,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
     
                     RegisterStat(tool, repo, "new");
     
-                    var downloadUrl = new GithubGateway().GetSourceZipUrl(GitHubSourceTemplates, repo);
+                    var downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(GitHubSourceTemplates, repo);
                     $"Installing {repo}...".Print();
     
                     var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
@@ -1370,7 +1378,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             var sourceRepos = new Dictionary<string,string>();
             sources.Each(x => sourceRepos[x.LeftPart(' ')] = x.RightPart(' '));
             
-            var sourceTasks = sourceRepos.Map(source => (source.Value, new GithubGateway().GetSourceReposAsync(source.Key)));
+            var sourceTasks = sourceRepos.Map(source => (source.Value, GitHubUtils.Gateway.GetSourceReposAsync(source.Key)));
 
             foreach (var sourceTask in sourceTasks)
                 

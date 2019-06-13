@@ -79,5 +79,8 @@
       <Content Include="script-minify.ss" />
       <Content Include="script.html" />
       <Content Include="script.ss" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="wwwroot\assets\svg" />
     </ItemGroup>    
 </Project>

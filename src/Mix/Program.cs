@@ -13,7 +13,7 @@ namespace Web
         {
             try
             {
-                await Startup.Mix(args);
+                await Startup.Mix("mix", args);
             } 
             catch (Exception ex)
             {

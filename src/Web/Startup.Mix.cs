@@ -96,7 +96,7 @@ namespace Web
 
             "".Print();
 
-            if (tool == "mix")
+            if (tool.EndsWith("mix"))
             {
                 $" Usage:  mix <name> <name> ...".Print();
 
@@ -214,7 +214,7 @@ namespace Web
 
         private static List<GistLink> GetGistLinks(string gistId, string name)
         {
-            var gistsIndex = new GithubGateway().GetGistFiles(gistId)
+            var gistsIndex = GitHubUtils.Gateway.GetGistFiles(gistId)
                 .FirstOrDefault(x => x.Key == name);
 
             if (gistsIndex.Key == null)
@@ -247,244 +247,6 @@ namespace Web
             public bool Private { get; set; }
 
             public GithubRepo Parent { get; set; } // only on single result, e.g: /repos/NetCoreWebApps/bare
-        }
-
-        public static string UserAgent = typeof(GithubGateway).Namespace.LeftPart('.');
-
-        public partial class GithubGateway
-        {
-            public const string GithubApiBaseUrl = "https://api.github.com/";
-
-            public string UnwrapRepoFullName(string orgName, string name)
-            {
-                try
-                {
-                    var repo = GetJson<GithubRepo>($"/repos/{orgName}/{name}");
-                    if (repo.Fork)
-                    {
-                        
-                        if (Startup.Verbose) $"'{orgName}/{repo.Name}' is a fork.".Print();
-                        if (repo.Parent == null)
-                        {
-                            if (Startup.Verbose) $"Could not find parent fork for '{orgName}/{repo.Name}', using '{repo.Full_Name}'".Print(); 
-                        }
-                        else
-                        {
-                            return repo.Parent.Full_Name;
-                        }
-                    }
-
-                    return repo.Full_Name;
-                }
-                catch (WebException ex)
-                {
-                    if (ex.IsNotFound())
-                        return null;
-                    throw;
-                }
-            }
-
-            public string GetSourceZipUrl(string orgNames, string name)
-            {
-                var orgs = orgNames.Split(';')
-                    .Map(x => x.LeftPart(' '));
-                foreach (var orgName in orgs)
-                {
-                    var repoFullName = UnwrapRepoFullName(orgName, name);
-                    if (repoFullName == null)
-                        continue;
-
-                    var json = GetJson($"repos/{repoFullName}/releases");
-                    var response = JSON.parse(json);
-
-                    if (response is List<object> releases && releases.Count > 0 &&
-                        releases[0] is Dictionary<string, object> release &&
-                        release.TryGetValue("zipball_url", out var zipUrl))
-                    {
-                        return (string) zipUrl;
-                    }
-
-                    if (Startup.Verbose) $"No releases found for '{repoFullName}', installing from master...".Print();
-                    return $"https://github.com/{repoFullName}/archive/master.zip";
-                }
-
-                throw new Exception($"'{name}' was not found in sources: {orgs.Join(", ")}");
-            }
-
-            public async Task<List<GithubRepo>> GetSourceReposAsync(string orgName)
-            {
-                var repos = (await GetUserAndOrgReposAsync(orgName))
-                    .OrderBy(x => x.Name)
-                    .ToList();
-                return repos;
-            }
-
-            public async Task<List<GithubRepo>> GetUserAndOrgReposAsync(string githubOrgOrUser)
-            {
-                var map = new Dictionary<string, GithubRepo>();
-
-                var userRepos = GetJsonCollectionAsync<List<GithubRepo>>($"users/{githubOrgOrUser}/repos");
-                var orgRepos = GetJsonCollectionAsync<List<GithubRepo>>($"orgs/{githubOrgOrUser}/repos");
-
-                try
-                {
-                    foreach (var repos in await userRepos)
-                    foreach (var repo in repos)
-                        map[repo.Name] = repo;
-                }
-                catch (Exception e)
-                {
-                    if (!e.IsNotFound()) throw;
-                }
-
-                try
-                {
-                    foreach (var repos in await userRepos)
-                    foreach (var repo in repos)
-                        map[repo.Name] = repo;
-                }
-                catch (Exception e)
-                {
-                    if (!e.IsNotFound()) throw;
-                }
-
-                return map.Values.ToList();
-            }
-
-            public List<GithubRepo> GetUserRepos(string githubUser) =>
-                StreamJsonCollection<List<GithubRepo>>($"users/{githubUser}/repos").SelectMany(x => x).ToList();
-
-            public List<GithubRepo> GetOrgRepos(string githubOrg) =>
-                StreamJsonCollection<List<GithubRepo>>($"orgs/{githubOrg}/repos").SelectMany(x => x).ToList();
-
-            public string GetJson(string route)
-            {
-                var apiUrl = !route.IsUrl()
-                    ? GithubApiBaseUrl.CombineWith(route)
-                    : route;
-                if (Startup.Verbose) $"API: {apiUrl}".Print();
-
-                return apiUrl.GetJsonFromUrl(req => req.ApplyRequestFilters());
-            }
-
-            public T GetJson<T>(string route) => GetJson(route).FromJson<T>();
-
-            public IEnumerable<T> StreamJsonCollection<T>(string route)
-            {
-                List<T> results;
-                var nextUrl = GithubApiBaseUrl.CombineWith(route);
-
-                do
-                {
-                    if (Startup.Verbose) $"API: {nextUrl}".Print();
-
-                    results = nextUrl.GetJsonFromUrl(req => req.ApplyRequestFilters(),
-                            responseFilter: res => {
-                                var links = ParseLinkUrls(res.Headers["Link"]);
-                                links.TryGetValue("next", out nextUrl);
-                            })
-                        .FromJson<List<T>>();
-
-                    foreach (var result in results)
-                    {
-                        yield return result;
-                    }
-                } while (results.Count > 0 && nextUrl != null);
-            }
-
-            public async Task<List<T>> GetJsonCollectionAsync<T>(string route)
-            {
-                var to = new List<T>();
-                List<T> results;
-                var nextUrl = GithubApiBaseUrl.CombineWith(route);
-
-                do
-                {
-                    if (Startup.Verbose) $"API: {nextUrl}".Print();
-
-                    results = (await nextUrl.GetJsonFromUrlAsync(req => req.ApplyRequestFilters(),
-                            responseFilter: res => {
-                                var links = ParseLinkUrls(res.Headers["Link"]);
-                                links.TryGetValue("next", out nextUrl);
-                            }))
-                        .FromJson<List<T>>();
-
-                    to.AddRange(results);
-                } while (results.Count > 0 && nextUrl != null);
-
-                return to;
-            }
-
-            public static Dictionary<string, string> ParseLinkUrls(string linkHeader)
-            {
-                var map = new Dictionary<string, string>();
-                var links = linkHeader;
-
-                while (!string.IsNullOrEmpty(links))
-                {
-                    var urlStartPos = links.IndexOf('<');
-                    var urlEndPos = links.IndexOf('>');
-
-                    if (urlStartPos == -1 || urlEndPos == -1)
-                        break;
-
-                    var url = links.Substring(urlStartPos + 1, urlEndPos - urlStartPos - 1);
-                    var parts = links.Substring(urlEndPos).SplitOnFirst(',');
-
-                    var relParts = parts[0].Split(';');
-                    foreach (var relPart in relParts)
-                    {
-                        var keyValueParts = relPart.SplitOnFirst('=');
-                        if (keyValueParts.Length < 2)
-                            continue;
-
-                        var name = keyValueParts[0].Trim();
-                        var value = keyValueParts[1].Trim().Trim('"');
-
-                        if (name == "rel")
-                        {
-                            map[value] = url;
-                        }
-                    }
-
-                    links = parts.Length > 1 ? parts[1] : null;
-                }
-
-                return map;
-            }
-
-            public void DownloadFile(string downloadUrl, string fileName)
-            {
-                var webClient = new WebClient();
-                webClient.Headers.Add(HttpHeaders.UserAgent, UserAgent);
-                webClient.DownloadFile(downloadUrl, fileName);
-            }
-
-            ConcurrentDictionary<string, Dictionary<string, string>> GistFilesCache =
-                new ConcurrentDictionary<string, Dictionary<string, string>>();
-
-            public Dictionary<string, string> GetGistFiles(string gistId)
-            {
-                return GistFilesCache.GetOrAdd(gistId, gistKey => {
-                    var json = GetJson($"/gists/{gistKey}");
-                    var response = JSON.parse(json);
-                    if (response is Dictionary<string, object> obj &&
-                        obj.TryGetValue("files", out var oFiles) &&
-                        oFiles is Dictionary<string, object> files)
-                    {
-                        var to = new Dictionary<string, string>();
-                        foreach (var entry in files)
-                        {
-                            var meta = (Dictionary<string, object>) entry.Value;
-                            to[entry.Key] = (string) meta["content"];
-                        }
-
-                        return to;
-                    }
-
-                    throw new NotSupportedException($"Invalid gist response returned for '{gistKey}'");
-                });
-            }
         }
 
         public static async Task<bool> CheckForUpdates(string tool, Task<string> checkUpdatesAndQuit)
@@ -664,7 +426,7 @@ namespace Web
             {
                 if (to.EndsWith("/"))
                 {
-                    var dirName = to.Substring(0, to.Length - 2);
+                    var dirName = to.Substring(0, to.Length - 1);
                     var matchingDirs = Directory.GetDirectories(Environment.CurrentDirectory, dirName, SearchOption.AllDirectories);
                     if (matchingDirs.Length == 0)
                         throw new NotSupportedException($"Unable to find Directory named '{dirName}'{exSuffix}");
@@ -694,7 +456,7 @@ namespace Web
                 gistId = gistId.LastRightPart('/');
             }
             
-            var gistFiles = new GithubGateway().GetGistFiles(gistId);
+            var gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
             var resolvedFiles = new List<KeyValuePair<string,string>>();
             KeyValuePair<string, string>? initFile = null;
 
@@ -931,7 +693,7 @@ namespace Web
             return false;
         }
 
-        public static async Task Mix(string[] args)
+        public static async Task Mix(string tool, string[] args)
         {
             InitMix();
             
@@ -964,7 +726,6 @@ namespace Web
                 dotnetArgs.Add(arg);
             }
 
-            var tool = "mix";
             Task<string> checkUpdatesAndQuit = null;
             Task<string> beginCheckUpdates() =>
                 $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync(req => req.ApplyRequestFilters());
@@ -1023,7 +784,7 @@ namespace Web
 
         public static void ApplyRequestFilters(this HttpWebRequest req)
         {
-            req.UserAgent = Startup.UserAgent;
+            req.UserAgent = GitHubUtils.UserAgent;
 
             if (Startup.IgnoreSslErrors)
             {
@@ -1043,4 +804,50 @@ namespace Web
             }
         }
     }
+
+    public static class GitHubUtils
+    {
+        public const string UserAgent = "web dotnet tool";
+        
+        public static GitHubGateway Gateway { get; } = new GitHubGateway {
+            UserAgent = UserAgent,
+            GetJsonFilter = GetJson
+        };
+            
+        public static string GetJson(string apiUrl)
+        {
+            if (Startup.Verbose) 
+                $"API: {apiUrl}".Print();
+                
+            return apiUrl.GetJsonFromUrl(req => req.ApplyRequestFilters());
+        }
+
+        public static ConcurrentDictionary<string, Dictionary<string, string>> GistFilesCache =
+            new ConcurrentDictionary<string, Dictionary<string, string>>();
+
+        public static Dictionary<string, string> GetGistFiles(this GitHubGateway gateway, string gistId)
+        {
+            return GistFilesCache.GetOrAdd(gistId, gistKey => {
+                var json = gateway.GetJson($"/gists/{gistKey}");
+                var response = JSON.parse(json);
+                if (response is Dictionary<string, object> obj &&
+                    obj.TryGetValue("files", out var oFiles) &&
+                    oFiles is Dictionary<string, object> files)
+                {
+                    var to = new Dictionary<string, string>();
+                    foreach (var entry in files)
+                    {
+                        var meta = (Dictionary<string, object>) entry.Value;
+                        to[entry.Key] = (string) meta["content"];
+                    }
+
+                    return to;
+                }
+
+                throw new NotSupportedException($"Invalid gist response returned for '{gistKey}'");
+            });
+        }
+    }
+
+    
 }
