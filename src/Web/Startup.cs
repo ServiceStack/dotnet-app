@@ -1569,6 +1569,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
                         : new SharpPagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
                 }
+
+                if (!feature.Plugins.Any(x => x is GithubPlugin))
+                    feature.Plugins.Add(new GithubPlugin());
     
                 var dbFactory = "db".GetAppSetting().GetDbFactory(connectionString:"db.connection".GetAppSetting());
                 if (dbFactory != null)
