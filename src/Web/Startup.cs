@@ -147,6 +147,7 @@ namespace Web
             string createShortcutFor = null;
             string runProcess = null;
             var runScriptArgs = new Dictionary<string, object>();
+            var runScriptArgV = new List<string>();
             var runSharpApp = false;
             var appSettingPaths = new[]
             {
@@ -217,6 +218,7 @@ namespace Web
                     for (; i < args.Length; i += 2)
                     {
                         var key = args[i];
+                        runScriptArgV.Add(args[i]);
                         if (!key.FirstCharEquals('-') && key.FirstCharEquals('/'))
                         {
                             $"Unknown run script argument '{key}', argument example: -name value".Print();
@@ -485,30 +487,43 @@ namespace Web
             {
                 void ExecScript(SharpPagesFeature feature)
                 {
-                    try 
-                    { 
+                    var ErrorPrefix = $"FAILED run {RunScript} [{string.Join(' ', runScriptArgV)}]:";
+                        
+                    try
+                    {
                         var html = File.ReadAllText(RunScript);
                         var page = feature.Pages.OneTimePage(html, ".html");
-                        var pageResult = new PageResult(page);
+                        var pageResult = new PageResult(page) {
+                            Args = {
+                                ["ARGV"] = runScriptArgV.ToArray(),
+                            }
+                        };
                         runScriptArgs.Each(entry => pageResult.Args[entry.Key] = entry.Value);
                         var output = pageResult.RenderToStringAsync().Result;
                         output.Print();
-    
+
                         if (pageResult.LastFilterError != null)
                         {
-                            $"FAILED run {RunScript} {runScriptArgs.ToJsv()}:".Print();
+                            ErrorPrefix.Print();
                             pageResult.LastFilterStackTrace.Map(x => "   at " + x)
                                 .Join(Environment.NewLine).Print();
-    
+
                             "".Print();
                             pageResult.LastFilterError.Message.Print();
                             pageResult.LastFilterError.ToString().Print();
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        ex = ex.UnwrapIfSingleException();
+                        if (ex is StopFilterExecutionException)
+                        {
+                            $"{ErrorPrefix} {ex.InnerException.Message}".Print();
+                            return;
+                        }
+
                         Verbose = true;
-                        $"FAILED run {RunScript} {runScriptArgs.ToJsv()}:".Print();
+                        ErrorPrefix.Print();
                         throw;
                     }
                 }
