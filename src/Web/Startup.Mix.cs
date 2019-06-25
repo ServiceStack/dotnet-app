@@ -32,6 +32,15 @@ namespace Web
         public static bool IgnoreSslErrors { get; set; }
         private static string[] IgnoreSslErrorsArgs = {"/ignore-ssl-errors", "--ignore-ssl-errors"};
 
+        static string[] NameArgs = { "/name", "--name", "-name" };
+
+        static string[] DeleteArgs = { "/delete", "--delete", "-delete" };
+        static string[] ReplaceArgs = { "/replace", "--replace", "-replace" };
+
+        static string[] HelpArgs = { "/help", "--help", "-help", "?" };
+
+        public static List<KeyValuePair<string,string>> ReplaceTokens { get; set; } = new List<KeyValuePair<string, string>>();
+        
         public static Func<bool> UserInputYesNo { get; set; } = UseConsoleRead;
 
         private static string CamelToKebab(string str) => Regex.Replace((str ?? ""),"([a-z])([A-Z])","$1-$2").ToLower();
@@ -98,11 +107,15 @@ namespace Web
 
             if (tool.EndsWith("mix"))
             {
-                $" Usage:  mix <name> <name> ...".Print();
+                $"   Usage:  mix <name> <name> ...".Print();
 
                 "".Print();
 
-                $"Search:  mix #<tag> Available tags: {string.Join(", ", tags)}".Print();
+                $"  Search:  mix #<tag> Available tags: {string.Join(", ", tags)}".Print();
+
+                "".Print();
+
+                $"Advanced:  mix ?".Print();
             }
             else
             {
@@ -255,21 +268,21 @@ namespace Web
             {
                 try
                 {
-                var json = await checkUpdatesAndQuit;
-                var response = JSON.parse(json);
-                if (response is Dictionary<string, object> r &&
-                    r.TryGetValue("items", out var oItems) && oItems is List<object> items &&
-                    items.Count > 0 && items[0] is Dictionary<string, object> item &&
-                    item.TryGetValue("upper", out var oUpper) && oUpper is string upper)
-                {
-                    if (GetVersion() != upper) {
-                        "".Print();
-                        "".Print();
-                        $"new version available, update with:".Print();
-                        "".Print();
-                        $"  dotnet tool update -g {tool}".Print();
+                    var json = await checkUpdatesAndQuit;
+                    var response = JSON.parse(json);
+                    if (response is Dictionary<string, object> r &&
+                        r.TryGetValue("items", out var oItems) && oItems is List<object> items &&
+                        items.Count > 0 && items[0] is Dictionary<string, object> item &&
+                        item.TryGetValue("upper", out var oUpper) && oUpper is string upper)
+                    {
+                        if (GetVersion() != upper) {
+                            "".Print();
+                            "".Print();
+                            $"new version available, update with:".Print();
+                            "".Print();
+                            $"  dotnet tool update -g {tool}".Print();
+                        }
                     }
-                }
                 }
                 catch (Exception)
                 {
@@ -280,8 +293,9 @@ namespace Web
             return false;
         }
 
-        public static bool ApplyGists(string tool, string[] gistAliases)
+        public static bool ApplyGists(string tool, string[] gistAliases, string projectName = null)
         {
+            projectName = projectName ?? new DirectoryInfo(Environment.CurrentDirectory).Name;
             var links = GetGistApplyLinks();
             
             var hasNums = gistAliases.Any(x => int.TryParse(x, out _));
@@ -315,12 +329,178 @@ namespace Web
                     return false;
                 }
                             
-                var currentDirName = new DirectoryInfo(Environment.CurrentDirectory).Name;
-                WriteGistFile(gistLink.Url, gistAlias, to: gistLink.To, projectName: currentDirName, getUserApproval: UserInputYesNo);
+                WriteGistFile(gistLink.Url, gistAlias, to: gistLink.To, projectName: projectName, getUserApproval: UserInputYesNo);
                 ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
             }
             return true;
         }
+
+        public static void DeleteGists(string tool, string[] gistAliases, string projectName)
+        {
+            projectName = projectName ?? new DirectoryInfo(Environment.CurrentDirectory).Name;
+            var links = GetGistApplyLinks();
+            
+            var sb = new StringBuilder();
+            var allResolvedFiles = new List<string>();
+            foreach (var gistAlias in gistAliases)
+            {
+                var gistLink = GistLink.Get(links, gistAlias);
+                if (gistLink == null)
+                {
+                    $"No match found for '{gistAlias}', available gists:".Print();
+                    PrintGistLinks(tool, links);
+                }
+
+                var gistId = gistLink.Url;
+                var gistLinkUrl = $"https://gist.github.com/{gistId}";
+                if (gistId.IsUrl())
+                {
+                    gistLinkUrl = gistId;
+                    gistId = gistId.LastRightPart('/');
+                }
+
+                var alias = !string.IsNullOrEmpty(gistAlias)
+                    ? $"'{gistAlias}' "
+                    : "";
+                var exSuffix = $" required by {alias}{gistLinkUrl}";
+
+                var gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
+                var basePath = ResolveBasePath(gistLink.To, exSuffix);
+
+                var resolvedFiles = new List<string>();
+                foreach (var gistFile in gistFiles)
+                {
+                    var useFileName = ReplaceMyApp(gistFile.Key, projectName);
+                    if (useFileName.EndsWith("?"))
+                        useFileName = useFileName.Substring(0, useFileName.Length - 1);
+                    
+                    var resolvedFile = Path.GetFullPath(useFileName, basePath.Replace("\\","/"));
+                    if (!File.Exists(resolvedFile))
+                    {
+                        if (Verbose) $"Skipping deleting non-existent file: {resolvedFile}".Print();
+                        continue;
+                    }
+                    
+                    resolvedFiles.Add(resolvedFile);
+                    allResolvedFiles.Add(resolvedFile);
+                }
+
+                if (resolvedFiles.Count > 0)
+                {
+                    var label = !string.IsNullOrEmpty(gistAlias)
+                        ? $"'{gistAlias}' "
+                        : "";
+                    sb.AppendLine();
+                    sb.AppendLine($"Delete {resolvedFiles.Count} files from {label}{gistLinkUrl}:");
+
+                    foreach (var resolvedFile in resolvedFiles)
+                    {
+                        sb.AppendLine(resolvedFile);
+                    }
+                }
+            }
+
+            if (allResolvedFiles.Count == 0)
+            {
+                var gistsList = string.Join(",", gistAliases);
+                $"Did not find any existing files from '{gistsList}' to delete".Print();
+                return;
+            }
+
+            var getUserApproval = UserInputYesNo;
+            var silentMode = getUserApproval == null;
+            if (!silentMode)
+            {
+                if (!ForceApproval)
+                {
+                    sb.AppendLine()
+                        .AppendLine("Proceed? (n/Y):");
+    
+                    sb.ToString().Print();
+
+                    if (!getUserApproval())
+                        throw new Exception("Operation cancelled by user.");
+                }
+                else
+                {
+                    sb.ToString().Print();
+                }
+
+                "".Print();
+                $"Deleting {allResolvedFiles.Count} files...".Print();
+            }
+
+            var folders = new HashSet<string>();
+            foreach (var resolvedFile in allResolvedFiles)
+            {
+                try
+                {
+                    File.Delete(resolvedFile);
+                    folders.Add(Path.GetDirectoryName(resolvedFile));
+                }
+                catch (Exception ex)
+                {
+                    if (Verbose) $"ERROR: {ex.Message}".Print();
+                }
+            }
+
+            // Delete empty folders that had gist files
+            var subFoldersFirst = folders.OrderByDescending(x => x);
+            folders = new HashSet<string>();
+            foreach (var folder in subFoldersFirst)
+            {
+                if (Directory.GetFiles(folder).Length == 0 && Directory.GetDirectories(folder).Length == 0)
+                {
+                    if (Verbose) $"Deleting folder {folder} ...".Print();
+                    try
+                    {
+                        DeleteDirectoryRecursive(folder);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (Verbose) $"ERROR: {ex.Message}".Print();
+                    }
+                }
+                else
+                {
+                    folders.Add(folder);
+                }
+            }
+
+            if (!silentMode)
+            {
+                $"Done.".Print();
+            }
+        }
+
+        // More resilient impl for .NET Core
+        public static void DeleteDirectoryRecursive(string path)
+        {
+            //modified from https://stackoverflow.com/a/1703799/85785
+            foreach (var directory in Directory.GetDirectories(path))
+            {
+                var files = Directory.GetFiles(directory);
+                foreach (var file in files)
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                }
+
+                DeleteDirectoryRecursive(directory);
+            }
+
+            try
+            {
+                Directory.Delete(path, true);
+            }
+            catch (IOException) 
+            {
+                Directory.Delete(path, true);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Directory.Delete(path, true);
+            }
+        }        
 
         static string ReplaceMyApp(string input, string projectName)
         {
@@ -336,6 +516,11 @@ namespace Web
 
             if (!Env.IsWindows)
                 ret = ret.Replace("\r", "");
+
+            foreach (var replacePair in ReplaceTokens)
+            {
+                ret = ret.Replace(replacePair.Key, replacePair.Value);
+            }
             
             return ret;
         }
@@ -696,11 +881,62 @@ namespace Web
         public static async Task Mix(string tool, string[] args)
         {
             InitMix();
-            
+
+            bool deleteMode = false;
+            string projectName = null;
             var dotnetArgs = new List<string>();
             for (var i = 0; i < args.Length; i++)
             {
                 var arg = args[i];
+                if (HelpArgs.Contains(arg))
+                {
+                    $"Version: {GetVersion()}".Print();
+                    
+                    "".Print();
+                    
+                    "Simple Usage:  ".Print();
+                    
+                    $"   mix <name> <name> ...".Print();
+                    
+                    "".Print();
+
+                    "Using numbered list index instead:".Print();
+                    
+                    $"   mix 1 3 5 ...".Print();
+                    
+                    "".Print();
+
+                    "Delete previously mixed gists:".Print();
+                    
+                    $"   mix -delete <name> <name> ...".Print();
+                    
+                    "".Print();
+
+                    $"Use a custom project name instead of current folder name (replaces MyApp):".Print();
+
+                    $"   mix -name ProjectName <name> <name> ...".Print();
+                    
+                    "".Print();
+
+                    $"Replace additional tokens before mixing:".Print();
+
+                    $"   mix -replace term=with <name> <name> ...".Print();
+
+                    "".Print();
+
+                    $"Multi replace with escaped string example:".Print();
+
+                    $"   mix -replace term=with -replace \"This Phrase\"=\"With This\" <name> <name> ...".Print();
+                    
+                    "".Print();
+
+                    $"Only display available gists with a specific tag:".Print();
+
+                    $"  mix #<tag>".Print();
+                    $"  mix #<tag>,<tag>,<tag>".Print();
+                    
+                    return;
+                }
                 if (VerboseArgs.Contains(arg))
                 {
                     Verbose = true;
@@ -721,7 +957,51 @@ namespace Web
                     IgnoreSslErrors = true;
                     continue;
                 }
-                
+                if (DeleteArgs.Contains(arg))
+                {
+                    deleteMode = true;
+                    continue;
+                }
+                if (NameArgs.Contains(arg))
+                {
+                    projectName = i < arg.Length - 1
+                        ? args[i+1]
+                        : throw new Exception("Missing -name value");
+                    i++;
+                    continue;
+                }
+                if (ReplaceArgs.Contains(arg))
+                {
+                    var replacePair = i < arg.Length - 1
+                        ? args[i+1]
+                        : throw new Exception("Missing -replace value, e.g -replace term=with");
+
+                    const string InvalidUsage = "Invalid -replace usage, e.g: -replace term=with OR -replace \"the phrase\"=\"with this text\"";
+
+                    var literal = replacePair.AsSpan().ParseJsToken(out var token).ToString();
+                    var term = token is JsIdentifier termId 
+                        ? termId.Name
+                            : token is JsLiteral termLiteral 
+                                ? (string)termLiteral.Value
+                                : throw new Exception(InvalidUsage);
+                    
+                    if (literal[0] != '=')
+                        throw new Exception(InvalidUsage);
+                    
+                    literal = literal.Substring(1).AsSpan().ParseJsToken(out token).ToString();
+                    var with = token is JsIdentifier withId 
+                        ? withId.Name
+                        : token is JsLiteral withLiteral 
+                            ? (string)withLiteral .Value
+                            : throw new Exception(InvalidUsage);
+
+                    ReplaceTokens.Add(KeyValuePair.Create(term, with));
+
+                    i++;
+                    continue;
+                }
+                if (arg.StartsWith("-"))
+                    throw new Exception("Unknown switch: " + arg);
                     
                 dotnetArgs.Add(arg);
             }
@@ -738,6 +1018,7 @@ namespace Web
             }
             else
             {
+                var replaceStatSuffix = ReplaceTokens.Count > 0 ? $"_replace{ReplaceTokens.Count}" : "";
                 if (args[0].FirstCharEquals('#'))
                 {
                     RegisterStat(tool, args[0], "search");
@@ -746,10 +1027,18 @@ namespace Web
                 else
                 {
                     if (dotnetArgs.Count == 1 && dotnetArgs[0].IndexOf('+') >= 0)
-                        dotnetArgs = dotnetArgs[0].Split('+').ToList(); 
+                        dotnetArgs = dotnetArgs[0].Split('+').ToList();
 
-                    RegisterStat(tool, string.Join("_", dotnetArgs.OrderBy(x => x)), "+");
-                    ApplyGists(tool, dotnetArgs.ToArray());
+                    if (!deleteMode)
+                    {
+                        RegisterStat(tool, string.Join("_", dotnetArgs.OrderBy(x => x)), "+" + replaceStatSuffix);
+                        ApplyGists(tool, dotnetArgs.ToArray(), projectName:projectName);
+                    }
+                    else
+                    {
+                        RegisterStat(tool, string.Join("_", dotnetArgs.OrderBy(x => x)), "+" + replaceStatSuffix);
+                        DeleteGists(tool, dotnetArgs.ToArray(), projectName);
+                    }
                 }
             }
 

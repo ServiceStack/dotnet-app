@@ -352,5 +352,25 @@ namespace Run
             catch (ArgumentOutOfRangeException) {}
         }
 
+        [Test]
+        public async Task Mix_gist_with_name()
+        {
+            DeleteCreateAndSetDirectory("wip\\MixText");
+            await Startup.Mix("mix", new[] { "-name", "ProjectName", "init", "bootstrap-sharp" });
+        }
+        
+        [Test]
+        public async Task Mix_replace_terms()
+        {
+            DeleteCreateAndSetDirectory("wip\\MixText");
+            await Startup.Mix("mix", new[] { "-replace", "Config=Remix", "-replace", "\"IApplicationBuilder app, \"=\"/*ignore*/\"", "init", "bootstrap-sharp" });
+        }
+
+        [Test]
+        public async Task Mix_delete()
+        {
+            RetryExec(() => Directory.SetCurrentDirectory("wip\\MixText"));
+            await Startup.Mix("mix", new[] { "-delete", "init", "bootstrap-sharp" });
+        }
     }
 }
