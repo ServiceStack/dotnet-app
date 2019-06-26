@@ -372,5 +372,12 @@ namespace Run
             RetryExec(() => Directory.SetCurrentDirectory("wip\\MixText"));
             await Startup.Mix("mix", new[] { "-delete", "init", "bootstrap-sharp" });
         }
+
+        [Test]
+        public async Task Mix_with_resolved_ServiceInterface()
+        {
+            RetryExec(() => Directory.SetCurrentDirectory("wip\\TheProject"));
+            await Startup.Mix("mix", new[] { "feature-mq" });
+        }
     }
 }

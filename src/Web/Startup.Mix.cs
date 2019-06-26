@@ -293,11 +293,8 @@ namespace Web
             return false;
         }
 
-        public static bool ApplyGists(string tool, string[] gistAliases, string projectName = null)
+        private static string[] ResolveGistAliases(string[] gistAliases, List<GistLink> links)
         {
-            projectName = projectName ?? new DirectoryInfo(Environment.CurrentDirectory).Name;
-            var links = GetGistApplyLinks();
-            
             var hasNums = gistAliases.Any(x => int.TryParse(x, out _));
 
             if (hasNums)
@@ -313,12 +310,23 @@ namespace Web
 
                     if (index <= 0 || index > links.Count)
                         throw new ArgumentOutOfRangeException($"Invalid Index '{index}'. Valid Range: 1...{links.Count - 1}");
-                
-                    resolvedAliases.Add(links[index-1].Name);
+
+                    resolvedAliases.Add(links[index - 1].Name);
                 }
+
                 gistAliases = resolvedAliases.ToArray();
             }
+
+            return gistAliases;
+        }
+
+        public static bool ApplyGists(string tool, string[] gistAliases, string projectName = null)
+        {
+            projectName = projectName ?? new DirectoryInfo(Environment.CurrentDirectory).Name;
+            var links = GetGistApplyLinks();
             
+            gistAliases = ResolveGistAliases(gistAliases, links);
+
             foreach (var gistAlias in gistAliases)
             {
                 var gistLink = GistLink.Get(links, gistAlias);
@@ -340,6 +348,8 @@ namespace Web
             projectName = projectName ?? new DirectoryInfo(Environment.CurrentDirectory).Name;
             var links = GetGistApplyLinks();
             
+            gistAliases = ResolveGistAliases(gistAliases, links);
+
             var sb = new StringBuilder();
             var allResolvedFiles = new List<string>();
             foreach (var gistAlias in gistAliases)
@@ -370,11 +380,7 @@ namespace Web
                 var resolvedFiles = new List<string>();
                 foreach (var gistFile in gistFiles)
                 {
-                    var useFileName = ReplaceMyApp(gistFile.Key, projectName);
-                    if (useFileName.EndsWith("?"))
-                        useFileName = useFileName.Substring(0, useFileName.Length - 1);
-                    
-                    var resolvedFile = Path.GetFullPath(useFileName, basePath.Replace("\\","/"));
+                    var resolvedFile = ResolveFilePath(gistFile.Key, basePath, projectName, gistLink.To);
                     if (!File.Exists(resolvedFile))
                     {
                         if (Verbose) $"Skipping deleting non-existent file: {resolvedFile}".Print();
@@ -392,6 +398,7 @@ namespace Web
                         : "";
                     sb.AppendLine();
                     sb.AppendLine($"Delete {resolvedFiles.Count} files from {label}{gistLinkUrl}:");
+                    sb.AppendLine();
 
                     foreach (var resolvedFile in resolvedFiles)
                     {
@@ -471,6 +478,32 @@ namespace Web
             {
                 $"Done.".Print();
             }
+        }
+
+        private static string ResolveFilePath(string gistFilePath, string basePath, string projectName, string applyTo)
+        {
+            var useFileName = ReplaceMyApp(gistFilePath, projectName);
+            if (useFileName.EndsWith("?"))
+                useFileName = useFileName.Substring(0, useFileName.Length - 1);
+
+            var resolvedFile = Path.GetFullPath(useFileName, basePath.Replace("\\", "/"));
+
+            var writesToFolder = gistFilePath.IndexOf('\\') >= 0;
+            if (applyTo == "$HOST" && writesToFolder && !Directory.Exists(Path.GetDirectoryName(resolvedFile)))
+            {
+                // If resolved file doesn't exist for $HOST gists, check current folder for $"{projectName}.Folder\file.ext"
+                // e.g. $HOST\ServiceModel => .\ProjectName.ServiceModel 
+                var currentBasePath = Environment.CurrentDirectory;
+                var tryPath = projectName + "." + gistFilePath;
+                var resolvedPath = ResolveFilePath(tryPath, currentBasePath, projectName, applyTo:".");
+                if (Directory.Exists(Path.GetDirectoryName(resolvedPath)))
+                {
+                    if (Verbose) $"Using matching qualified path: {resolvedPath}".Print();
+                    return resolvedPath;
+                }
+            }
+            
+            return resolvedFile;
         }
 
         // More resilient impl for .NET Core
@@ -663,15 +696,8 @@ namespace Web
                         continue;
                     }
 
-                    var useFileName = ReplaceMyApp(gistFile.Key, projectName);
-                    bool noOverride = false;
-                    if (useFileName.EndsWith("?"))
-                    {
-                        noOverride = true;
-                        useFileName = useFileName.Substring(0, useFileName.Length - 1);
-                    }
-
-                    var resolvedFile = Path.GetFullPath(useFileName, basePath.Replace("\\","/"));
+                    var resolvedFile = ResolveFilePath(gistFile.Key, basePath, projectName, to);
+                    var noOverride = gistFile.Key.EndsWith("?");
                     if (noOverride && File.Exists(resolvedFile))
                     {
                         if (Verbose) $"Skipping existing optional file: {resolvedFile}".Print();
@@ -701,7 +727,8 @@ namespace Web
             {
                 if (!ForceApproval)
                 {
-                    sb.Insert(0, $"Write files from {label}{gistLinkUrl} to:{Environment.NewLine}");
+                    var nl = Environment.NewLine;
+                    sb.Insert(0, $"{nl}Write files from {label}{gistLinkUrl} to:{nl}{nl}");
                     sb.AppendLine()
                         .AppendLine("Proceed? (n/Y):");
     
@@ -900,7 +927,7 @@ namespace Web
                     
                     "".Print();
 
-                    "Using numbered list index instead:".Print();
+                    "Mix using numbered list index instead:".Print();
                     
                     $"   mix 1 3 5 ...".Print();
                     
@@ -912,7 +939,7 @@ namespace Web
                     
                     "".Print();
 
-                    $"Use a custom project name instead of current folder name (replaces MyApp):".Print();
+                    $"Use custom project name instead of current folder name (replaces MyApp):".Print();
 
                     $"   mix -name ProjectName <name> <name> ...".Print();
                     
