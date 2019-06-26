@@ -25,6 +25,7 @@
     <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
     <LangVersion>latest</LangVersion>
     <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>-->
+    <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,12 +52,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.3" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
-    <PackageReference Include="Mysql.Data" Version="8.0.15" />
-    <PackageReference Include="Npgsql" Version="4.0.5" />
-    <PackageReference Include="Markdig" Version="0.16.0" />
-    <PackageReference Include="NUglify" Version="1.5.12" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.4" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.6.1" />
+    <PackageReference Include="Mysql.Data" Version="8.0.16" />
+    <PackageReference Include="Npgsql" Version="4.0.7" />
+    <PackageReference Include="Markdig" Version="0.17.0" />
+    <PackageReference Include="NUglify" Version="1.5.13" />
 
     <PackageReference Include="ServiceStack.Interfaces" Version="5.*" />
     <PackageReference Include="ServiceStack.Text" Version="5.*" />

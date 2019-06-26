@@ -27,6 +27,7 @@
         <file src="bin\Release\netcoreapp2.1\publish\AWSSDK.DynamoDBv2.dll" target="tools\netcoreapp2.1\any\AWSSDK.DynamoDBv2.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\AWSSDK.S3.dll" target="tools\netcoreapp2.1\any\AWSSDK.S3.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\AWSSDK.SQS.dll" target="tools\netcoreapp2.1\any\AWSSDK.SQS.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\BouncyCastle.Crypto.dll" target="tools\netcoreapp2.1\any\BouncyCastle.Crypto.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Google.Protobuf.dll" target="tools\netcoreapp2.1\any\Google.Protobuf.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Markdig.dll" target="tools\netcoreapp2.1\any\Markdig.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Azure.Amqp.dll" target="tools\netcoreapp2.1\any\Microsoft.Azure.Amqp.dll" />
@@ -80,10 +81,12 @@
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.0\System.Drawing.Common.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.0\System.Drawing.Common.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.0\System.Text.Encoding.CodePages.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.0\System.Text.Encoding.CodePages.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-arm64\native\sni.dll" target="tools\netcoreapp2.1\any\runtimes\win-arm64\native\sni.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x64\native\sni.dll" target="tools\netcoreapp2.1\any\runtimes\win-x64\native\sni.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x64\native\e_sqlite3.dll" target="tools\netcoreapp2.1\any\runtimes\win-x64\native\e_sqlite3.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x86\native\sni.dll" target="tools\netcoreapp2.1\any\runtimes\win-x86\native\sni.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x86\native\e_sqlite3.dll" target="tools\netcoreapp2.1\any\runtimes\win-x86\native\e_sqlite3.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win8-arm\native\e_sqlite3.dll" target="tools\netcoreapp2.1\any\runtimes\win8-arm\native\e_sqlite3.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp2.1\any\runtimes\win-x64\native\netstandard2.0\SQLite.Interop.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x86\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp2.1\any\runtimes\win-x86\native\netstandard2.0\SQLite.Interop.dll" />
