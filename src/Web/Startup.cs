@@ -200,6 +200,11 @@ namespace Web
                     ForceApproval = true;
                     continue;
                 }
+                if (TokenArgs.Contains(arg))
+                {
+                    GitHubGistToken = args[++i];
+                    continue;
+                }
                 if (arg == "shortcut")
                 {
                     createShortcut = true;
@@ -398,23 +403,9 @@ namespace Web
                 }
                 if (arg == "uninstall")
                 {
-                    void PrintUninstallUsage()
-                    {
-                        "".Print();
-                        $"Usage: {tool} uninstall <app>".Print();
-                        var appsDir = GetAppsPath("");
-                        var appNames = Directory.GetDirectories(appsDir);
-                        if (appNames.Length > 0)
-                        {
-                            "".Print();
-                            "Installed Apps:".Print();
-                            appNames.Each(x => $" {new DirectoryInfo(x).Name}".Print());
-                        }
-                    }
-                    
                     if (i + 1 >= args.Length)
                     {
-                        PrintUninstallUsage();
+                        PrintAppUsage(tool, arg);
                         return null;
                     }
 
@@ -426,7 +417,7 @@ namespace Web
                     {
                         "".Print();
                         $"App '{target}' is not installed.".Print();
-                        PrintUninstallUsage();
+                        PrintAppUsage(tool, arg);
                         return null;
                     }
                     
@@ -601,7 +592,15 @@ namespace Web
             }
 
             if (appSettingsContent == null && (appSettingsPath == null && createShortcutFor == null && RunScript == null))
-                throw new Exception($"'{appSettingPaths[0]}' does not exist.\n\nView Help: {tool} --help");
+            {
+                if (Directory.Exists(GetAppsPath("")) && Directory.GetDirectories(GetAppsPath("")).Length > 0)
+                {
+                    PrintAppUsage(tool, "run");
+                    return null;
+                }
+
+                throw new Exception($"'{appSettingPaths[0]}' does not exist.\n\nView Help: {tool} ?");
+            }
 
             var usingWebSettings = File.Exists(appSettingsPath);
             if (Verbose || (usingWebSettings && !createShortcut && tool == "web" && instruction == null && appSettingsPath != null))
@@ -673,20 +672,57 @@ namespace Web
             {
                 RegisterStat(tool, "publish");
 
-                var toolDir = Path.GetDirectoryName(ctx.ToolPath);
+                if (!File.Exists("app.settings"))
+                    throw new Exception($"No app.settings exists");
 
-                var (publishDir, publishAppDir, publishToolDir) = GetPublishDirs(tool == "app" ? "cef" : tool, appDir);
-                CreatePublishShortcut(ctx, publishDir, publishAppDir, publishToolDir, Path.GetFileName(ctx.ToolPath));
-
-                appDir.CopyAllTo(publishAppDir, excludePaths: new []{ publishToolDir });
-                toolDir.CopyAllTo(publishToolDir);
-
-                if (Verbose)
+                if (string.IsNullOrEmpty(GitHubGistToken))
                 {
-                    $"publish: {appDir} -> {publishAppDir}".Print();
-                    $"publish: {toolDir} -> {publishToolDir}".Print();
+                    var CR = Environment.NewLine;
+                    throw new Exception($"GitHub Access Token required to publish App to Gist.{CR}" +
+                                        $"Specify Token with --token <token> or GITHUB_GIST_TOKEN Environment Variable.{CR}" + 
+                                        $"Generate Access Token at: https://github.com/settings/tokens");
+                }
+                
+                var files = new Dictionary<string, object>();
+                Environment.CurrentDirectory.CopyAllToDictionary(files, excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray());
+                
+                string gistUrl = null;
+                string description = null;
+                var sb = new StringBuilder();
+                foreach (var line in File.ReadAllLines("app.settings"))
+                {
+                    sb.AppendLine(line);
+                    if (line.StartsWith("description") || (line.StartsWith("name ") && string.IsNullOrEmpty(description)))
+                    {
+                        description = line.RightPart(' ');
+                    }
+                    if (line.StartsWith("publish "))
+                    {
+                        gistUrl = line.RightPart(' ');
+                    }
                 }
 
+                var gateway = new GitHubGateway(GitHubGistToken);
+
+                var createGist = string.IsNullOrEmpty(gistUrl);
+                if (createGist)
+                {
+                    var gist = gateway.CreateGithubGist(
+                        description ?? new DirectoryInfo(Environment.CommandLine).Name + " Sharp App", isPublic: true, 
+                        files: files);
+                    
+                    $"App published to: {gist.Url}".Print();
+
+                    sb.AppendLine("publish " + gist.Html_Url);
+                    File.WriteAllText("app.settings", sb.ToString());
+                }
+                else
+                {
+                    var gistId = gistUrl.LastRightPart('/');
+                    gateway.WriteGistFiles(gistId, files);
+                    $"App updated at: {gistUrl}".Print();
+                }
+                
                 return null;
             }
             if (RunScript != null)
@@ -797,6 +833,20 @@ namespace Web
             }
 
             return CreateWebAppContext(ctx);
+        }
+
+        private static void PrintAppUsage(string tool, string cmd)
+        {
+            "".Print();
+            $"Usage: {tool} {cmd} <app>".Print();
+            var appsDir = GetAppsPath("");
+            var appNames = Directory.GetDirectories(appsDir);
+            if (appNames.Length > 0)
+            {
+                "".Print();
+                "Installed Apps:".Print();
+                appNames.Each(x => $"  {new DirectoryInfo(x).Name}".Print());
+            }
         }
 
         private static string InstallRepo(string downloadUrl, string appName)
@@ -989,13 +1039,18 @@ Usage:
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
   {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
 
-  {tool} run                     Run Sharp App in App folder using local app.settings
-  {tool} run path/app.settings   Run Sharp App at folder containing specified app.settings
-{runProcess}
-  {tool} list                    List available Sharp Apps            (Alias 'l')
-  {tool} install <name>          Install Sharp App                    (Alias 'i')
+  {tool} open                    List of available Sharp Apps
+  {tool} open <app>              Install and run Sharp App
 
-  {tool} publish                 Package Sharp App to /publish ready for deployment (.NET Core Required)
+  {tool} run                     Run Sharp App in current directory
+  {tool} run <name>              Run Installed Sharp App
+  {tool} run path/app.settings   Run Sharp App at directory containing specified app.settings
+{runProcess}
+  {tool} install                 List available Sharp Apps            (Alias 'l')
+  {tool} install <app>           Install Sharp App                    (Alias 'i')
+  {tool} uninstall <app>         Uninstall Sharp App
+  
+  {tool} publish                 Publish Sharp App to Gist       (requires token)
   
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
@@ -1009,6 +1064,7 @@ Options:
     -r, --release             Run in Release mode for Production
     -s, --source              Change GitHub Source for App Directory
     -f, --force               Quiet mode, always approve, never prompt
+        --token               Use GitHub Auth Token 
         --clean               Delete downloaded caches
         --verbose             Display verbose logging
         --ignore-ssl-errors   Ignore SSL Errors
@@ -2278,6 +2334,44 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
             }
         }
+
+        public static void CopyAllToDictionary(this string src, Dictionary<string, object> to, string[] excludePaths = null)
+        {
+            var d = Path.DirectorySeparatorChar;
+            string VirtualPath(string filePath) => filePath.Substring(src.Length + 1);
+
+            foreach (string newPath in Directory.GetFiles(src, "*.*", SearchOption.AllDirectories))
+            {
+                if (!excludePaths.IsEmpty() && excludePaths.Any(x => newPath.StartsWith(x)))
+                    continue;
+
+                if (ExcludeFoldersNamed.Any(x => newPath.Contains($"{d}{x}{d}", StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                try
+                {
+                    if (newPath.EndsWith(".settings"))
+                    {
+                        var text = File.ReadAllText(newPath);
+                        if (text.Contains("debug true"))
+                        {
+                            text = text.Replace("debug true", "debug false");
+                            to[VirtualPath(newPath)] = text;
+                            continue;
+                        }
+                    }
+
+                    to[VirtualPath(newPath)] = MimeTypes.IsBinary(MimeTypes.GetMimeType(newPath))
+                        ? (object)File.ReadAllBytes(newPath)
+                        : File.ReadAllText(newPath);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(Startup.Verbose ? ex.ToString() : ex.Message);
+                }
+            }
+        }
+
     }
 
 }
