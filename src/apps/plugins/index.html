@@ -1,5 +1,5 @@
 <!--
-title: Web App Plugins
+title: Sharp App Plugins
 -->
 
 {{ 'nameContains,tab' | importRequestParams }}
@@ -11,26 +11,26 @@ title: Web App Plugins
 
 <p>
     Plugins allow "no touch" sharing of 
-    <a href="http://docs.servicestack.net/plugins">ServiceStack Plugins</a>, 
-    <a href="http://docs.servicestack.net/create-your-first-webservice">Services</a>, 
-    <a href="http://templates.servicestack.net/docs/filters">Template Filters</a>
-    <a href="http://templates.servicestack.net/docs/code-pages">Template Code Pages</a>,
-    <a href="http://docs.servicestack.net/validation">Validators</a>, etc.
-    contained within <b>.dll's</b> or <b>.exe's</b> dropped in a Web App's 
+    <a href="https://docs.servicestack.net/plugins">ServiceStack Plugins</a>, 
+    <a href="https://docs.servicestack.net/create-your-first-webservice">Services</a>, 
+    <a href="https://sharpscript.net/docs/methods">Script Methods</a>
+    <a href="https://sharpscript.net/docs/code-pages">Sharp Code Pages</a>,
+    <a href="https://docs.servicestack.net/validation">Validators</a>, etc.
+    contained within <b>.dll's</b> or <b>.exe's</b> dropped in a Sharp App's 
     <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/apps/plugins/plugins">/plugins</a> folder which are auto-registered 
     on startup. This source code for plugins used in this App were built from the .NET Core 2.1 projects in the
     <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/example-plugins">/example-plugins</a> folder.
 </p>
 
-<h3>FilterInfo Plugin</h3>
+<h3>ScriptInfo Plugin</h3>
 
 <p>
-    The <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/example-plugins/FilterInfo">/FilterInfo</a> plugin contains the 
-    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/FilterInfo/EvaluateTemplateService.cs">EvaluateTemplateService</a>
+    The <a href="https://github.com/NetCoreApps/WebApp/tree/master/src/example-plugins/ScriptInfo">/ScriptInfo</a> plugin contains the 
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/ScriptInfo/EvaluateTemplateService.cs">EvaluateTemplateService</a>
     which lets us evaluate templates via Ajax and the
-    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/FilterInfo/FilterInfoFilters.cs">FilterInfoFilters</a>
-    which provides the <em>filterLinkToSrc</em> and <em>filtersAvailable</em> filters used below to provide the UI to quickly browse the 
-    different filters available in ServiceStack:
+    <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/ScriptInfo/ScriptInfoMethods.cs">ScriptInfoMethods</a>
+    which provides the <em>methodLinkToSrc</em> and <em>methodsAvailable</em> script methods used below to provide the UI to quickly browse the 
+    different methods available in ServiceStack:
 </p>
 
 <hr>
@@ -39,9 +39,10 @@ title: Web App Plugins
     <div class="row">
         <div class="col-auto">
             <div class="input-group">
-                <label for="nameContains" style="line-height:2rem;margin:0 10px 0 0">Search for available filters:</label>
-                <input type="text" id="nameContains" name="nameContains" class="form-control" placeholder="Filter Name Contains" 
-                       value="{{ nameContains | ifExists }}"
+                <label for="nameContains" style="line-height:2rem;margin:0 10px 0 0">Search for available methods:</label>
+                <input type="text" id="nameContains" name="nameContains" class="form-control" placeholder="Method Name Contains" 
+                       value="{{ nameContains }}"
+                       autofocus onfocus="var hold=this.value; this.value=''; this.value=hold"
                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <span class="input-group-btn"><button class="btn btn-primary" type="submit">Go!</button></span>
                 <input type="hidden" name="tab">
@@ -50,33 +51,33 @@ title: Web App Plugins
     </div>
 </form>
 
-<ul id="filters" class="nav nav-tabs" role="tablist">
+<ul id="methods" class="nav nav-tabs" role="tablist">
     <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#default-filters" role="tab">Default Filters</a>
+        <a class="nav-link" data-toggle="tab" href="#default-scripts" role="tab">Default</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#html-filters" role="tab">HTML Filters</a>
+        <a class="nav-link" data-toggle="tab" href="#html-scripts" role="tab">HTML Scripts</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#protected-filters" role="tab">Protected Filters</a>
+        <a class="nav-link" data-toggle="tab" href="#protected-scripts" role="tab">Protected Scripts</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#info-filters" role="tab">Info Filters</a>
+        <a class="nav-link" data-toggle="tab" href="#info-scripts" role="tab">Info Scripts</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#redis-filters" role="tab">Redis Filters</a>
+        <a class="nav-link" data-toggle="tab" href="#redis-scripts" role="tab">Redis Scripts</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#db-filters" role="tab">DB Filters</a>
+        <a class="nav-link" data-toggle="tab" href="#db-scripts" role="tab">DB Scripts</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#ss-filters" role="tab">ServiceStack</a>
+        <a class="nav-link" data-toggle="tab" href="#ss-scripts" role="tab">ServiceStack</a>
     </li>
 </ul>
 
 {{#raw appendTo scripts}}
 <script>
-var tab = queryStringParams()['tab'] || 'default-filters';
+var tab = queryStringParams()['tab'] || 'default-scripts';
 $("#" + tab).addClass('active');
 $(".nav-link[href$=" + tab + "]").addClass('active');
 
@@ -107,69 +108,62 @@ $("FORM").submit(function(){
     }
 </style>
 
-{{ 8 | assignTo: rows }}
+{{ 8 | to => rows }}
 <div class="tab-content">
-    <div class="tab-pane" id="default-filters" role="tabpanel">
-{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateDefaultFilters' | assignTo: filter }}
-<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
-{{ filter | filtersAvailable
-    | where: contains(lower(it.Name), lower(default(nameContains,'')))
-    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
-}}
+    <div class="tab-pane" id="default-scripts" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'DefaultScripts' | to => method }}
+{{ method | methodsAvailable | where => it.Name.lower().contains((nameContains ?? '').lower())
+          | to => methods }}
+<table class="table table-striped"><caption>{{ method | methodLinkToSrc }}</caption>
+{{#each methods}}<tr><td>{{FirstParam}}</td><td>{{Body}}</td><td>{{Return}}</td></tr>{{/each}}
 </table>` }) }}
     </div>
-    <div class="tab-pane" id="html-filters" role="tabpanel">
-{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateHtmlFilters' | assignTo: filter }}
-<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
-{{ filter | filtersAvailable
-    | where: contains(lower(it.Name), lower(default(nameContains,'')))
-    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
-}}
+    <div class="tab-pane" id="html-scripts" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'HtmlScripts' | to => method }}
+{{ method | methodsAvailable | where => it.Name.lower().contains((nameContains ?? '').lower())
+          | to => methods }}
+<table class="table table-striped"><caption>{{ method | methodLinkToSrc }}</caption>
+{{#each methods}}<tr><td>{{FirstParam}}</td><td>{{Body}}</td><td>{{Return}}</td></tr>{{/each}}
 </table>` }) }}
     </div>
-    <div class="tab-pane" id="protected-filters" role="tabpanel">
-{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateProtectedFilters' | assignTo: filter }}
-<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
-{{ filter | filtersAvailable
-    | where: contains(lower(it.Name), lower(default(nameContains,'')))
-    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
-}}
+    <div class="tab-pane" id="protected-scripts" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'ProtectedScripts' | to => method }}
+{{ method | methodsAvailable | where => it.Name.lower().contains((nameContains ?? '').lower())
+          | to => methods }}
+<table class="table table-striped"><caption>{{ method | methodLinkToSrc }}</caption>
+{{#each methods}}<tr><td>{{FirstParam}}</td><td>{{Body}}</td><td>{{Return}}</td></tr>{{/each}}
 </table>` }) }}
     </div>
-    <div class="tab-pane" id="info-filters" role="tabpanel">
-{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateInfoFilters' | assignTo: filter }}
-<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
-{{ filter | filtersAvailable
-    | where: contains(lower(it.Name), lower(default(nameContains,'')))
-    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
-}}
+    <div class="tab-pane" id="info-scripts" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'InfoScripts' | to => method }}
+{{ method | methodsAvailable | where => it.Name.lower().contains((nameContains ?? '').lower())
+          | to => methods }}
+<table class="table table-striped"><caption>{{ method | methodLinkToSrc }}</caption>
+{{#each methods}}<tr><td>{{FirstParam}}</td><td>{{Body}}</td><td>{{Return}}</td></tr>{{/each}}
 </table>` }) }}
     </div>
-    <div class="tab-pane" id="redis-filters" role="tabpanel">
-{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateRedisFilters' | assignTo: filter }}
-<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
-{{ filter | filtersAvailable
-    | where: contains(lower(it.Name), lower(default(nameContains,'')))
-    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
-}}
+    <div class="tab-pane" id="redis-scripts" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'RedisScripts' | to => method }}
+{{ method | methodsAvailable | where => it.Name.lower().contains((nameContains ?? '').lower())
+          | to => methods }}
+<table class="table table-striped"><caption>{{ method | methodLinkToSrc }}</caption>
+{{#each methods}}<tr><td>{{FirstParam}}</td><td>{{Body}}</td><td>{{Return}}</td></tr>{{/each}}
 </table>` }) }}
     </div>
-    <div class="tab-pane" id="db-filters" role="tabpanel">
-{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateDbFiltersAsync' | assignTo: filter }}
-<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
-{{ filter | filtersAvailable
-    | where: contains(lower(it.Name), lower(default(nameContains,'')))
-    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
-}}
+    <div class="tab-pane" id="db-scripts" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'DbScriptsAsync' | to => method }}
+{{ method | methodsAvailable | where => it.Name.lower().contains((nameContains ?? '').lower())
+          | to => methods }}
+<table class="table table-striped"><caption>{{ method | methodLinkToSrc }}</caption>
+{{#each methods}}<tr><td>{{FirstParam}}</td><td>{{Body}}</td><td>{{Return}}</td></tr>{{/each}}
 </table>` }) }}
     </div>
-    <div class="tab-pane" id="ss-filters" role="tabpanel">
-{{ "live-template" | partial({ rows, className, template:`{{ 'TemplateServiceStackFilters' | assignTo: filter }}
-<table class="table table-striped"><caption>{{ filter | filterLinkToSrc }}</caption>
-{{ filter | filtersAvailable
-    | where: contains(lower(it.Name), lower(default(nameContains,'')))
-    | select: <tr><td>{ it.FirstParam }</td><td>{ it.Body }</td><td>{ it.Return }</td></tr>
-}}
+    <div class="tab-pane" id="ss-scripts" role="tabpanel">
+{{ "live-template" | partial({ rows, className, template:`{{ 'ServiceStackScripts' | to => method }}
+{{ method | methodsAvailable | where => it.Name.lower().contains((nameContains ?? '').lower())
+          | to => methods }}
+<table class="table table-striped"><caption>{{ method | methodLinkToSrc }}</caption>
+{{#each methods}}<tr><td>{{FirstParam}}</td><td>{{Body}}</td><td>{{Return}}</td></tr>{{/each}}
 </table>` }) }}
     </div>
 </div>
@@ -189,7 +183,7 @@ $("FORM").submit(function(){
 <caption>Top 5 Local Disks</caption>
 <tr><th>Name</th><th>Type</th><th>Available Space</th><th>Total Free Space</th><th>Total Size</th></tr>
 {{ drives    | orderByDescending: it.TotalSize
-   | take(5) | assignTo: driveInfos }}
+   | take(5) | to => driveInfos }}
 {{#each driveInfos}}
 <tr>
     <td>{{ Name | substringWithEllipsis(50) }}</td>
@@ -206,8 +200,8 @@ $("FORM").submit(function(){
 <tr><th>Id</th><th>Name</th><th>CPU Time</th><th>User Time</th><th>Memory (current)</th>
     <th>Memory (peak)</th><th>Active Threads</th></tr>
 {{#if currentProcess}}
-{{ currentProcess | assignTo: p }}
-{{ "h':'mm':'ss'.'FFF" | assignTo: fmtTime }}
+{{ currentProcess | to => p }}
+{{ "h':'mm':'ss'.'FFF" | to => fmtTime }}
 <tr>
     <td>{{ Id }}</td>
     <td>{{ p.ProcessName | substringWithEllipsis(15) }}</td>
@@ -311,7 +305,7 @@ $("FORM").submit(function(){
 <p>
     The 
     <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/example-plugins/ServerInfo/ContactServices.cs">ContactServices</a>
-    shows an example of a Service relying on ServiceStack's <a href="http://docs.servicestack.net/validation">Validation Feature</a>:  
+    shows an example of a Service relying on ServiceStack's <a href="https://docs.servicestack.net/validation">Validation Feature</a>:  
 </p>
 
 <style>
@@ -402,12 +396,12 @@ function resetContacts(){ $.getJSON("/contacts/reset", fetchContacts) }
 
 <p>
     The use of the <em>ValidationFeature</em> above shows an example of loading a 
-    <a href="http://docs.servicestack.net/plugins">ServiceStack Plugin</a> by specifying it as a feature in its 
+    <a href="https://docs.servicestack.net/plugins">ServiceStack Plugin</a> by specifying it as a feature in its 
     <a href="https://github.com/NetCoreApps/WebApp/blob/master/src/apps/plugins/web.settings">web.settings</a>:
 </p>
 
 <pre class="settings"><code>debug true
-name Web App Plugins
+name Sharp App Plugins
 port 5000
 contentRoot ~/../plugins
 webRoot ~/../plugins
@@ -417,7 +411,7 @@ ValidationFeature { ScanAppHostAssemblies: true }
 </code></pre>
 
 <p>
-    All plugins listed in <em>features</em> will be added to your Web App's AppHost in the order they're specified. They can further customized 
+    All plugins listed in <em>features</em> will be added to your Sharp App's AppHost in the order they're specified. They can further customized 
     by adding a separate config entry with the Plugin Name and a JavaScript Object literal to populate the Plugin at registration, e.g
     the config above is equivalent to:
 </p>
@@ -476,11 +470,11 @@ Plugins.Add(new ValidationFeature { ScanAppHostAssemblies = true });</code></pre
 </p>
 
 <p>
-    Other optional plugins registered in this Web App is the metadata Services required for 
-    <a href="http://docs.servicestack.net/openapi">Open API</a>, 
-    <a href="http://docs.servicestack.net/postman">Postman</a> as well as
-    <a href="http://docs.servicestack.net/corsfeature">support for CORS</a>.
-    You can check the <a href="http://templates.servicestack.net/docs/info-filters#debug-template">Metadata Debug Template</a> for all Plugins 
+    Other optional plugins registered in this App is the metadata Services required for 
+    <a href="https://docs.servicestack.net/openapi">Open API</a>, 
+    <a href="https://docs.servicestack.net/postman">Postman</a> as well as
+    <a href="https://docs.servicestack.net/corsfeature">support for CORS</a>.
+    You can check the <a href="https://sharpscript.net/docs/servicestack-scripts#debug-template">Metadata Debug Inspector</a> for all Plugins 
     loaded in your AppHost.
 </p>
 
@@ -490,5 +484,5 @@ Plugins.Add(new ValidationFeature { ScanAppHostAssemblies = true });</code></pre
     All Services loaded by plugins continue to benefit from ServiceStack's rich metadata services, including being listed 
     in the <a href="/metadata">/metadata</a> page, being able to explore and interact with Services using 
     <a href="/swagger-ui/">/swagger-ui/</a> as well as being able to generate Typed APIs for the most popular
-    <a href="http://docs.servicestack.net/add-servicestack-reference">Mobile, Web and Desktop platforms</a>.
+    <a href="https://docs.servicestack.net/add-servicestack-reference">Mobile, Web and Desktop platforms</a>.
 </p>

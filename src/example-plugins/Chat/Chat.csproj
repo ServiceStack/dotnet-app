@@ -14,13 +14,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.App" />
 
-    <PackageReference Include="ServiceStack.Text.Core" Version="5.*" />
-    <PackageReference Include="ServiceStack.Interfaces.Core" Version="5.*" />
-    <PackageReference Include="ServiceStack.Client.Core" Version="5.*" />
-    <PackageReference Include="ServiceStack.Common.Core" Version="5.*" />
-    <PackageReference Include="ServiceStack.Core" Version="5.*" />
+    <PackageReference Include="ServiceStack.Text" Version="5.*" />
+    <PackageReference Include="ServiceStack.Interfaces" Version="5.*" />
+    <PackageReference Include="ServiceStack.Client" Version="5.*" />
+    <PackageReference Include="ServiceStack.Common" Version="5.*" />
+    <PackageReference Include="ServiceStack" Version="5.*" />
 
     <!-- 
     <ProjectReference Include="..\..\..\..\..\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj" />

@@ -3,11 +3,11 @@ $(".live-template").each(function(){
     var el = $(this)
     el.find("textarea").on("input", function(){
 
-        var request = { template: el.find("textarea").val() }
+        var request = { script: el.find("textarea").val() }
 
         $.ajax({
             type: "POST",
-            url: "/template/eval" + location.search,
+            url: "/script/eval" + location.search,
             data: JSON.stringify(request),
             contentType: "application/json",
             dataType: "html"

@@ -15,6 +15,7 @@ using ServiceStack;
 using ServiceStack.Auth;
 using ServiceStack.Templates;
 using ServiceStack.Configuration;
+using ServiceStack.Script;
 
 namespace Chat
 {
@@ -39,7 +40,7 @@ namespace Chat
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole();
-            var appSettings = new TextFileSettings("~/../../apps/chat/web.settings".MapProjectPath());
+            var appSettings = new TextFileSettings("~/../../apps/chat/app.settings".MapProjectPath());
             app.UseServiceStack(new AppHost(appSettings));
         }
     }
@@ -237,7 +238,7 @@ namespace Chat
                 Channel = request.Channel,
                 FromUserId = sub.UserId,
                 FromName = sub.DisplayName,
-                Message = EvaluateIfTemplateExpression(request.Message),
+                Message = EvaluateIfScriptExpression(request.Message),
             };
 
             // Check to see if this is a private message to a specific user
@@ -270,19 +271,19 @@ namespace Chat
             return msg;
         }
 
-        private string EvaluateIfTemplateExpression(string msg)
+        private string EvaluateIfScriptExpression(string msg)
         {
-            if (msg.IndexOf("{{") == -1 || msg.IndexOf("}}") == -1)
+            if (msg.IndexOf("{{", StringComparison.Ordinal) == -1 || msg.IndexOf("}}", StringComparison.Ordinal) == -1)
                 return PclExportClient.Instance.HtmlEncode(msg);
 
             try
             {
-                var context = new TemplateContext {
+                var context = new ScriptContext {
                     Args = {
-                        [TemplateConstants.Request] = Request
+                        [ScriptConstants.Request] = Request
                     }
                 }.Init();
-                var evaluatedMsg = context.EvaluateTemplate(msg);
+                var evaluatedMsg = context.EvaluateScript(msg);
                 return evaluatedMsg.IndexOf('<') >= 0 || evaluatedMsg.IndexOf('>') >= 0
                     ? evaluatedMsg.Replace("<", "&lt;").Replace(">", "&gt;")
                     : evaluatedMsg;
