@@ -379,5 +379,35 @@ namespace Run
             RetryExec(() => Directory.SetCurrentDirectory("wip\\TheProject"));
             await Startup.Mix("mix", new[] { "feature-mq" });
         }
+        
+        [Test]
+        public async Task Run_web_apps()
+        {
+            await Startup.CreateWebHost("web", new[]{ "apps" });
+        }
+
+        [Test]
+        public async Task Run_web_install_redis()
+        {
+            await Startup.CreateWebHost("web", new[]{ "install", "redis" });
+        }
+
+        [Test]
+        public async Task Run_web_open_redis()
+        {
+            await Startup.CreateWebHost("web", new[]{ "open", "redis" });
+        }
+
+        [Test]
+        public async Task Run_web_run_redis()
+        {
+            await Startup.CreateWebHost("web", new[]{ "run", "redis" });
+        }
+ 
+        [Test]
+        public async Task Run_web_open_url()
+        {
+            await Startup.CreateWebHost("web", new[]{ "open", "https://github.com/sharp-apps/bare" });
+        }
     }
 }

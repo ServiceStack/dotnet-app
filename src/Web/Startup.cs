@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Compression;
-using System.Net;
 using System.Linq;
 using System.Text;
 using System.Reflection;
@@ -29,7 +27,6 @@ using ServiceStack.Redis;
 using ServiceStack.OrmLite;
 using ServiceStack.Configuration;
 using ServiceStack.Azure.Storage;
-using ServiceStack.FluentValidation.Internal;
 using ServiceStack.Html;
 using ServiceStack.Script;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
@@ -104,19 +101,36 @@ namespace Web
     {
         public static WebAppEvents Events { get; set; }
 
-        public static string GalleryUrl { get; set; } = "https://servicestack.net/apps/gallery";
-
         public static string GitHubSource { get; set; } = "sharp-apps Sharp Apps";
         public static string GitHubSourceTemplates { get; set; } = "NetCoreTemplates .NET Core C# Templates;NetFrameworkTemplates .NET Framework C# Templates;NetFrameworkCoreTemplates ASP.NET Core Framework Templates";
+        
+        public static string GitHubGistToken { get; set; } 
+
+        public static string GistAppsId { get; set; } = "802daba52b6fe6e2ed1430348dc596cb";
+
+        public static List<GistLink> GetGistAppsLinks() => GetGistLinks(GistAppsId, "apps.md");
+        public static string GetAppsPath(string gistAlias)
+        {
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return Path.Combine(homeDir, ".sharp-apps", gistAlias);
+        }
 
         public static bool? DebugMode { get; set; }
-        static string[] DebugArgs = { "/d", "-d", "/debug", "--debug" };
-        static string[] ReleaseArgs = { "/r", "-r", "/release", "--release" };
+        static string[] DebugArgs = { "/d", "-d", "/debug", "-debug" , "--debug" };
+        static string[] ReleaseArgs = { "/r", "-r", "/release", "-release", "--release" };
+        
+        static string[] TokenArgs = { "/token", "-token", "--token" };
 
         public static string RunScript { get; set; }
         public static bool WatchScript { get; set; }
         
+        public static bool Open { get; set; }
+        
         public static string ToolFavIcon = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "favicon.ico");
+
+        public static GistVirtualFiles GistVfs;
+        public static Task<Gist> GistVfsTask;
+        public static Task GistVfsLoadTask;
 
         public static async Task<WebAppContext> CreateWebHost(string tool, string[] args, WebAppEvents events = null)
         {
@@ -134,10 +148,12 @@ namespace Web
                 GitHubSource = Environment.GetEnvironmentVariable("APP_SOURCE");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_TEMPLATES")))
                 GitHubSourceTemplates = Environment.GetEnvironmentVariable("APP_SOURCE_TEMPLATES");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_GALLERY")))
-                GalleryUrl = Environment.GetEnvironmentVariable("APP_GALLERY");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_GISTS")))
                 GistLinksId = Environment.GetEnvironmentVariable("APP_SOURCE_GISTS");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_APPS")))
+                GistAppsId = Environment.GetEnvironmentVariable("APP_SOURCE_APPS");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN")))
+                GitHubGistToken = Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN");
             
             InitMix();
 
@@ -152,7 +168,6 @@ namespace Web
             var appSettingPaths = new[]
             {
                 "app.settings", "../app/app.settings", "app/app.settings",
-                "web.settings", "../app/web.settings", "app/web.settings",
             };
             for (var i = 0; i < args.Length; i++)
             {
@@ -210,7 +225,33 @@ namespace Web
                     }
 
                     if (!(script.EndsWith(".html") || script.EndsWith(".ss")))
-                        throw new ArgumentException("Only .ss or .html scripts can be run");
+                    {
+                        // Run SharpApp
+                        var appsDir = GetAppsPath(script);
+                        if (Directory.Exists(appsDir))
+                        {
+                            RetryExec(() => Directory.SetCurrentDirectory(appsDir));
+                            runSharpApp = true;
+
+                            // Run Gist SharpApp
+                            var gistFile = appsDir + ".gist";
+                            if (File.Exists(gistFile))
+                            {
+                                if (Verbose) $"Loading GistVirtualFiles from: {gistFile}".Print();
+                                var gistJson = File.ReadAllText(gistFile);
+                                var gist = gistJson.FromJson<Gist>();
+                                GistVfs = new GistVirtualFiles(gist);
+                                GistVfsTask = GistVfs.GetGistAsync(); // fire to load asynchronously
+                            }
+                            
+                            i++;
+                            continue;
+                        }
+                        
+                        throw new ArgumentException(script.IndexOf('.', StringComparison.Ordinal) >= 0 
+                            ? "Only .ss or .html scripts can be run"
+                            : $"No '{script}' App installed");
+                    }
                         
                     RunScript = script;
                     WatchScript = arg == "watch";
@@ -229,7 +270,175 @@ namespace Web
                     }
 
                     continue;
-                }                
+                }
+                if (arg == "open")
+                {
+                    var gistLinks = GetGistAppsLinks();
+
+                    if (i + 1 >= args.Length)
+                    {
+                        PrintGistLinks(tool, gistLinks, usage:$"Usage: {tool} open <name>");
+                        return null;
+                    }
+                    
+                    var target = args[i+1];
+                    RegisterStat(tool, target, "open");
+
+                    var gistLink = gistLinks.FirstOrDefault(x => x.Name == target);
+
+                    var appsDir = GetAppsPath(target);
+
+                    var gistId = gistLink?.GistId;
+                    if (gistId == null)
+                    {
+                        if (target.Length == GistAppsId.Length)
+                        {
+                            gistId = target;
+                        }
+                        else if (target.StartsWith("https://gist.github.com/"))
+                        {
+                            gistId = target.ToGistId();
+                            appsDir = GetAppsPath(gistId);
+                        }
+                        else if (gistLink?.Repo != null)
+                        {
+                            appsDir = InstallRepo(gistLink.Url.EndsWith(".zip") 
+                                    ? gistLink.Url 
+                                    : GitHubUtils.Gateway.GetSourceZipUrl(gistLink.User, gistLink.Repo), 
+                                target);
+
+                            if (!Directory.Exists(appsDir))
+                            {
+                                $"Could not install {target}".Print();
+                                return null;
+                            }
+                        }
+                        else if (target.StartsWith("https://github.com/"))
+                        {
+                            var pathInfo = target.Substring("https://github.com/".Length);
+                            var user = pathInfo.LeftPart('/');
+                            var repo = pathInfo.RightPart('/').LeftPart('/');
+                            
+                            appsDir = InstallRepo(target.EndsWith(".zip") 
+                                    ? gistLink.Url 
+                                    : GitHubUtils.Gateway.GetSourceZipUrl(user, repo), 
+                                repo);
+
+                            if (!Directory.Exists(appsDir))
+                            {
+                                $"Could not install {target}".Print();
+                                return null;
+                            }
+                        }
+                        else
+                        {
+                            $"No match found for '{target}', available Apps:".Print();
+                            PrintGistLinks(tool, gistLinks, usage:$"Usage: {tool} open <name>");
+                            return null;
+                        }
+                    }
+
+                    if (gistId != null)
+                    {
+                        GistVfs = new GistVirtualFiles(gistId);
+                        GistVfsTask = GistVfs.GetGistAsync(); // fire to load asynchronously
+                    }
+
+                    if (!Directory.Exists(appsDir))
+                    {
+                        RetryExec(() => Directory.CreateDirectory(appsDir));
+                    }
+                    RetryExec(() => Directory.SetCurrentDirectory(appsDir));
+
+                    runSharpApp = true;
+                    Open = true;
+                    i++;
+                    continue;
+                }
+                if (arg == "install" || arg == "i")
+                {
+                    var gistLinks = GetGistAppsLinks();
+
+                    if (i + 1 >= args.Length)
+                    {
+                        PrintGistLinks(tool, gistLinks, usage:$"Usage: {tool} open <name>");
+                        return null;
+                    }
+                    
+                    var target = args[i+1];
+                    RegisterStat(tool, target, "install");
+                    
+                    var gistLink = gistLinks.FirstOrDefault(x => x.Name == target);
+                    if (gistLink == null)
+                    {
+                        $"No match found for '{target}', available Apps:".Print();
+                        PrintGistLinks(tool, gistLinks, usage:$"Usage: {tool} open <name>");
+                        return null;
+                    }
+                    if (gistLink.GistId != null)
+                    {
+                        $"Run Gist App with:".Print();
+                        $"  {tool} open {target}".Print();
+                        return null;
+                    }
+                    if (gistLink.Repo != null)
+                    {
+                        InstallRepo(gistLink.Url.EndsWith(".zip") 
+                                ? gistLink.Url 
+                                : GitHubUtils.Gateway.GetSourceZipUrl(gistLink.User, gistLink.Repo), 
+                            target);
+                    }
+
+                    "".Print();
+                    $"Installation successful, run with:".Print();
+                    "".Print();
+                    $"  {tool} run {target}".Print();
+
+                    return null;
+                }
+                if (arg == "uninstall")
+                {
+                    void PrintUninstallUsage()
+                    {
+                        "".Print();
+                        $"Usage: {tool} uninstall <app>".Print();
+                        var appsDir = GetAppsPath("");
+                        var appNames = Directory.GetDirectories(appsDir);
+                        if (appNames.Length > 0)
+                        {
+                            "".Print();
+                            "Installed Apps:".Print();
+                            appNames.Each(x => $" {new DirectoryInfo(x).Name}".Print());
+                        }
+                    }
+                    
+                    if (i + 1 >= args.Length)
+                    {
+                        PrintUninstallUsage();
+                        return null;
+                    }
+
+                    var target = args[i + 1];
+                    var installDir = GetAppsPath(target);
+                    var gistFile = installDir + ".gist";
+
+                    if (!Directory.Exists(installDir) && !File.Exists(gistFile))
+                    {
+                        "".Print();
+                        $"App '{target}' is not installed.".Print();
+                        PrintUninstallUsage();
+                        return null;
+                    }
+                    
+                    if (Directory.Exists(installDir))
+                        DeleteDirectory(installDir);
+                    if (File.Exists(gistFile))
+                        DeleteFile(gistFile);
+                        
+                    "".Print();
+                    $"App '{target}' was uninstalled.".Print();
+                    return null;
+                }
                 if (arg == "publish")
                 {
                     publish = true;
@@ -286,8 +495,6 @@ namespace Web
                 $"args: '{dotnetArgs.Join(" ")}'".Print();
                 $"APP_SOURCE={GitHubSource}".Print();
 
-                if (GalleryUrl != "https://servicestack.net/apps/gallery")
-                    $"APP_GALLERY={GalleryUrl}".Print();
                 if (runProcess != null)
                     $"Run Process: {runProcess}".Print();
                 if (createShortcut)
@@ -370,25 +577,56 @@ namespace Web
                 return null;
             }
 
-            if (appSettingsPath == null && createShortcutFor == null && RunScript == null)
+            string appSettingsContent = null;
+
+            if (GistVfsTask != null)
+            {
+                var gist = await GistVfsTask;
+                appSettingsContent = gist.Files.TryGetValue("app.settings", out var file)
+                    ? (string.IsNullOrEmpty(file.Content) && file.Truncated
+                        ? DownloadCachedStringFromUrl(file.Raw_Url)
+                        : file.Content)
+                    : null;
+                
+                // start downloading any truncated gist content whilst AppHost initializes
+                GistVfsLoadTask = GistVfs.LoadAllTruncatedFilesAsync(); 
+
+                if (string.IsNullOrEmpty(appSettingsContent))
+                {
+                    appSettingsPath = Path.Combine(appDir, "app.settings");
+                    appSettingsContent = File.Exists(appSettingsPath)
+                        ? File.ReadAllText(appSettingsPath)
+                        : $"debug false{Environment.NewLine}name {gist.Description ?? "Gist App"}{Environment.NewLine}";
+                }
+            }
+
+            if (appSettingsContent == null && (appSettingsPath == null && createShortcutFor == null && RunScript == null))
                 throw new Exception($"'{appSettingPaths[0]}' does not exist.\n\nView Help: {tool} --help");
 
             var usingWebSettings = File.Exists(appSettingsPath);
-            if (Verbose || (usingWebSettings && !createShortcut && tool == "web" && instruction == null))
+            if (Verbose || (usingWebSettings && !createShortcut && tool == "web" && instruction == null && appSettingsPath != null))
                 $"Using '{appSettingsPath}'".Print();
 
-            var dictionarySettings = new DictionarySettings();
+            if (appSettingsContent == null && RunScript == null)
+            {
+                appSettingsContent = usingWebSettings 
+                    ? File.ReadAllText(appSettingsPath)
+                    : "debug false";
+            }
+            
+            var appSettings = appSettingsContent != null
+                ? new DictionarySettings(appSettingsContent.ParseKeyValueText(delimiter:" "))
+                : new DictionarySettings();
             if (RunScript != null)
             {
                 var context = new ScriptContext().Init();
                 var page = context.OneTimePage(File.ReadAllText(RunScript), "html");
                 if (page.Args.Count > 0)
-                    dictionarySettings = new DictionarySettings(page.Args.ToStringDictionary());
+                    appSettings = new DictionarySettings(page.Args.ToStringDictionary());
             }
-            
-            WebTemplateUtils.AppSettings = new MultiAppSettings(usingWebSettings
-                    ? new TextFileSettings(appSettingsPath)
-                    : dictionarySettings,
+
+            WebTemplateUtils.AppSettings = new MultiAppSettings(
+                appSettings,
                 new EnvironmentVariableSettings());
 
             var bind = "bind".GetAppSetting("localhost");
@@ -447,38 +685,6 @@ namespace Web
                 {
                     $"publish: {appDir} -> {publishAppDir}".Print();
                     $"publish: {toolDir} -> {publishToolDir}".Print();
-                }
-
-                return null;
-            }
-            if (publishExe)
-            {
-                RegisterStat(tool, "publish-exe");
-                
-                var zipUrl = GitHubUtils.Gateway.GetSourceZipUrl("ServiceStack", "WebWin");
-
-                var cachedVersionPath = DownloadCachedZipUrl(zipUrl);
-
-                var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", "WebWin");
-                DeleteDirectory(tmpDir);
-                
-                if (Verbose) $"Extract to Directory: {cachedVersionPath} -> {tmpDir}".Print();
-
-                ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
-
-                var (publishDir, publishAppDir, publishToolDir) = GetPublishDirs("win", appDir);
-                var toolDir = new DirectoryInfo(tmpDir).GetDirectories().First().FullName;
-
-                DeleteDirectory(publishToolDir);
-                MoveDirectory(toolDir, publishToolDir);
-
-                CreatePublishShortcut(ctx, publishDir, publishAppDir, publishToolDir, "win.exe");
-                appDir.CopyAllTo(publishAppDir, excludePaths: new[] { publishToolDir });
-
-                if (Verbose)
-                {
-                    $"publish-exe: {appDir} -> {publishAppDir}".Print();
-                    $"publish-exe: {toolDir} -> {publishToolDir}".Print();
                 }
 
                 return null;
@@ -592,27 +798,57 @@ namespace Web
 
             return CreateWebAppContext(ctx);
         }
-        
+
+        private static string InstallRepo(string downloadUrl, string appName)
+        {
+            var installDir = GetAppsPath(appName);
+
+            var gistFile = installDir + ".gist";
+            DeleteFile(gistFile);
+            
+            var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
+            var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", appName);
+            DeleteDirectory(tmpDir);
+
+            if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
+            ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
+
+            if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {installDir}".Print();
+
+            DeleteDirectory(installDir);
+            MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, installDir);
+            
+            $"Installed App '{appName}'".Print();
+            
+            return installDir;
+        }
+
         private static string DownloadCachedZipUrl(string zipUrl)
         {
-            var invalidFileNameChars = new HashSet<char>(Path.GetInvalidFileNameChars()) {
-                ':'
-            };
-            var safeFileName = new string(zipUrl.Where(c => !invalidFileNameChars.Contains(c)).ToArray());
-            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var cachedVersionPath = Path.Combine(homeDir, ".servicestack", "cache", safeFileName);
+            var noCache = zipUrl.IndexOf("master.zip", StringComparison.OrdinalIgnoreCase) >= 0;
+            if (noCache)
+            {
+                var tempFile = Path.GetTempFileName();
+                if (Verbose) $"Downloading {zipUrl} => {tempFile} (nocache)".Print();
+                GitHubUtils.Gateway.DownloadFile(zipUrl, tempFile.AssertDirectory());
+                return tempFile;
+            }
+            
+            var cachedVersionPath = GetCachedFilePath(zipUrl);
 
             var isCached = File.Exists(cachedVersionPath);
-            if (Verbose) Console.WriteLine((isCached ? "Using cached release: " : "Using new release: ") + cachedVersionPath);
+            if (Verbose) ((isCached ? "Using cached release: " : "Using new release: ") + cachedVersionPath).Print();
 
             if (!isCached)
             {
-                if (Verbose) $"Downloading {zipUrl}".Print();
+                if (Verbose) $"Downloading {zipUrl} => {cachedVersionPath}".Print();
                 GitHubUtils.Gateway.DownloadFile(zipUrl, cachedVersionPath.AssertDirectory());
             }
 
             return cachedVersionPath;
         }
+
+
         public static void MoveDirectory(string fromPath, string toPath)
         {
             if (Verbose) $"Directory Move: {fromPath} -> {toPath}".Print();
@@ -626,14 +862,6 @@ namespace Web
                 if (Verbose) $"Directory Copy: {fromPath} -> {toPath}".Print();
                 fromPath.CopyAllTo(toPath);
             }
-        }
-
-        public static void DeleteDirectory(string dirPath)
-        {
-            if (!Directory.Exists(dirPath)) return;
-            if (Verbose) $"RMDIR: {dirPath}".Print();
-            try { Directory.Delete(dirPath, recursive: true); } catch { }
-            try { Directory.Delete(dirPath); } catch { }
         }
 
         private static bool GetDebugMode() => DebugMode ?? "debug".GetAppSetting(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Production");
@@ -765,12 +993,10 @@ Usage:
   {tool} run path/app.settings   Run Sharp App at folder containing specified app.settings
 {runProcess}
   {tool} list                    List available Sharp Apps            (Alias 'l')
-  {tool} gallery                 Open Sharp App Gallery in a Browser  (Alias 'g')
   {tool} install <name>          Install Sharp App                    (Alias 'i')
 
   {tool} publish                 Package Sharp App to /publish ready for deployment (.NET Core Required)
-  {tool} publish-exe             Package self-contained .exe Sharp App to /publish  (.NET Core Embedded)
-
+  
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
 {additional}
@@ -911,9 +1137,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     RegisterStat(tool, "list");
                     checkUpdatesAndQuit = beginCheckUpdates();
 
-                    await PrintSources(GitHubSource.Split(';'));
-
-                    $"Usage: {tool} install <name>".Print();
+                    PrintGistLinks(tool, GetGistAppsLinks(), usage:$"Usage: {tool} open <name>");
                 }
                 else if (arg == "new")
                 {
@@ -923,14 +1147,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     await PrintSources(GitHubSourceTemplates.Split(';'));
                     
                     $"Usage: {tool} new <template> <name>".Print();
-                }
-                else if (arg == "gallery" || arg == "g")
-                {
-                    RegisterStat(tool, "gallery");
-                    checkUpdatesAndQuit = beginCheckUpdates();
-
-                    var openUrl = Events?.OpenBrowser ?? OpenBrowser;
-                    openUrl(GalleryUrl);
                 }
                 else if (arg[0] == '+')
                 {
@@ -981,42 +1197,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
             else if (args.Length == 2)
             {
-                if (arg == "install" || arg == "i")
-                {
-                    var repo = args[1];
-                    RegisterStat(tool, repo, "install");
-
-                    var downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(GitHubSource, repo);
-                    $"Installing {repo}...".Print();
-
-                    var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
-                    var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
-                    DeleteDirectory(tmpDir);
-
-                    if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
-                    ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
-                    var installDir = Path.GetFullPath(repo);
-
-                    if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {installDir}".Print();
-                    DeleteDirectory(installDir);
-                    MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, installDir);
-
-                    "".Print();
-                    $"Installation successful, run with:".Print();
-                    "".Print();
-                    $"  cd {repo} && {tool}".Print();
-
-                    var appSettingsPath = Path.Combine(installDir, "app.settings");
-                    if (!File.Exists(appSettingsPath))
-                        return new Instruction { Command = "shortcut", Handled = true };
-
-                    return new Instruction
-                    {
-                        Command = "shortcut",
-                        AppDir = installDir,
-                        AppSettingsPath = appSettingsPath,
-                    };
-                }
                 if (arg[0] == '+')
                 {
                     if (args[1][0] == '#')
@@ -1076,8 +1256,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     AssertValidProjectName(projectName, tool);
     
                     RegisterStat(tool, repo, "new");
-    
-                    var downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(GitHubSourceTemplates, repo);
+
+                    var orgs = GitHubSourceTemplates.Split(';').Select(x => x.LeftPart(' ')).ToArray();
+                    var fullRepo = GitHubUtils.Gateway.FindRepo(orgs, repo);
+                    
+                    var downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(fullRepo.Item1, fullRepo.Item2);
                     $"Installing {repo}...".Print();
     
                     var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
@@ -1453,7 +1636,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         var remainingPlugins = new List<IPlugin>();
                         foreach (var type in appHost.ServiceAssemblies.SelectMany(x => x.GetTypes()))
                         {
-                            if (type.HasInterface(typeof(IPlugin)) && !registerPlugins.Any(x => x?.GetType() == type))
+                            if (type.HasInterface(typeof(IPlugin)) && registerPlugins.All(x => x?.GetType() != type))
                             {
                                 var plugin = type.CreatePlugin();
                                 remainingPlugins.Add(plugin);
@@ -1552,15 +1735,44 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             services.AddSingleton<ServiceStackHost>(appHost);
 
             plugins?.OfType<IStartup>().Each(x => x.ConfigureServices(services));
+            plugins?.OfType<IConfigureServices>().Each(x => x.Configure(services));
 
-            (appHost as IStartup)?.ConfigureServices(services);
+            appHost.Configure(services);
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             plugins?.OfType<IStartup>().Each(x => x.Configure(app));
+            plugins?.OfType<IConfigureApp>().Each(x => x.Configure(app));
 
             appHost.BeforeConfigure.Add(ConfigureAppHost);
+
+            if (GistVfs != null)
+            {
+                appHost.InsertVirtualFileSources.Add(GistVfs);
+                appHost.AfterInitCallbacks.Add(item: _ => {
+
+                    GistVfsLoadTask?.GetResult();
+                    if (Open)
+                    {
+                        ThreadPool.QueueUserWorkItem(state => {
+                            try
+                            {
+                                var dirName = new DirectoryInfo(Environment.CurrentDirectory).Name;
+                                var gist = GistVfs.GetGist();
+                                var json = gist.ToJson();
+                                var cachedGistPath = GetAppsPath($"{dirName}.gist");
+                                if (Verbose) $"Saving gist '{GistVfs.GistId}' size: {json.Length}' to: {cachedGistPath}".Print();
+                                File.WriteAllText(cachedGistPath, json);
+                            }
+                            catch (Exception ex)
+                            {
+                                if (Verbose) $"ERROR: cannot save gist '{GistVfs.GistId}': {ex.Message}".Print();
+                            }
+                        });
+                    }
+                });
+            }
 
             app.UseServiceStack(appHost);
         }
@@ -1670,6 +1882,22 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {
                 StartupException = ex;
                 throw;
+            }
+        }
+
+        public static void RetryExec(Action fn, int retryTimes=5)
+        {
+            while (retryTimes-- > 0)
+            {
+                try
+                {
+                    fn();
+                    return;
+                }
+                catch
+                {
+                    Thread.Sleep(200);
+                }
             }
         }
     }
@@ -2050,7 +2278,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
             }
         }
-
     }
 
 }

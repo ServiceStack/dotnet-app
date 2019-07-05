@@ -24,18 +24,18 @@ namespace Web
         public static bool Silent { get; set; }
         static string[] VerboseArgs = {"/verbose", "--verbose"};
 
-        static string[] SourceArgs = { "/s", "-s", "/source", "--source" };
+        static string[] SourceArgs = { "/s", "-s", "/source", "-source", "--source" };
 
         public static bool ForceApproval { get; set; }
-        static string[] ForceArgs = { "/f", "-f", "/force", "--force" };
+        static string[] ForceArgs = { "/f", "-f", "/force", "-force", "--force" };
 
         public static bool IgnoreSslErrors { get; set; }
         private static string[] IgnoreSslErrorsArgs = {"/ignore-ssl-errors", "--ignore-ssl-errors"};
 
-        static string[] NameArgs = { "/name", "--name", "-name" };
+        static string[] NameArgs = { "/name", "-name", "--name" };
 
-        static string[] DeleteArgs = { "/delete", "--delete", "-delete" };
-        static string[] ReplaceArgs = { "/replace", "--replace", "-replace" };
+        static string[] DeleteArgs = { "/delete", "-delete", "--delete" };
+        static string[] ReplaceArgs = { "/replace", "-replace", "--replace" };
 
         static string[] HelpArgs = { "/help", "--help", "-help", "?" };
 
@@ -77,7 +77,7 @@ namespace Web
             catch { }
         }
 
-        private static void PrintGistLinks(string tool, List<GistLink> links, string tag = null)
+        private static void PrintGistLinks(string tool, List<GistLink> links, string tag = null, string usage = null)
         {
             "".Print();
 
@@ -93,17 +93,26 @@ namespace Web
 
             var i = 1;
             var padName = links.OrderByDescending(x => x.Name.Length).First().Name.Length + 1;
-            var padTo = links.OrderByDescending(x => x.To.Length).First().To.Length + 1;
+            var padTo = (links.OrderByDescending(x => x.To?.Length ?? 0).First().To?.Length ?? 0) + 1;
             var padBy = links.OrderByDescending(x => x.User.Length).First().User.Length + 1;
             var padDesc = links.OrderByDescending(x => x.Description.Length).First().Description.Length + 1;
 
             foreach (var link in links)
-            {
-                $" {i++.ToString().PadLeft(3, ' ')}. {link.Name.PadRight(padName, ' ')} {link.Description.PadRight(padDesc, ' ')} to: {link.To.PadRight(padTo, ' ')} by @{link.User.PadRight(padBy, ' ')} {link.ToTagsString()}"
+            { 
+                var toLabel = link.To != null
+                    ? $" to: {link.To.PadRight(padTo, ' ')}" 
+                    : "";
+                $" {i++.ToString().PadLeft(3, ' ')}. {link.Name.PadRight(padName, ' ')} {link.Description.PadRight(padDesc, ' ')}{toLabel} by @{link.User.PadRight(padBy, ' ')} {link.ToTagsString()}"
                     .Print();
             }
 
             "".Print();
+
+            if (usage != null)
+            {
+                usage.Print();
+                return;
+            }
 
             if (tool.EndsWith("mix"))
             {
@@ -128,11 +137,9 @@ namespace Web
                 $"Search:  {tool} + {tagSearch.PadRight(Math.Max(padName - 9, 0), ' ')} Available tags: {string.Join(", ", tags)}"
                     .Print();
             }
-
-            "".Print();
         }
 
-        class GistLink
+        public class GistLink
         {
             public string Name { get; set; }
             public string Url { get; set; }
@@ -141,6 +148,10 @@ namespace Web
             public string Description { get; set; }
 
             public string[] Tags { get; set; }
+
+            public string GistId { get; set; }
+
+            public string Repo { get; set; }
 
             public string ToTagsString() => Tags == null ? "" : $"[" + string.Join(",", Tags) + "]";
 
@@ -179,7 +190,7 @@ namespace Web
                             afterModifiers = afterModifiers.Advance(pos + 1);
                         }
 
-                        if (name == null || toPath == null || url == null)
+                        if (name == null || url == null)
                             continue;
 
                         var link = new GistLink {
@@ -187,9 +198,19 @@ namespace Web
                             Url = url.ToString(),
                             To = toPath,
                             Description = afterModifiers.Trim().ToString(),
-                            User = url.LastLeftPart('/').LastRightPart('/').ToString(),
+                            User = url.Substring("https://".Length).RightPart('/').LeftPart('/'),
                             Tags = tags?.Split(',').Map(x => x.Trim()).ToArray(),
                         };
+
+                        if (link.Url.StartsWith("https://gist.github.com"))
+                            link.GistId = link.Url.LastRightPart('/');
+                        
+                        if (link.Url.StartsWith("https://github.com/"))
+                        {
+                            var pathInfo = url.Substring("https://github.com/".Length);
+                            link.User = pathInfo.LeftPart('/');
+                            link.Repo = pathInfo.RightPart('/').LeftPart('/');
+                        }
 
                         if (link.User == "gistlyn" || link.User == "mythz")
                             link.User = "ServiceStack";
@@ -276,7 +297,6 @@ namespace Web
                         item.TryGetValue("upper", out var oUpper) && oUpper is string upper)
                     {
                         if (GetVersion() != upper) {
-                            "".Print();
                             "".Print();
                             $"new version available, update with:".Print();
                             "".Print();
@@ -440,15 +460,8 @@ namespace Web
             var folders = new HashSet<string>();
             foreach (var resolvedFile in allResolvedFiles)
             {
-                try
-                {
-                    File.Delete(resolvedFile);
-                    folders.Add(Path.GetDirectoryName(resolvedFile));
-                }
-                catch (Exception ex)
-                {
-                    if (Verbose) $"ERROR: {ex.Message}".Print();
-                }
+                DeleteFile(resolvedFile);
+                folders.Add(Path.GetDirectoryName(resolvedFile));
             }
 
             // Delete empty folders that had gist files
@@ -458,15 +471,7 @@ namespace Web
             {
                 if (Directory.GetFiles(folder).Length == 0 && Directory.GetDirectories(folder).Length == 0)
                 {
-                    if (Verbose) $"Deleting folder {folder} ...".Print();
-                    try
-                    {
-                        DeleteDirectoryRecursive(folder);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (Verbose) $"ERROR: {ex.Message}".Print();
-                    }
+                    DeleteDirectory(folder);
                 }
                 else
                 {
@@ -534,6 +539,26 @@ namespace Web
                 Directory.Delete(path, true);
             }
         }        
+
+        public static void DeleteDirectory(string dirPath)
+        {
+            if (!Directory.Exists(dirPath)) return;
+            if (Verbose) $"RMDIR: {dirPath}".Print();
+            try { DeleteDirectoryRecursive(dirPath); } catch (Exception ex) { Print(ex); }
+            try { Directory.Delete(dirPath); } catch { }
+        }
+
+        public static void DeleteFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return;
+            if (Verbose) $"RM: {filePath}".Print();
+            try { File.Delete(filePath); }  catch (Exception ex) { Print(ex); }
+        }
+
+        public static void Print(Exception ex)
+        {
+            if (Verbose) $"ERROR: {ex.Message}".Print();
+        }
 
         static string ReplaceMyApp(string input, string projectName)
         {
@@ -1071,6 +1096,31 @@ namespace Web
 
             await CheckForUpdates(tool, checkUpdatesAndQuit);
         }
+        
+        private static string GetCachedFilePath(string zipUrl)
+        {
+            var invalidFileNameChars = new HashSet<char>(Path.GetInvalidFileNameChars()) { ':' };
+            var safeFileName = new string(zipUrl.Where(c => !invalidFileNameChars.Contains(c)).ToArray());
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var cachedPath = Path.Combine(homeDir, ".servicestack", "cache", safeFileName);
+            return cachedPath;
+        }
+
+        internal static string DownloadCachedStringFromUrl(string url)
+        {
+            var cachedPath = GetCachedFilePath(url);
+
+            var isCached = File.Exists(cachedPath);
+            if (Verbose && !isCached) $"Downloading uncached '{url}' ...".Print();
+
+            if (File.Exists(cachedPath))
+                return File.ReadAllText(cachedPath);
+
+            var text = url.GetStringFromUrl(requestFilter: req => req.UserAgent = GitHubUtils.UserAgent);
+            File.WriteAllText(cachedPath, text);
+
+            return text;
+        }
     }
 
     public static class MixUtils
@@ -1154,7 +1204,13 @@ namespace Web
                     foreach (var entry in files)
                     {
                         var meta = (Dictionary<string, object>) entry.Value;
-                        to[entry.Key] = (string) meta["content"];
+                        var contents = (string) meta["content"];
+                        if (string.IsNullOrEmpty(contents) && meta["truncated"] is bool b && b)
+                        {
+                            contents = Startup.DownloadCachedStringFromUrl((string)meta["raw_url"]);
+                        }
+                        
+                        to[entry.Key] = contents;
                     }
 
                     return to;
@@ -1163,6 +1219,9 @@ namespace Web
                 throw new NotSupportedException($"Invalid gist response returned for '{gistKey}'");
             });
         }
+        
+        public static string ToGistId(this string url) => url?.LastRightPart('/');
+
     }
 
     
