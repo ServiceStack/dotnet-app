@@ -603,7 +603,7 @@ namespace Web
             }
 
             var usingWebSettings = File.Exists(appSettingsPath);
-            if (Verbose || (usingWebSettings && !createShortcut && tool == "web" && instruction == null && appSettingsPath != null))
+            if (Verbose || (usingWebSettings && !createShortcut && tool == "web" && instruction == null && appSettingsPath != null && !publish))
                 $"Using '{appSettingsPath}'".Print();
 
             if (appSettingsContent == null && RunScript == null)
@@ -686,8 +686,9 @@ namespace Web
                 var files = new Dictionary<string, object>();
                 Environment.CurrentDirectory.CopyAllToDictionary(files, excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray());
                 
-                string gistUrl = null;
+                string publishUrl = null;
                 string description = null;
+                string appName = null;
                 var sb = new StringBuilder();
                 foreach (var line in File.ReadAllLines("app.settings"))
                 {
@@ -696,15 +697,24 @@ namespace Web
                     {
                         description = line.RightPart(' ');
                     }
+                    if (line.StartsWith("appName "))
+                    {
+                        appName = line.RightPart(' ');
+                    }
                     if (line.StartsWith("publish "))
                     {
-                        gistUrl = line.RightPart(' ');
+                        publishUrl = line.RightPart(' ');
                     }
                 }
 
                 var gateway = new GitHubGateway(GitHubGistToken);
 
-                var createGist = string.IsNullOrEmpty(gistUrl);
+                "".Print();
+
+                Task<RegisterSharpAppResponse> registerTask = null;
+                var client = new JsonServiceClient("https://servicestack.net");
+
+                var createGist = string.IsNullOrEmpty(publishUrl);
                 if (createGist)
                 {
                     var gist = gateway.CreateGithubGist(
@@ -715,12 +725,55 @@ namespace Web
 
                     sb.AppendLine("publish " + gist.Html_Url);
                     File.WriteAllText("app.settings", sb.ToString());
+                    
+                    if (appName != null && gist.Url != null)
+                    {
+                        registerTask = client.PostAsync(new RegisterSharpApp {
+                            AppName = appName,
+                            Publish = gist.Url,
+                        });
+                    }
                 }
                 else
                 {
-                    var gistId = gistUrl.LastRightPart('/');
+                    var gistId = publishUrl.LastRightPart('/');
                     gateway.WriteGistFiles(gistId, files);
-                    $"App updated at: {gistUrl}".Print();
+                    $"App updated at: {publishUrl}".Print();
+                    
+                    if (appName != null && publishUrl != null)
+                    {
+                        registerTask = client.PostAsync(new RegisterSharpApp {
+                            AppName = appName,
+                            Publish = publishUrl,
+                        });
+                    }
+                }
+
+                "".Print();
+                if (appName == null)
+                {
+
+                    "Publish App to the public registry by re-publishing with app.settings:".Print();
+                    "".Print();
+                    "appName     <app alias>    # required: alpha-numeric snake-case characters only, 30 chars max".Print();
+                    "description <app summary>  # optional: 20-150 chars".Print();
+                    "tags        <app tags>     # optional: space delimited, alpha-numeric snake-case, 3 tags max".Print();
+                }
+                else if (registerTask != null)
+                {
+                    try
+                    {
+                        registerTask.Wait();
+                    }
+                    catch (WebServiceException ex)
+                    {
+                        $"REGISTRY ERROR: {ex.Message}".Print();
+                        return null;
+                    }
+
+                    "Run published App:".Print();
+                    "".Print();
+                    $"    {tool} run {appName}".Print();
                 }
                 
                 return null;
@@ -2371,7 +2424,17 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
             }
         }
-
+    }
+    
+    [Route("/sharp-apps/registry", "POST")]
+    public class RegisterSharpApp : IReturn<RegisterSharpAppResponse>
+    {
+        public string AppName { get; set; }
+        public string Publish { get; set; }
     }
 
+    public class RegisterSharpAppResponse
+    {
+        public ResponseStatus ResponseStatus { get; set; }
+    }
 }

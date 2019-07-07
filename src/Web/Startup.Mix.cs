@@ -155,6 +155,32 @@ namespace Web
 
             public string ToTagsString() => Tags == null ? "" : $"[" + string.Join(",", Tags) + "]";
 
+            public string ToListItem()
+            {
+                var sb = new StringBuilder(" - [")
+                    .Append(Name)
+                    .Append("](")
+                    .Append(Url)
+                    .Append(") {")
+                    .Append(!string.IsNullOrEmpty(To) ? "to:" + To.ToJson() : "")
+                    .Append("} `")
+                    .Append(Tags != null ? string.Join(",", Tags) : "")
+                    .Append("` ")
+                    .Append(Description);
+
+                return sb.ToString();
+            }
+
+            public static string RenderLinks(List<GistLink> links)
+            {
+                var sb = new StringBuilder();
+                foreach (var link in links)
+                {
+                    sb.AppendLine(link.ToListItem());
+                }
+                return sb.ToString();
+            }
+
             public static List<GistLink> Parse(string md)
             {
                 var to = new List<GistLink>();
@@ -186,14 +212,18 @@ namespace Web
                         {
                             afterModifiers = afterModifiers.Advance(1);
                             var pos = afterModifiers.IndexOf('`');
-                            tags = afterModifiers.Substring(0, pos);
-                            afterModifiers = afterModifiers.Advance(pos + 1);
+                            if (pos >= 0)
+                            {
+                                tags = afterModifiers.Substring(0, pos);
+                                afterModifiers = afterModifiers.Advance(pos + 1);
+                            }
                         }
 
                         if (name == null || url == null)
                             continue;
 
-                        var link = new GistLink {
+                        var link = new GistLink
+                        {
                             Name = name.ToString(),
                             Url = url.ToString(),
                             To = toPath,
@@ -202,14 +232,14 @@ namespace Web
                             Tags = tags?.Split(',').Map(x => x.Trim()).ToArray(),
                         };
 
-                        if (link.Url.StartsWith("https://gist.github.com"))
-                            link.GistId = link.Url.LastRightPart('/');
-                        
-                        if (link.Url.StartsWith("https://github.com/"))
+                        if (TryParseGitHubUrl(link.Url, out var gistId, out var user, out var repo))
                         {
-                            var pathInfo = url.Substring("https://github.com/".Length);
-                            link.User = pathInfo.LeftPart('/');
-                            link.Repo = pathInfo.RightPart('/').LeftPart('/');
+                            link.GistId = gistId;
+                            if (user != null)
+                            {
+                                link.User = user;
+                                link.Repo = repo;
+                            }
                         }
 
                         if (link.User == "gistlyn" || link.User == "mythz")
@@ -220,6 +250,27 @@ namespace Web
                 }
 
                 return to;
+            }
+
+            public static bool TryParseGitHubUrl(string url, out string gistId, out string user, out string repo)
+            {
+                gistId = user = repo = null;
+
+                if (url.StartsWith("https://gist.github.com"))
+                {
+                    gistId = url.LastRightPart('/');
+                    return true;
+                }
+
+                if (url.StartsWith("https://github.com/"))
+                {
+                    var pathInfo = url.Substring("https://github.com/".Length);
+                    user = pathInfo.LeftPart('/');
+                    repo = pathInfo.RightPart('/').LeftPart('/');
+                    return true;
+                }
+
+                return false;
             }
 
             public static GistLink Get(List<GistLink> links, string gistAlias)
