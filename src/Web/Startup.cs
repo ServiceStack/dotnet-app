@@ -572,16 +572,21 @@ namespace Web
                 return null;
             }
 
-            string appSettingsContent = null;
+            var appSettingsContent = File.Exists(appSettingsPath)
+                ? File.ReadAllText(appSettingsPath)
+                : null;
 
             if (GistVfsTask != null)
             {
                 var gist = await GistVfsTask;
-                appSettingsContent = gist.Files.TryGetValue("app.settings", out var file)
-                    ? (string.IsNullOrEmpty(file.Content) && file.Truncated
-                        ? DownloadCachedStringFromUrl(file.Raw_Url)
-                        : file.Content)
-                    : null;
+                if (string.IsNullOrEmpty(appSettingsContent))
+                {
+                    appSettingsContent = gist.Files.TryGetValue("app.settings", out var file)
+                        ? (string.IsNullOrEmpty(file.Content) && file.Truncated
+                            ? DownloadCachedStringFromUrl(file.Raw_Url)
+                            : file.Content)
+                        : null;
+                }
                 
                 // start downloading any truncated gist content whilst AppHost initializes
                 GistVfsLoadTask = GistVfs.LoadAllTruncatedFilesAsync(); 
@@ -1797,7 +1802,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var assemblies = new List<Assembly>();
                 var filesConfig = "files.config".GetAppSetting();               
                 var vfs = "files".GetAppSetting().GetVirtualFiles(config:filesConfig);
-                var pluginsDir = (vfs ?? WebTemplateUtils.VirtualFiles).GetDirectory("plugins");
+                var pluginsDir = (vfs ?? WebTemplateUtils.VirtualFiles).GetDirectory("plugins")
+                    ?? GistVfs?.GetDirectory("plugins");
                 if (pluginsDir != null)
                 {
                     var plugins = pluginsDir.GetFiles();
@@ -1944,7 +1950,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     });
                 }
     
-               var checkForModifiedPagesAfterSecs = "checkForModifiedPagesAfterSecs".GetAppSetting();
+                var checkForModifiedPagesAfterSecs = "checkForModifiedPagesAfterSecs".GetAppSetting();
                 if (checkForModifiedPagesAfterSecs != null)
                     feature.CheckForModifiedPagesAfter = TimeSpan.FromSeconds(checkForModifiedPagesAfterSecs.ConvertTo<int>());
     
