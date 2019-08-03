@@ -278,18 +278,22 @@ namespace Web
                 }
                 if (arg == "open")
                 {
-                    var gistLinks = GetGistAppsLinks();
 
                     if (i + 1 >= args.Length)
                     {
-                        PrintGistLinks(tool, gistLinks, usage:$"Usage: {tool} open <name>");
+                        PrintGistLinks(tool, GetGistAppsLinks(), usage:$"Usage: {tool} open <name>");
                         return null;
                     }
                     
                     var target = args[i+1];
+                    
                     RegisterStat(tool, target, "open");
 
-                    var gistLink = gistLinks.FirstOrDefault(x => x.Name == target);
+                    var isGitHubUrl = target.StartsWith("https://gist.github.com/") ||
+                                      target.StartsWith("https://github.com/");
+
+                    var gistLinks = !isGitHubUrl ? GetGistAppsLinks() : null;
+                    var gistLink = gistLinks?.FirstOrDefault(x => x.Name == target);
 
                     var appsDir = GetAppsPath(target);
 
@@ -325,7 +329,7 @@ namespace Web
                             var repo = pathInfo.RightPart('/').LeftPart('/');
                             
                             appsDir = InstallRepo(target.EndsWith(".zip") 
-                                    ? gistLink.Url 
+                                    ? target 
                                     : GitHubUtils.Gateway.GetSourceZipUrl(user, repo), 
                                 repo);
 
@@ -338,7 +342,7 @@ namespace Web
                         else
                         {
                             $"No match found for '{target}', available Apps:".Print();
-                            PrintGistLinks(tool, gistLinks, usage:$"Usage: {tool} open <name>");
+                            PrintGistLinks(tool, gistLinks ?? GetGistAppsLinks(), usage:$"Usage: {tool} open <name>");
                             return null;
                         }
                     }
