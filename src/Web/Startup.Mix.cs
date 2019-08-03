@@ -18,7 +18,7 @@ namespace Web
 {
     public partial class Startup
     {
-        public static string GistLinksId { get; set; } = "f3fa8c016bbd253badc61d80afe399d9";
+        public static string GistLinksId { get; set; } = "9b32b03f207a191099137429051ebde8";
 
         public static bool Verbose { get; set; }
         public static bool Silent { get; set; }
@@ -295,7 +295,7 @@ namespace Web
         private static ConcurrentDictionary<string, List<GistLink>> GistLinksCache =
             new ConcurrentDictionary<string, List<GistLink>>();
 
-        private static List<GistLink> GetGistApplyLinks() => GetGistLinks(GistLinksId, "apply.md");
+        private static List<GistLink> GetGistApplyLinks() => GetGistLinks(GistLinksId, "mix.md");
 
         private static List<GistLink> GetGistLinks(string gistId, string name)
         {
@@ -468,7 +468,8 @@ namespace Web
                         ? $"'{gistAlias}' "
                         : "";
                     sb.AppendLine();
-                    sb.AppendLine($"Delete {resolvedFiles.Count} files from {label}{gistLinkUrl}:");
+                    var plural = resolvedFiles.Count != 1 ? "s" : "";
+                    sb.AppendLine($"Delete {resolvedFiles.Count} file{plural} from {label}{gistLinkUrl}:");
                     sb.AppendLine();
 
                     foreach (var resolvedFile in resolvedFiles)
@@ -997,6 +998,12 @@ namespace Web
                     
                     "".Print();
                     
+                    "View all published gists:  ".Print();
+                    
+                    $"   mix".Print();
+                    
+                    "".Print();
+                    
                     "Simple Usage:  ".Print();
                     
                     $"   mix <name> <name> ...".Print();
@@ -1121,7 +1128,6 @@ namespace Web
             }
             else
             {
-                var replaceStatSuffix = ReplaceTokens.Count > 0 ? $"_replace{ReplaceTokens.Count}" : "";
                 if (args[0].FirstCharEquals('#'))
                 {
                     RegisterStat(tool, args[0], "search");
@@ -1132,6 +1138,7 @@ namespace Web
                     if (dotnetArgs.Count == 1 && dotnetArgs[0].IndexOf('+') >= 0)
                         dotnetArgs = dotnetArgs[0].Split('+').ToList();
 
+                    var replaceStatSuffix = ReplaceTokens.Count > 0 ? $"_replace{ReplaceTokens.Count}" : "";
                     if (!deleteMode)
                     {
                         RegisterStat(tool, string.Join("_", dotnetArgs.OrderBy(x => x)), "+" + replaceStatSuffix);

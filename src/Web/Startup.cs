@@ -723,7 +723,13 @@ namespace Web
                     
                     $"App published to: {gist.Url}".Print();
 
-                    sb.AppendLine("publish " + gist.Html_Url);
+                    // Html_Url doesn't include username in URL, which it redirects to. 
+                    // Use URL with username instead so app listing can extract username
+                    var htmlUrl = !string.IsNullOrEmpty(gist.Owner?.Login)
+                        ? $"https://gist.github.com/{gist.Owner.Login}/{gist.Id}"
+                        : gist.Html_Url;
+
+                    sb.AppendLine("publish " + htmlUrl);
                     File.WriteAllText("app.settings", sb.ToString());
                     
                     if (appName != null && gist.Url != null)
@@ -1906,8 +1912,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         : new SharpPagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
                 }
 
-                if (!feature.Plugins.Any(x => x is GithubPlugin))
-                    feature.Plugins.Add(new GithubPlugin());
+                if (!feature.Plugins.Any(x => x is GitHubPlugin))
+                    feature.Plugins.Add(new GitHubPlugin());
     
                 var dbFactory = "db".GetAppSetting().GetDbFactory(connectionString:"db.connection".GetAppSetting());
                 if (dbFactory != null)
