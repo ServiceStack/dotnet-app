@@ -4,11 +4,12 @@ using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
 using ServiceStack;
+using ServiceStack.Script;
 using ServiceStack.Templates;
 
 namespace ServerInfo
 {
-    public class ServerInfoFilters : TemplateFilter
+    public class ServerInfoFilters : ScriptMethods
     {
         public static ServerInfoFilters Instance = new ServerInfoFilters();
 

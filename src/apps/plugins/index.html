@@ -182,8 +182,7 @@ $("FORM").submit(function(){
 <table class="table table-striped">
 <caption>Top 5 Local Disks</caption>
 <tr><th>Name</th><th>Type</th><th>Available Space</th><th>Total Free Space</th><th>Total Size</th></tr>
-{{ drives    | orderByDescending: it.TotalSize
-   | take(5) | to => driveInfos }}
+{{ drives | orderByDescending => it.TotalSize | take(5) | to => driveInfos }}
 {{#each driveInfos}}
 <tr>
     <td>{{ Name | substringWithEllipsis(50) }}</td>

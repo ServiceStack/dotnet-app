@@ -22,7 +22,7 @@ namespace ScriptInfo
             var context = new ScriptContext {
                 ScriptMethods = {
                     new ScriptInfoMethods(), 
-                    feature.ScriptMethods.FirstOrDefault(x => x.GetType().Name == nameof(ScriptInfoMethods))
+                    feature.ScriptMethods.FirstOrDefault(x => x.GetType().Name == "ServerInfoFilters")
                 },
                 VirtualFiles = feature.VirtualFiles,
             }.Init();
