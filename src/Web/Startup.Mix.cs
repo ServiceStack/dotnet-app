@@ -539,11 +539,11 @@ namespace Web
 
         private static string ResolveFilePath(string gistFilePath, string basePath, string projectName, string applyTo)
         {
-            var useFileName = ReplaceMyApp(gistFilePath, projectName);
+            var useFileName = ReplaceMyApp(osPaths(gistFilePath), projectName);
             if (useFileName.EndsWith("?"))
                 useFileName = useFileName.Substring(0, useFileName.Length - 1);
 
-            var resolvedFile = Path.GetFullPath(useFileName, basePath.Replace("\\", "/"));
+            var resolvedFile = Path.GetFullPath(useFileName, osPaths(basePath));
 
             var writesToFolder = gistFilePath.IndexOf('\\') >= 0;
             if (applyTo == "$HOST" && writesToFolder && !Directory.Exists(Path.GetDirectoryName(resolvedFile)))
@@ -556,11 +556,11 @@ namespace Web
                 if (Directory.Exists(Path.GetDirectoryName(resolvedPath)))
                 {
                     if (Verbose) $"Using matching qualified path: {resolvedPath}".Print();
-                    return osPaths(resolvedPath);
+                    return resolvedPath;
                 }
             }
             
-            return osPaths(resolvedFile);
+            return resolvedFile;
         }
 
         // More resilient impl for .NET Core
