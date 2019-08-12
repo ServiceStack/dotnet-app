@@ -556,11 +556,11 @@ namespace Web
                 if (Directory.Exists(Path.GetDirectoryName(resolvedPath)))
                 {
                     if (Verbose) $"Using matching qualified path: {resolvedPath}".Print();
-                    return resolvedPath;
+                    return osPaths(resolvedPath);
                 }
             }
             
-            return resolvedFile;
+            return osPaths(resolvedFile);
         }
 
         // More resilient impl for .NET Core
@@ -740,6 +740,10 @@ namespace Web
             
             throw new NotSupportedException($"Unknown location '{to}'{exSuffix}");
         }
+
+        public static string osPaths(string path) => Env.IsWindows
+            ? path.Replace('/', '\\')
+            : path.Replace('\\', '/');
 
         public static void WriteGistFile(string gistId, string gistAlias, string to, string projectName, Func<bool> getUserApproval = null)
         {
