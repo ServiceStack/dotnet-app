@@ -784,6 +784,14 @@ namespace Web
                     }
                 }
                 
+                bool breakLoop = false;
+                        
+                Console.TreatControlCAsInput = false;
+                Console.CancelKeyPress += delegate {
+                    if (Verbose) $"Console.CancelKeyPress".Print();
+                    breakLoop = true;
+                };
+                
                 RegisterStat(tool, RunScript, WatchScript ? "watch" : "run");
                 var (contentRoot, useWebRoot) = GetDirectoryRoots(ctx);
                 var builder = new WebHostBuilder()
@@ -795,7 +803,8 @@ namespace Web
 
                 using (var webHost = builder.Build())
                 {
-                    var task = webHost.RunAsync();
+                    var cts = new CancellationTokenSource();
+                    var task = webHost.RunAsync(cts.Token);
                     
                     var appHost = WebTemplateUtils.AppHost;
                     if (StartupException != null) throw StartupException;
@@ -807,19 +816,15 @@ namespace Web
                     
                     if (WatchScript)
                     {
-                        bool breakLoop = false;
-                        
-                        Console.CancelKeyPress += delegate { breakLoop = true; };
-                        
                         $"Watching '{RunScript}' (Ctrl+C to stop):".Print();
 
-                        while (true)
+                        while (!breakLoop)
                         {
                             do
                             {
                                 if (breakLoop)
                                     break;
-                                await Task.Delay(100);
+                                await Task.Delay(100, cts.Token);
                                 script.Refresh();
                             } while(script.LastWriteTimeUtc == lastWriteAt);
 
@@ -837,6 +842,9 @@ namespace Web
                             }
                             lastWriteAt = script.LastWriteTimeUtc;
                         }
+                        
+                        if (Verbose) $"breakLoop = {breakLoop}".Print();
+                        cts.Cancel();
                     }
                     else
                     {
