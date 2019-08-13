@@ -1911,13 +1911,15 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             SerializeGistAppFiles();
                         });
                     }
-                    Svg.Load(GistVfs.GetDirectory("/svg"));
+                    var svgDir = GistVfs.GetDirectory("/svg");
+                    if (svgDir != null) Svg.Load(svgDir);
                 });
             }
             else
             {
                 appHost.AfterInitCallbacks.Add(item: _ => {
-                    Svg.Load(appHost.RootDirectory.GetDirectory("/svg"));
+                    var svgDir = appHost.RootDirectory.GetDirectory("/svg"); 
+                    if (svgDir != null) Svg.Load(svgDir);
                 });
             }
             
