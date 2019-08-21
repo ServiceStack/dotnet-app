@@ -54,6 +54,13 @@ namespace ServiceStack.CefGlue.Win64
             CefRuntime.Shutdown();
             base.OnDestroy(ref packet);
         }
+
+        protected override void OnClose(ref Packet packet)
+        {
+            CefPlatformWindows.OnExit?.Invoke();
+            base.OnClose(ref packet);
+        }
+
         private void PostTask(CefThreadId threadId, Action action)
         {
             CefRuntime.PostTask(threadId, new ActionTask(action));

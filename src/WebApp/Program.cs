@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using ServiceStack;
 using ServiceStack.CefGlue;
@@ -18,6 +19,15 @@ namespace Web
         {
             try
             {
+                var cts = new CancellationTokenSource();
+                Process process = null;
+                CefPlatformWindows.OnExit = () => {
+                    if (Startup.Verbose) $"OnExit".Print();
+                    cts?.Cancel();
+                    process?.Close();
+                    CefPlatformWindows.Provider.ShowConsoleWindow();
+                };
+                
                 var host = await Startup.CreateWebHost("app", args, new WebAppEvents
                     {
                         CreateShortcut = Shortcut.Create,
@@ -37,7 +47,7 @@ namespace Web
                                 arguments = ctx.RunProcess;
                             }
                             
-                            Startup.PipeProcess(fileName, arguments, fn: () => 
+                            process = Startup.PipeProcess(fileName, arguments, fn: () => 
                                 CefPlatformWindows.Start(new CefConfig { StartUrl = url, Icon = ctx.FavIcon }));
                         },
                         SelectFolder = options => {
@@ -77,7 +87,7 @@ namespace Web
                     return 0;
 
 #pragma warning disable 4014
-                host.Build().StartAsync();
+                host.Build().StartAsync(cts.Token);
 #pragma warning restore 4014
                 
                 var config = new CefConfig(host.DebugMode)

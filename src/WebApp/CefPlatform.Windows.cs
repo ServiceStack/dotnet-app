@@ -11,15 +11,20 @@ namespace ServiceStack.CefGlue
         private static CefPlatformWindows provider;
         public static CefPlatformWindows Provider => provider ?? (provider = new CefPlatformWindows());
         private CefPlatformWindows() { }
-
+        
+        public static Action OnExit { get; set; }
+        
         public static int Start(CefConfig config)
         {
             Instance = Provider;
             return Provider.Run(config);
         }
 
+        private CefConfig config;
+
         public int Run(CefConfig config)
         {
+            this.config = config;
             var res = Instance.GetScreenResolution();
             var scaleFactor = GetScalingFactor(GetDC(IntPtr.Zero));
             config.Width = (int)(config.Width > 0 ? config.Width * scaleFactor : res.Width * .75);
@@ -68,9 +73,22 @@ namespace ServiceStack.CefGlue
             return (float)PhysicalScreenHeight / (float)LogicalScreenHeight;
         }
 
+        public void ShowConsoleWindow()
+        {
+            if (!this.config.HideConsoleWindow)
+                return;
+            
+            Console.Title = typeof(CefPlatformWindows).Namespace + " " + Guid.NewGuid().ToString().Substring(0,5);
+            var hWnd = FindWindow(null, Console.Title);
+            if (hWnd != IntPtr.Zero)
+            {
+                ShowWindow(hWnd, 1);
+            }
+        }
+
         public override void HideConsoleWindow()
         {
-            Console.Title = typeof(CefPlatformWindows).Namespace;
+            Console.Title = typeof(CefPlatformWindows).Namespace + " " + Guid.NewGuid().ToString().Substring(0,5);
             var hWnd = FindWindow(null, Console.Title);
             if (hWnd != IntPtr.Zero)
             {
@@ -108,6 +126,12 @@ namespace ServiceStack.CefGlue
 
         [DllImport("user32.dll")]
         static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        
+        [DllImport("user32.dll", SetLastError=true)]
+        static extern int CloseWindow (IntPtr hWnd);        
+        
+        [DllImport("user32.dll")]
+        static extern bool DestroyWindow(IntPtr hWnd);        
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
