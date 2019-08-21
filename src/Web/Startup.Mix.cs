@@ -622,7 +622,8 @@ namespace Web
             var ret = input
                 .Replace("My App", splitPascalCase)
                 .Replace("MyApp", projectName)
-                .Replace("my-app", projectNameKebab);
+                .Replace("my-app", projectNameKebab)
+                .Replace("myapp", projectName.ToLower());
 
             if (!Env.IsWindows)
                 ret = ret.Replace("\r", "");

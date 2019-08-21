@@ -1372,145 +1372,137 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     WriteGistFile(gist, gistAlias:null, to:".", projectName:null, getUserApproval:UserInputYesNo);
                     return new Instruction { Command = "gist", Handled = true };
                 }
-                if (arg == "new")
-                {
-                    await PrintSources(GitHubSourceTemplates.Split(';'));
-                    AssertValidProjectName(null, tool);
-                }
             }
-            else if (args.Length == 3)
+            
+            if (arg == "new" && (args.Length == 2 || args.Length == 3))
             {
-                if (arg == "new")
+                var repo = args[1];
+                var parts = repo.Split('+');
+                string[] gistAliases = null; 
+                if (parts.Length > 1)
                 {
-                    var repo = args[1];
-                    var parts = repo.Split('+');
-                    string[] gistAliases = null; 
-                    if (parts.Length > 1)
+                    repo = parts[0];
+                    gistAliases = parts.Skip(1).ToArray();
+                    
+                    var links = GetGistApplyLinks();
+                    foreach (var gistAlias in gistAliases)
                     {
-                        repo = parts[0];
-                        gistAliases = parts.Skip(1).ToArray();
-                        
-                        var links = GetGistApplyLinks();
-                        foreach (var gistAlias in gistAliases)
+                        var gistLink = GistLink.Get(links, gistAlias);
+                        if (gistLink == null)
                         {
-                            var gistLink = GistLink.Get(links, gistAlias);
-                            if (gistLink == null)
-                            {
-                                $"No match found for '{gistAlias}', available gists:".Print();
-                                PrintGistLinks(tool, links);
-                                return new Instruction { Command = "new+", Handled = true };
-                            }
+                            $"No match found for '{gistAlias}', available gists:".Print();
+                            PrintGistLinks(tool, links);
+                            return new Instruction { Command = "new+", Handled = true };
                         }
                     }
-                    
-                    var projectName = args[2];
-                    AssertValidProjectName(projectName, tool);
-    
-                    RegisterStat(tool, repo, "new");
-
-                    var orgs = GitHubSourceTemplates.Split(';').Select(x => x.LeftPart(' ')).ToArray();
-                    var fullRepo = GitHubUtils.Gateway.FindRepo(orgs, repo);
-                    
-                    var downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(fullRepo.Item1, fullRepo.Item2);
-                    $"Installing {repo}...".Print();
-    
-                    var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
-                    var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
-                    DeleteDirectory(tmpDir);
-    
-                    if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
-                    ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
-                    var installDir = Path.GetFullPath(repo);
-    
-                    var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
-                    if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {projectDir.FullName}".Print();
-                    DeleteDirectory(projectDir.FullName);
-                    MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
-    
-                    RenameProject(str => ReplaceMyApp(str, projectName), projectDir);
-    
-                    // Restore Solution
-                    var slns = Directory.GetFiles(projectDir.FullName, "*.sln", SearchOption.AllDirectories);
-                    if (slns.Length == 1)
-                    {
-                        var sln = slns[0];
-                        if (Verbose) $"Found {sln}".Print();
-                        
-                        if (GetExePath("nuget", out var nugetPath))
-                        {
-                            $"running nuget restore...".Print();
-                            PipeProcess(nugetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
-                        }
-                        else if (GetExePath("dotnet", out var dotnetPath))
-                        {
-                            $"running dotnet restore...".Print();
-                            PipeProcess(dotnetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
-                        }
-                        else
-                        {
-                            $"'nuget' or 'dotnet' not found in PATH, skipping restore.".Print();
-                        }
-                    }
-                    else if (Verbose) $"Found {slns.Length} *.sln".Print();
-    
-                    // Install npm dependencies (if any)
-                    var packageJsons = Directory.GetFiles(projectDir.FullName, "package.json", SearchOption.AllDirectories);
-                    if (packageJsons.Length == 1)
-                    {
-                        var packageJson = packageJsons[0];
-                        if (Verbose) $"Found {packageJson}".Print();
-    
-                        var npmScript = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "npm.cmd" : "npm";
-                        if (GetExePath(npmScript, out var npmPath))
-                        {
-                            $"running npm install...".Print();
-                            PipeProcess(npmPath, "install", workDir: Path.GetDirectoryName(packageJson));
-                        }
-                        else
-                        {
-                            $"'npm' not found in PATH, skipping npm install.".Print();
-                        }
-                    }
-                    else if (Verbose) $"Found {packageJsons.Length} package.json".Print();
-    
-                    // Install libman dependencies (if any)
-                    var packageLibmans = Directory.GetFiles(projectDir.FullName, "libman.json", SearchOption.AllDirectories);
-                    if (packageLibmans.Length == 1)
-                    {
-                        var packageLibman = packageLibmans[0];
-                        if (Verbose) $"Found {packageLibman}".Print();
-    
-                        if (GetExePath("libman", out var libmanPath))
-                        {
-                            $"running libman restore...".Print();
-                            PipeProcess(libmanPath, "restore", workDir: Path.GetDirectoryName(packageLibman));
-                        }
-                        else
-                        {
-                            $"'libman' not found in PATH, skipping 'libman restore'.".Print();
-                            $"Install 'libman cli' with: dotnet tool install -g Microsoft.Web.LibraryManager.CLI".Print();
-                        }
-                    }
-                    else if (Verbose) $"Found {packageLibmans.Length} libman.json".Print();
-                    
-                    "".Print();
-
-                    if (gistAliases != null)
-                    {
-                        Directory.SetCurrentDirectory(projectDir.FullName);
-                        var links = GetGistApplyLinks();
-                        foreach (var gistAlias in gistAliases)
-                        {
-                            var gistLink = GistLink.Get(links, gistAlias);
-                            WriteGistFile(gistLink.Url, gistAlias, to:gistLink.To, projectName:projectName, getUserApproval:null);
-                        }
-                    }
-                    
-                    $"{projectName} {repo} project created.".Print();
-                    "".Print();
-                    return new Instruction { Handled = true };
-                    
                 }
+                
+                var projectName = args.Length > 2 ? args[2] : args[1].SafeVarRef();
+                AssertValidProjectName(projectName, tool);
+
+                RegisterStat(tool, repo, "new");
+
+                var orgs = GitHubSourceTemplates.Split(';').Select(x => x.LeftPart(' ')).ToArray();
+                var fullRepo = GitHubUtils.Gateway.FindRepo(orgs, repo);
+                
+                var downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(fullRepo.Item1, fullRepo.Item2);
+                $"Installing {repo}...".Print();
+
+                var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
+                var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);
+                DeleteDirectory(tmpDir);
+
+                if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
+                ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
+                var installDir = Path.GetFullPath(repo);
+
+                var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
+                if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {projectDir.FullName}".Print();
+                DeleteDirectory(projectDir.FullName);
+                MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
+
+                RenameProject(str => ReplaceMyApp(str, projectName), projectDir);
+
+                // Restore Solution
+                var slns = Directory.GetFiles(projectDir.FullName, "*.sln", SearchOption.AllDirectories);
+                if (slns.Length == 1)
+                {
+                    var sln = slns[0];
+                    if (Verbose) $"Found {sln}".Print();
+                    
+                    if (GetExePath("nuget", out var nugetPath))
+                    {
+                        $"running nuget restore...".Print();
+                        PipeProcess(nugetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
+                    }
+                    else if (GetExePath("dotnet", out var dotnetPath))
+                    {
+                        $"running dotnet restore...".Print();
+                        PipeProcess(dotnetPath, $"restore \"{Path.GetFileName(sln)}\"", workDir: Path.GetDirectoryName(sln));                        
+                    }
+                    else
+                    {
+                        $"'nuget' or 'dotnet' not found in PATH, skipping restore.".Print();
+                    }
+                }
+                else if (Verbose) $"Found {slns.Length} *.sln".Print();
+
+                // Install npm dependencies (if any)
+                var packageJsons = Directory.GetFiles(projectDir.FullName, "package.json", SearchOption.AllDirectories);
+                if (packageJsons.Length == 1)
+                {
+                    var packageJson = packageJsons[0];
+                    if (Verbose) $"Found {packageJson}".Print();
+
+                    var npmScript = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "npm.cmd" : "npm";
+                    if (GetExePath(npmScript, out var npmPath))
+                    {
+                        $"running npm install...".Print();
+                        PipeProcess(npmPath, "install", workDir: Path.GetDirectoryName(packageJson));
+                    }
+                    else
+                    {
+                        $"'npm' not found in PATH, skipping npm install.".Print();
+                    }
+                }
+                else if (Verbose) $"Found {packageJsons.Length} package.json".Print();
+
+                // Install libman dependencies (if any)
+                var packageLibmans = Directory.GetFiles(projectDir.FullName, "libman.json", SearchOption.AllDirectories);
+                if (packageLibmans.Length == 1)
+                {
+                    var packageLibman = packageLibmans[0];
+                    if (Verbose) $"Found {packageLibman}".Print();
+
+                    if (GetExePath("libman", out var libmanPath))
+                    {
+                        $"running libman restore...".Print();
+                        PipeProcess(libmanPath, "restore", workDir: Path.GetDirectoryName(packageLibman));
+                    }
+                    else
+                    {
+                        $"'libman' not found in PATH, skipping 'libman restore'.".Print();
+                        $"Install 'libman cli' with: dotnet tool install -g Microsoft.Web.LibraryManager.CLI".Print();
+                    }
+                }
+                else if (Verbose) $"Found {packageLibmans.Length} libman.json".Print();
+                
+                "".Print();
+
+                if (gistAliases != null)
+                {
+                    Directory.SetCurrentDirectory(projectDir.FullName);
+                    var links = GetGistApplyLinks();
+                    foreach (var gistAlias in gistAliases)
+                    {
+                        var gistLink = GistLink.Get(links, gistAlias);
+                        WriteGistFile(gistLink.Url, gistAlias, to:gistLink.To, projectName:projectName, getUserApproval:null);
+                    }
+                }
+                
+                $"{projectName} {repo} project created.".Print();
+                "".Print();
+                return new Instruction { Handled = true };
             }
             
             if (await CheckForUpdates(tool, checkUpdatesAndQuit))
