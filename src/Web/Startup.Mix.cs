@@ -400,6 +400,13 @@ namespace Web
 
             foreach (var gistAlias in gistAliases)
             {
+                if (gistAlias.StartsWith("https://gist.github.com/"))
+                {
+                    WriteGistFile(gistAlias, gistAlias, to: ".", projectName: projectName, getUserApproval: UserInputYesNo);
+                    ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
+                    continue;
+                }
+                
                 var gistLink = GistLink.Get(links, gistAlias);
                 if (gistLink == null)
                 {
@@ -423,21 +430,35 @@ namespace Web
 
             var sb = new StringBuilder();
             var allResolvedFiles = new List<string>();
+            string gistId;
+            string gistLinkUrl;
+            string to = ".";
+            
             foreach (var gistAlias in gistAliases)
             {
-                var gistLink = GistLink.Get(links, gistAlias);
-                if (gistLink == null)
+                if (!gistAlias.StartsWith("https://gist.github.com"))
                 {
-                    $"No match found for '{gistAlias}', available gists:".Print();
-                    PrintGistLinks(tool, links);
-                }
+                    var gistLink = GistLink.Get(links, gistAlias);
+                    if (gistLink == null)
+                    {
+                        $"No match found for '{gistAlias}', available gists:".Print();
+                        PrintGistLinks(tool, links);
+                        return;
+                    }
 
-                var gistId = gistLink.Url;
-                var gistLinkUrl = $"https://gist.github.com/{gistId}";
-                if (gistId.IsUrl())
+                    gistId = gistLink.Url;
+                    gistLinkUrl = $"https://gist.github.com/{gistId}";
+                    if (gistId.IsUrl())
+                    {
+                        gistLinkUrl = gistId;
+                        gistId = gistLinkUrl.LastRightPart('/');
+                    }
+                    to = gistLink.To;
+                }
+                else
                 {
-                    gistLinkUrl = gistId;
-                    gistId = gistId.LastRightPart('/');
+                    gistLinkUrl = gistAlias;
+                    gistId = gistLinkUrl.LastRightPart('/');
                 }
 
                 var alias = !string.IsNullOrEmpty(gistAlias)
@@ -446,12 +467,12 @@ namespace Web
                 var exSuffix = $" required by {alias}{gistLinkUrl}";
 
                 var gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
-                var basePath = ResolveBasePath(gistLink.To, exSuffix);
+                var basePath = ResolveBasePath(to, exSuffix);
 
                 var resolvedFiles = new List<string>();
                 foreach (var gistFile in gistFiles)
                 {
-                    var resolvedFile = ResolveFilePath(gistFile.Key, basePath, projectName, gistLink.To);
+                    var resolvedFile = ResolveFilePath(gistFile.Key, basePath, projectName, to);
                     if (!File.Exists(resolvedFile))
                     {
                         if (Verbose) $"Skipping deleting non-existent file: {resolvedFile}".Print();
@@ -902,12 +923,32 @@ namespace Web
                 if (!Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
-                File.WriteAllText(resolvedFile.Key, resolvedFile.Value);
+                var filePath = resolvedFile.Key;
+                var fileContents = resolvedFile.Value;
+
+                if (filePath.EndsWith("|base64"))
+                {
+                    try
+                    {
+                        filePath = filePath.LastLeftPart('|');
+                        var fileBytes = Convert.FromBase64String(fileContents);
+                        File.WriteAllBytes(filePath, fileBytes);
+                    }
+                    catch (Exception ex)
+                    {
+                        $"Could not Convert Base64 binary file '{filePath}': {ex.Message}".Print();
+                        throw;
+                    }
+                }
+                else
+                {
+                    File.WriteAllText(filePath, fileContents);
+                }
             }
         }
 
 
-        public static void PipeProcess(string fileName, string arguments, string workDir = null, Action fn = null)
+        public static Process PipeProcess(string fileName, string arguments, string workDir = null, Action fn = null)
         {
             var process = new Process
             {
@@ -948,7 +989,8 @@ namespace Web
                 }
                 
                 process.Close();
-            }            
+            }
+            return process;
         }
 
         public static bool GetExePath(string exeName, out string fullPath)
