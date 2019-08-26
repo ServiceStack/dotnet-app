@@ -5,12 +5,14 @@ using Xilium.CefGlue;
 
 namespace ServiceStack.CefGlue.Win64
 {
-    internal class CefGlueHost : EventedWindowCore
+    public class CefGlueHost : EventedWindowCore
     {
         private readonly CefConfig context;
         public CefGlueHost(CefConfig context) => this.context = context;
 
         public CefGlueBrowser browser;
+
+        public CefGlueBrowser Browser => browser;
 
         protected bool MultiThreadedMessageLoop => context.CefSettings.MultiThreadedMessageLoop;
 

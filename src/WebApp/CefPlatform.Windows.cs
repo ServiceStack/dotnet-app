@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xilium.CefGlue;
 using WinApi.Windows;
 using ServiceStack.CefGlue.Win64;
@@ -20,6 +21,9 @@ namespace ServiceStack.CefGlue
             return Provider.Run(config);
         }
 
+        private CefGlueHost window;
+        public CefGlueHost Window => window;
+
         private CefConfig config;
 
         public int Run(CefConfig config)
@@ -34,13 +38,11 @@ namespace ServiceStack.CefGlue
                 Instance.HideConsoleWindow();
 
             var factory = WinapiHostFactory.Init(config.Icon);
-            using (var window = factory.CreateWindow(
+            using (window = factory.CreateWindow(
                 () => new CefGlueHost(config),
                 config.WindowTitle,
                 constructionParams: new FrameWindowConstructionParams()))
             {
-
-                window.SetSize(config.Width, config.Height);
                 if (config.CenterToScreen)
                 {
                     window.CenterToScreen();
@@ -49,13 +51,18 @@ namespace ServiceStack.CefGlue
                 {
                     window.SetPosition(config.X.GetValueOrDefault(), config.Y.GetValueOrDefault());
                 }
+
+                window.SetSize(config.Width, config.Height-1);
+                window.Browser.BrowserCreated += (sender, args) => {
+                    window.SetSize(config.Width, config.Height); //trigger refresh to sync browser frame with window
+                };
+
                 window.Show();
 
-                //startTask.Wait();
                 return new EventLoop().Run(window);
             }
         }
-
+        
         public override CefSize GetScreenResolution()
         {
             IntPtr hdc = GetDC(IntPtr.Zero);
