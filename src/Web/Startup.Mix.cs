@@ -139,159 +139,6 @@ namespace Web
             }
         }
 
-        public class GistLink
-        {
-            public string Name { get; set; }
-            public string Url { get; set; }
-            public string User { get; set; }
-            public string To { get; set; }
-            public string Description { get; set; }
-
-            public string[] Tags { get; set; }
-
-            public string GistId { get; set; }
-
-            public string Repo { get; set; }
-
-            public string ToTagsString() => Tags == null ? "" : $"[" + string.Join(",", Tags) + "]";
-
-            public string ToListItem()
-            {
-                var sb = new StringBuilder(" - [")
-                    .Append(Name)
-                    .Append("](")
-                    .Append(Url)
-                    .Append(") {")
-                    .Append(!string.IsNullOrEmpty(To) ? "to:" + To.ToJson() : "")
-                    .Append("} `")
-                    .Append(Tags != null ? string.Join(",", Tags) : "")
-                    .Append("` ")
-                    .Append(Description);
-
-                return sb.ToString();
-            }
-
-            public static string RenderLinks(List<GistLink> links)
-            {
-                var sb = new StringBuilder();
-                foreach (var link in links)
-                {
-                    sb.AppendLine(link.ToListItem());
-                }
-                return sb.ToString();
-            }
-
-            public static List<GistLink> Parse(string md)
-            {
-                var to = new List<GistLink>();
-
-                if (!string.IsNullOrEmpty(md))
-                {
-                    foreach (var strLine in md.ReadLines())
-                    {
-                        var line = strLine.AsSpan();
-                        if (!line.TrimStart().StartsWith("- ["))
-                            continue;
-
-                        line.SplitOnFirst('[', out _, out var startName);
-                        startName.SplitOnFirst(']', out var name, out var endName);
-                        endName.SplitOnFirst('(', out _, out var startUrl);
-                        startUrl.SplitOnFirst(')', out var url, out var endUrl);
-
-                        var afterModifiers = endUrl.ParseJsToken(out var token);
-
-                        var toPath =
-                            (token is JsObjectExpression obj
-                                ? obj.Properties.FirstOrDefault(x => x.Key is JsIdentifier key && key.Name == "to")
-                                    ?.Value as JsLiteral
-                                : null)?.Value?.ToString();
-
-                        string tags = null;
-                        afterModifiers = afterModifiers.TrimStart();
-                        if (afterModifiers.StartsWith("`"))
-                        {
-                            afterModifiers = afterModifiers.Advance(1);
-                            var pos = afterModifiers.IndexOf('`');
-                            if (pos >= 0)
-                            {
-                                tags = afterModifiers.Substring(0, pos);
-                                afterModifiers = afterModifiers.Advance(pos + 1);
-                            }
-                        }
-
-                        if (name == null || url == null)
-                            continue;
-
-                        var link = new GistLink
-                        {
-                            Name = name.ToString(),
-                            Url = url.ToString(),
-                            To = toPath,
-                            Description = afterModifiers.Trim().ToString(),
-                            User = url.Substring("https://".Length).RightPart('/').LeftPart('/'),
-                            Tags = tags?.Split(',').Map(x => x.Trim()).ToArray(),
-                        };
-
-                        if (TryParseGitHubUrl(link.Url, out var gistId, out var user, out var repo))
-                        {
-                            link.GistId = gistId;
-                            if (user != null)
-                            {
-                                link.User = user;
-                                link.Repo = repo;
-                            }
-                        }
-
-                        if (link.User == "gistlyn" || link.User == "mythz")
-                            link.User = "ServiceStack";
-
-                        to.Add(link);
-                    }
-                }
-
-                return to;
-            }
-
-            public static bool TryParseGitHubUrl(string url, out string gistId, out string user, out string repo)
-            {
-                gistId = user = repo = null;
-
-                if (url.StartsWith("https://gist.github.com"))
-                {
-                    gistId = url.LastRightPart('/');
-                    return true;
-                }
-
-                if (url.StartsWith("https://github.com/"))
-                {
-                    var pathInfo = url.Substring("https://github.com/".Length);
-                    user = pathInfo.LeftPart('/');
-                    repo = pathInfo.RightPart('/').LeftPart('/');
-                    return true;
-                }
-
-                return false;
-            }
-
-            public static GistLink Get(List<GistLink> links, string gistAlias)
-            {
-                var sanitizedAlias = gistAlias.Replace("-", "");
-                var gistLink = links.FirstOrDefault(x => x.Name.Replace("-", "").EqualsIgnoreCase(sanitizedAlias));
-                return gistLink;
-            }
-
-            public bool MatchesTag(string tagName)
-            {
-                if (Tags == null)
-                    return false;
-
-                var searchTags = tagName.Split(',').Map(x => x.Trim());
-                return searchTags.Count == 1
-                    ? Tags.Any(x => x.EqualsIgnoreCase(tagName))
-                    : Tags.Any(x => searchTags.Any(x.EqualsIgnoreCase));
-            }
-        }
-
         private static ConcurrentDictionary<string, List<GistLink>> GistLinksCache =
             new ConcurrentDictionary<string, List<GistLink>>();
 
@@ -1060,6 +907,12 @@ namespace Web
                     "Mix using numbered list index instead:".Print();
                     
                     $"   mix 1 3 5 ...".Print();
+                    
+                    "".Print();
+
+                    "Mix file contents from gist URL:".Print();
+                    
+                    $"   mix <gist-url>".Print();
                     
                     "".Print();
 

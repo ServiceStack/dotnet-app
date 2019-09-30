@@ -409,5 +409,23 @@ namespace Run
         {
             await Startup.CreateWebHost("web", new[]{ "open", "https://github.com/sharp-apps/bare" });
         }
+
+        [Test]
+        public async Task Run_version()
+        {
+            await Startup.CreateWebHost("web", new[]{ "/version" });
+        }
+
+        [Test]
+        public async Task Run_lisp_repl()
+        {
+            await Startup.CreateWebHost("web", new[]{ "lisp" });
+        }
+
+        [Test]
+        public async Task Run_lisp_run_parse_rss()
+        {
+            await Startup.CreateWebHost("web", new[]{ "run", "..\\..\\..\\parse-rss.l" });
+        }
     }
 }

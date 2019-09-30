@@ -165,6 +165,7 @@ namespace Web
             var runScriptArgs = new Dictionary<string, object>();
             var runScriptArgV = new List<string>();
             var runSharpApp = false;
+            var runLispRepl = false;
             var appSettingPaths = new[]
             {
                 "app.settings", "../app/app.settings", "app/app.settings",
@@ -212,6 +213,11 @@ namespace Web
                         createShortcutFor = args[++i];
                     continue;
                 }
+                if (arg == "lisp")
+                {
+                    runLispRepl = runSharpApp = true;
+                    continue;
+                }
                 if (arg == "run" || arg == "watch")
                 {
                     if (i + 1 >= args.Length)
@@ -228,8 +234,8 @@ namespace Web
                         i++;
                         continue;
                     }
-
-                    if (!(script.EndsWith(".html") || script.EndsWith(".ss")))
+                    
+                    if (!(script.EndsWith(".html") || script.EndsWith(".ss") || script.EndsWith(".sc") || script.EndsWith(".l")))
                     {
                         // Run SharpApp
                         var appsDir = GetAppsPath(script);
@@ -254,7 +260,7 @@ namespace Web
                         }
                         
                         throw new ArgumentException(script.IndexOf('.', StringComparison.Ordinal) >= 0 
-                            ? "Only .ss or .html scripts can be run"
+                            ? "Only .ss. .sc. .l or .html scripts can be run"
                             : $"No '{script}' App installed");
                     }
                         
@@ -446,6 +452,8 @@ namespace Web
                     $"Command: publish-exe".Print();
                 if (RunScript != null)
                     $"Command: run {RunScript} {runScriptArgs.ToJsv()}".Print();
+                if (runLispRepl)
+                    $"Command: LISP REPL".Print();
             }
 
             if (runProcess != null)
@@ -546,7 +554,7 @@ namespace Web
                 }
             }
 
-            if (appSettingsContent == null && (appSettingsPath == null && createShortcutFor == null && RunScript == null))
+            if (appSettingsContent == null && (appSettingsPath == null && createShortcutFor == null && RunScript == null && !runLispRepl))
             {
                 if (Directory.Exists(GetAppsPath("")) && Directory.GetDirectories(GetAppsPath("")).Length > 0)
                 {
@@ -574,7 +582,7 @@ namespace Web
             if (RunScript != null)
             {
                 var context = new ScriptContext().Init();
-                var page = context.OneTimePage(File.ReadAllText(RunScript), "html");
+                var page = OneTimePage(context, File.ReadAllText(RunScript));
                 if (page.Args.Count > 0)
                     appSettings = new DictionarySettings(page.Args.ToStringDictionary());
             }
@@ -739,16 +747,16 @@ namespace Web
                 
                 return null;
             }
-            if (RunScript != null)
+            if (RunScript != null || runLispRepl)
             {
                 void ExecScript(SharpPagesFeature feature)
                 {
                     var ErrorPrefix = $"FAILED run {RunScript} [{string.Join(' ', runScriptArgV)}]:";
-                        
+
                     try
                     {
-                        var html = File.ReadAllText(RunScript);
-                        var page = feature.Pages.OneTimePage(html, ".html");
+                        var script = File.ReadAllText(RunScript);
+                        var page = OneTimePage(feature, script);
                         var pageResult = new PageResult(page) {
                             Args = {
                                 ["ARGV"] = runScriptArgV.ToArray(),
@@ -785,12 +793,16 @@ namespace Web
                 }
                 
                 bool breakLoop = false;
-                        
-                Console.TreatControlCAsInput = false;
-                Console.CancelKeyPress += delegate {
-                    if (Verbose) $"Console.CancelKeyPress".Print();
-                    breakLoop = true;
-                };
+
+                try
+                {
+                    Console.TreatControlCAsInput = false;
+                    Console.CancelKeyPress += delegate {
+//                    if (Verbose) $"Console.CancelKeyPress".Print();
+                        breakLoop = true;
+                    };
+                }
+                catch {} // fails when called from unit test
                 
                 RegisterStat(tool, RunScript, WatchScript ? "watch" : "run");
                 var (contentRoot, useWebRoot) = GetDirectoryRoots(ctx);
@@ -810,6 +822,13 @@ namespace Web
                     if (StartupException != null) throw StartupException;
                     
                     var feature = appHost.AssertPlugin<SharpPagesFeature>();
+
+                    if (runLispRepl)
+                    {
+                        Console.WriteLine($"\nWelcome to #Script Lisp! The time now is: {DateTime.Now.ToShortTimeString()}");
+                        Lisp.RunRepl(feature);
+                        return null;
+                    }
 
                     var script = new FileInfo(RunScript);
                     var lastWriteAt = DateTime.MinValue;
@@ -855,6 +874,17 @@ namespace Web
             }
 
             return CreateWebAppContext(ctx);
+        }
+
+        private static SharpPage OneTimePage(ScriptContext context, string script)
+        {
+            if (RunScript == null)
+                return context.Pages.OneTimePage(script, ".html");
+            return RunScript.EndsWith(".sc") 
+                ? context.CodeSharpPage(script)
+                : RunScript.EndsWith(".l") 
+                    ? context.LispSharpPage(script)
+                    : context.Pages.OneTimePage(script, ".html");
         }
 
         private static bool InstallGistApp(string tool, string target, GistLink gistLink, List<GistLink> gistLinks, out string appsDir)
@@ -1102,6 +1132,8 @@ namespace Web
 
             var additional = new StringBuilder();
 
+            var indt = "".PadLeft(tool.Length, ' ');
+
             string USAGE = $@"
 Version:  {GetVersion()}
 
@@ -1127,10 +1159,16 @@ Usage:
   {tool} mix <name>              Write gist files locally, e.g:        (Alias +init)
   {tool} mix init                Create empty .NET Core ServiceStack App
   {tool} mix #<tag>              Search available gists
+  {tool} mix <gist-url>          Write all Gist text files to current directory
   {tool} gist <gist-id>          Write all Gist text files to current directory
 
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
   {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
+  {indt}                         Language File Extensions:
+                                   .ss - #Script source file
+                                   .sc - #Script `code` source file
+                                   .l  - #Script `lisp` source file
+  {tool} lisp                    Start Lisp REPL
 
   {tool} open                    List of available Sharp Apps
   {tool} open <app>              Install and run Sharp App
@@ -1335,13 +1373,15 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     RegisterStat(tool, "version");
                     checkUpdatesAndQuit = beginCheckUpdates();
                     $"Version: {GetVersion()}".Print();
+                    $"ServiceStack: {Env.VersionString}".Print();
+                    $"Framework: {RuntimeInformation.FrameworkDescription}".Print();
+                    $"OS: {Environment.OSVersion}".Print();
                 }
                 else if (new[] { "/clean", "/clear" }.Contains(cmd))
                 {
                     RegisterStat(tool, "clean");
                     checkUpdatesAndQuit = beginCheckUpdates();
-                    var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                    var cachesDir = Path.Combine(homeDir, ".servicestack", "cache");
+                    var cachesDir = GetCacheDir();
                     DeleteDirectory(cachesDir);
                     $"All caches deleted in '{cachesDir}'".Print();
                 }
@@ -1509,6 +1549,13 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             
             return null;
+        }
+
+        private static string GetCacheDir()
+        {
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var cachesDir = Path.Combine(homeDir, ".servicestack", "cache");
+            return cachesDir;
         }
 
         private static readonly Dictionary<string,string> RefAlias = new Dictionary<string, string>
@@ -1982,6 +2029,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
                         : new SharpPagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
                 }
+                
+                // Use ~/.servicestack/cache for all downloaded scripts
+                feature.CacheFiles = new FileSystemVirtualFiles(GetCacheDir());
+                feature.ScriptLanguages.Add(ScriptLisp.Language);
 
                 if (!feature.Plugins.Any(x => x is GitHubPlugin))
                     feature.Plugins.Add(new GitHubPlugin());

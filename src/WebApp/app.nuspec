@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>app</id>
-        <version>0.0.41</version>
+        <version>0.0.42</version>
         <authors>ServiceStack</authors>
         <owners>ServiceStack</owners>
         <requireLicenseAcceptance>true</requireLicenseAcceptance>
@@ -37,10 +37,12 @@
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Data.Sqlite.dll" target="tools\netcoreapp2.1\any\Microsoft.Data.Sqlite.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" target="tools\netcoreapp2.1\any\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" target="tools\netcoreapp2.1\any\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\Microsoft.IdentityModel.JsonWebTokens.dll" target="tools\netcoreapp2.1\any\Microsoft.IdentityModel.JsonWebTokens.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.IdentityModel.Logging.dll" target="tools\netcoreapp2.1\any\Microsoft.IdentityModel.Logging.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.IdentityModel.Tokens.dll" target="tools\netcoreapp2.1\any\Microsoft.IdentityModel.Tokens.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Rest.ClientRuntime.dll" target="tools\netcoreapp2.1\any\Microsoft.Rest.ClientRuntime.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Rest.ClientRuntime.Azure.dll" target="tools\netcoreapp2.1\any\Microsoft.Rest.ClientRuntime.Azure.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Win32.Registry.dll" target="tools\netcoreapp2.1\any\Microsoft.Win32.Registry.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Win32.SystemEvents.dll" target="tools\netcoreapp2.1\any\Microsoft.Win32.SystemEvents.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\MySql.Data.dll" target="tools\netcoreapp2.1\any\MySql.Data.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\NetCoreEx.BinaryExtensions.dll" target="tools\netcoreapp2.1\any\NetCoreEx.BinaryExtensions.dll" />
@@ -63,35 +65,60 @@
         <file src="bin\Release\netcoreapp2.1\publish\ServiceStack.Redis.dll" target="tools\netcoreapp2.1\any\ServiceStack.Redis.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\ServiceStack.Server.dll" target="tools\netcoreapp2.1\any\ServiceStack.Server.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\ServiceStack.Text.dll" target="tools\netcoreapp2.1\any\ServiceStack.Text.dll" />
-        <file src="bin\Release\netcoreapp2.1\publish\SQLitePCLRaw.batteries_green.dll" target="tools\netcoreapp2.1\any\SQLitePCLRaw.batteries_green.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\SQLitePCLRaw.batteries_v2.dll" target="tools\netcoreapp2.1\any\SQLitePCLRaw.batteries_v2.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\SQLitePCLRaw.core.dll" target="tools\netcoreapp2.1\any\SQLitePCLRaw.core.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\SQLitePCLRaw.provider.e_sqlite3.dll" target="tools\netcoreapp2.1\any\SQLitePCLRaw.provider.e_sqlite3.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\Renci.SshNet.dll" target="tools\netcoreapp2.1\any\Renci.SshNet.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\SshNet.Security.Cryptography.dll" target="tools\netcoreapp2.1\any\SshNet.Security.Cryptography.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Configuration.ConfigurationManager.dll" target="tools\netcoreapp2.1\any\System.Configuration.ConfigurationManager.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Data.SqlClient.dll" target="tools\netcoreapp2.1\any\System.Data.SqlClient.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Data.SQLite.dll" target="tools\netcoreapp2.1\any\System.Data.SQLite.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\System.Diagnostics.DiagnosticSource.dll" target="tools\netcoreapp2.1\any\System.Diagnostics.DiagnosticSource.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Drawing.Common.dll" target="tools\netcoreapp2.1\any\System.Drawing.Common.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.IdentityModel.Tokens.Jwt.dll" target="tools\netcoreapp2.1\any\System.IdentityModel.Tokens.Jwt.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\System.Runtime.CompilerServices.Unsafe.dll" target="tools\netcoreapp2.1\any\System.Runtime.CompilerServices.Unsafe.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\System.Security.AccessControl.dll" target="tools\netcoreapp2.1\any\System.Security.AccessControl.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Security.Cryptography.ProtectedData.dll" target="tools\netcoreapp2.1\any\System.Security.Cryptography.ProtectedData.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\System.Security.Principal.Windows.dll" target="tools\netcoreapp2.1\any\System.Security.Principal.Windows.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.ServiceModel.Primitives.dll" target="tools\netcoreapp2.1\any\System.ServiceModel.Primitives.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.ServiceModel.dll" target="tools\netcoreapp2.1\any\System.ServiceModel.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Text.Encoding.CodePages.dll" target="tools\netcoreapp2.1\any\System.Text.Encoding.CodePages.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\System.Xml.XPath.XmlDocument.dll" target="tools\netcoreapp2.1\any\System.Xml.XPath.XmlDocument.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\WinApi.dll" target="tools\netcoreapp2.1\any\WinApi.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.WindowsAzure.Storage.dll" target="tools\netcoreapp2.1\any\Microsoft.WindowsAzure.Storage.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\unix\lib\netstandard2.0\Microsoft.Win32.Registry.dll" target="tools\netcoreapp2.1\any\runtimes\unix\lib\netstandard2.0\Microsoft.Win32.Registry.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\unix\lib\netstandard2.0\System.Private.ServiceModel.dll" target="tools\netcoreapp2.1\any\runtimes\unix\lib\netstandard2.0\System.Private.ServiceModel.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\Microsoft.Win32.Registry.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\Microsoft.Win32.Registry.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\System.Private.ServiceModel.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\System.Private.ServiceModel.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.0\System.Drawing.Common.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.0\System.Drawing.Common.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.0\System.Security.AccessControl.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.0\System.Security.AccessControl.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.0\System.Text.Encoding.CodePages.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.0\System.Text.Encoding.CodePages.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-arm64\native\sni.dll" target="tools\netcoreapp2.1\any\runtimes\win-arm64\native\sni.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-arm64\native\e_sqlite3.dll" target="tools\netcoreapp2.1\any\runtimes\win-arm64\native\e_sqlite3.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x64\native\sni.dll" target="tools\netcoreapp2.1\any\runtimes\win-x64\native\sni.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x64\native\e_sqlite3.dll" target="tools\netcoreapp2.1\any\runtimes\win-x64\native\e_sqlite3.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x86\native\sni.dll" target="tools\netcoreapp2.1\any\runtimes\win-x86\native\sni.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x86\native\e_sqlite3.dll" target="tools\netcoreapp2.1\any\runtimes\win-x86\native\e_sqlite3.dll" />
-        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win8-arm\native\e_sqlite3.dll" target="tools\netcoreapp2.1\any\runtimes\win8-arm\native\e_sqlite3.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\alpine-x64\native\libe_sqlite3.so" target="tools\netcoreapp2.1\any\runtimes\alpine-x64\native\libe_sqlite3.so" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\linux-arm\native\libe_sqlite3.so" target="tools\netcoreapp2.1\any\runtimes\linux-arm\native\libe_sqlite3.so" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\linux-arm64\native\libe_sqlite3.so" target="tools\netcoreapp2.1\any\runtimes\linux-arm64\native\libe_sqlite3.so" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\linux-armel\native\libe_sqlite3.so" target="tools\netcoreapp2.1\any\runtimes\linux-armel\native\libe_sqlite3.so" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\linux-musl-x64\native\libe_sqlite3.so" target="tools\netcoreapp2.1\any\runtimes\linux-musl-x64\native\libe_sqlite3.so" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\linux-x64\native\libe_sqlite3.so" target="tools\netcoreapp2.1\any\runtimes\linux-x64\native\libe_sqlite3.so" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\linux-x86\native\libe_sqlite3.so" target="tools\netcoreapp2.1\any\runtimes\linux-x86\native\libe_sqlite3.so" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\osx-x64\native\libe_sqlite3.dylib" target="tools\netcoreapp2.1\any\runtimes\osx-x64\native\libe_sqlite3.dylib" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-arm\native\e_sqlite3.dll" target="tools\netcoreapp2.1\any\runtimes\win-arm\native\e_sqlite3.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\netcoreapp2.1\any\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\unix\lib\netcoreapp2.1\System.Security.Principal.Windows.dll" target="tools\netcoreapp2.1\any\runtimes\unix\lib\netcoreapp2.1\System.Security.Principal.Windows.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.1\System.Security.Principal.Windows.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.1\System.Security.Principal.Windows.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\linux-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp2.1\any\runtimes\linux-x64\native\netstandard2.0\SQLite.Interop.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\osx-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp2.1\any\runtimes\osx-x64\native\netstandard2.0\SQLite.Interop.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp2.1\any\runtimes\win-x64\native\netstandard2.0\SQLite.Interop.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win-x86\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp2.1\any\runtimes\win-x86\native\netstandard2.0\SQLite.Interop.dll" />
-        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\System.Private.ServiceModel.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\System.Private.ServiceModel.dll" />
-        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\unix\lib\netcoreapp2.0\System.Drawing.Common.dll" target="tools\netcoreapp2.1\any\runtimes\unix\lib\netcoreapp2.0\System.Drawing.Common.dll" />
         <file src="$cefdir$\cef.pak" target="tools\netcoreapp2.1\any\cef.pak" />
         <file src="$cefdir$\cef_100_percent.pak" target="tools\netcoreapp2.1\any\cef_100_percent.pak" />
         <file src="$cefdir$\cef_200_percent.pak" target="tools\netcoreapp2.1\any\cef_200_percent.pak" />
