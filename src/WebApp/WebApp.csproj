@@ -55,10 +55,11 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="3.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
     <PackageReference Include="Mysql.Data" Version="8.0.17" />
-    <PackageReference Include="Npgsql" Version="4.0.10" />
+    <PackageReference Include="Npgsql" Version="4.1.1" />
     <PackageReference Include="Markdig" Version="0.17.1" />
     <PackageReference Include="NUglify" Version="1.5.13" />
-
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.6.0" />
+    
     <PackageReference Include="ServiceStack.Interfaces" Version="5.*" />
     <PackageReference Include="ServiceStack.Text" Version="5.*" />
     <PackageReference Include="ServiceStack.Client" Version="5.*" />

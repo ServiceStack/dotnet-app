@@ -427,5 +427,11 @@ namespace Run
         {
             await Startup.CreateWebHost("web", new[]{ "run", "..\\..\\..\\parse-rss.l" });
         }
+ 
+        [Test]
+        public async Task Run_ts_http2()
+        {
+            await Startup.CreateWebHost("web", new[]{ "ts", "https://localhost:5001" });
+        }
     }
 }

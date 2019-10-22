@@ -5,7 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -1584,6 +1587,14 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"typescript.d", "dtos.d.ts"},
         };
 
+        public class Http2CustomHandler : WinHttpHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
+            {
+                request.Version = new Version("2.0");
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
 
         public static void SaveReference(string tool, string lang, string typesUrl, string filePath)
         {
@@ -1591,12 +1602,25 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             RegisterStat(tool, lang, exists ? "updateref" : "addref");
 
             if (Verbose) $"API: {typesUrl}".Print();
-            var dtos = typesUrl.GetStringFromUrl(requestFilter:req => req.ApplyRequestFilters());
+            string dtosSrc;
+            try 
+            { 
+                dtosSrc = typesUrl.GetStringFromUrl(requestFilter:req => req.ApplyRequestFilters());
+            }
+            catch (WebException) // .NET HttpWebRequest doesn't support HTTP/2 yet, try with HttpClient/WinHttpHandler
+            {
+                var handler = new Http2CustomHandler();
+                using (var client = new HttpClient(handler))
+                {
+                    var res = TaskExt.RunSync(async () => await client.GetAsync(typesUrl));
+                    dtosSrc = res.Content.ReadAsStringAsync().Result;
+                }
+            }
 
-            if (dtos.IndexOf("Options:", StringComparison.Ordinal) == -1) 
+            if (dtosSrc.IndexOf("Options:", StringComparison.Ordinal) == -1) 
                 throw new Exception($"Invalid Response from {typesUrl}");
             
-            File.WriteAllText(filePath, dtos, Utf8WithoutBom);
+            File.WriteAllText(filePath, dtosSrc, Utf8WithoutBom);
 
             var fileName = Path.GetFileName(filePath);
             (exists ? $"Updated: {fileName}" : $"Saved to: {fileName}").Print();
