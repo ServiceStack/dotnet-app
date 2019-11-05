@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>app</id>
-        <version>0.0.42</version>
+        <version>0.0.44</version>
         <authors>ServiceStack</authors>
         <owners>ServiceStack</owners>
         <requireLicenseAcceptance>true</requireLicenseAcceptance>
@@ -34,6 +34,7 @@
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Azure.Management.ServiceBus.dll" target="tools\netcoreapp2.1\any\Microsoft.Azure.Management.ServiceBus.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Azure.ServiceBus.dll" target="tools\netcoreapp2.1\any\Microsoft.Azure.ServiceBus.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Azure.Services.AppAuthentication.dll" target="tools\netcoreapp2.1\any\Microsoft.Azure.Services.AppAuthentication.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Bcl.AsyncInterfaces.dll" target="tools\netcoreapp2.1\any\Microsoft.Bcl.AsyncInterfaces.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.Data.Sqlite.dll" target="tools\netcoreapp2.1\any\Microsoft.Data.Sqlite.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" target="tools\netcoreapp2.1\any\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" target="tools\netcoreapp2.1\any\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
@@ -76,6 +77,7 @@
         <file src="bin\Release\netcoreapp2.1\publish\System.Diagnostics.DiagnosticSource.dll" target="tools\netcoreapp2.1\any\System.Diagnostics.DiagnosticSource.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Drawing.Common.dll" target="tools\netcoreapp2.1\any\System.Drawing.Common.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.IdentityModel.Tokens.Jwt.dll" target="tools\netcoreapp2.1\any\System.IdentityModel.Tokens.Jwt.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\System.Net.Http.WinHttpHandler.dll" target="tools\netcoreapp2.1\any\System.Net.Http.WinHttpHandler.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Runtime.CompilerServices.Unsafe.dll" target="tools\netcoreapp2.1\any\System.Runtime.CompilerServices.Unsafe.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Security.AccessControl.dll" target="tools\netcoreapp2.1\any\System.Security.AccessControl.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Security.Cryptography.ProtectedData.dll" target="tools\netcoreapp2.1\any\System.Security.Cryptography.ProtectedData.dll" />
@@ -83,12 +85,15 @@
         <file src="bin\Release\netcoreapp2.1\publish\System.ServiceModel.Primitives.dll" target="tools\netcoreapp2.1\any\System.ServiceModel.Primitives.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.ServiceModel.dll" target="tools\netcoreapp2.1\any\System.ServiceModel.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Text.Encoding.CodePages.dll" target="tools\netcoreapp2.1\any\System.Text.Encoding.CodePages.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\System.Text.Encodings.Web.dll" target="tools\netcoreapp2.1\any\System.Text.Encodings.Web.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\System.Text.Json.dll" target="tools\netcoreapp2.1\any\System.Text.Json.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\System.Xml.XPath.XmlDocument.dll" target="tools\netcoreapp2.1\any\System.Xml.XPath.XmlDocument.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\WinApi.dll" target="tools\netcoreapp2.1\any\WinApi.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\Microsoft.WindowsAzure.Storage.dll" target="tools\netcoreapp2.1\any\Microsoft.WindowsAzure.Storage.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\unix\lib\netstandard2.0\Microsoft.Win32.Registry.dll" target="tools\netcoreapp2.1\any\runtimes\unix\lib\netstandard2.0\Microsoft.Win32.Registry.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\unix\lib\netstandard2.0\System.Private.ServiceModel.dll" target="tools\netcoreapp2.1\any\runtimes\unix\lib\netstandard2.0\System.Private.ServiceModel.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\Microsoft.Win32.Registry.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\Microsoft.Win32.Registry.dll" />
+        <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\System.Net.Http.WinHttpHandler.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\System.Net.Http.WinHttpHandler.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\System.Private.ServiceModel.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\System.Private.ServiceModel.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" />
         <file src="bin\Release\netcoreapp2.1\publish\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll" target="tools\netcoreapp2.1\any\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll" />
