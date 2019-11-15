@@ -1157,6 +1157,7 @@ Usage:
   {tool} fsharp     <url>        Add F# ServiceStack Reference         (Alias 'fs')
   {tool} vbnet      <url>        Add VB.NET ServiceStack Reference     (Alias 'vb')
   {tool} tsd        <url>        Add TypeScript Definition ServiceStack Reference
+  {tool} proto      <url>        Add gRPC ServiceStack Reference
 
   {tool} mix                     Show available gists to mixin         (Alias '+')
   {tool} mix <name>              Write gist files locally, e.g:        (Alias +init)
@@ -1572,6 +1573,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"fs", "fsharp"},
             {"vb", "vbnet"},
             {"tsd", "typescript.d"},
+            {"po", "proto"},
         };
         
         private static readonly Dictionary<string,string> RefExt = new Dictionary<string, string>
@@ -1585,6 +1587,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"fsharp", "dtos.fs"},
             {"vbnet", "dtos.vb"},
             {"typescript.d", "dtos.d.ts"},
+            {"proto", "services.proto"},
         };
 
         public class Http2CustomHandler : WinHttpHandler
@@ -1621,6 +1624,29 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 throw new Exception($"Invalid Response from {typesUrl}");
             
             File.WriteAllText(filePath, dtosSrc, Utf8WithoutBom);
+
+            if (lang == "proto")
+            {
+                const string BaseProtoBufNetRawUrl = "https://raw.githubusercontent.com/protobuf-net/protobuf-net/master/src/protobuf-net.Reflection/protobuf-net/";
+                const string ImportProtoBufNetPrefix = "import \"protobuf-net/";
+                foreach (var line in dtosSrc.ReadLines())
+                {
+                    if (line.StartsWith(ImportProtoBufNetPrefix))
+                    {
+                        var protoFileName = line.Substring(ImportProtoBufNetPrefix.Length).LeftPart('"');
+                        var rawUrl = BaseProtoBufNetRawUrl.CombineWith(protoFileName);
+                        var protoContents = rawUrl.GetStringFromUrl();
+
+                        var dirPath = Path.Combine(Path.GetDirectoryName(filePath), "protobuf-net");
+                        if (!Directory.Exists(dirPath))
+                            Directory.CreateDirectory(dirPath);
+
+                        var protoFilePath = Path.Combine(dirPath, protoFileName);
+                        if (Verbose) $"Writing protobuf-net/{protoFileName}".Print();
+                        File.WriteAllText(protoFilePath, protoContents, Utf8WithoutBom);
+                    }
+                }
+            }
 
             var fileName = Path.GetFileName(filePath);
             (exists ? $"Updated: {fileName}" : $"Saved to: {fileName}").Print();
