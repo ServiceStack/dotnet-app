@@ -76,6 +76,7 @@
     </ItemGroup>
     <ItemGroup>
       <Content Include="parse-rss.l" />
+      <Content Include="script-args.ss" />
       <Content Include="script-aws.ss" />
       <Content Include="script-azure.ss" />
       <Content Include="script-minify.ss" />

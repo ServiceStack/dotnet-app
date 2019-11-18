@@ -127,6 +127,9 @@ namespace Web
         public static string RunScript { get; set; }
         public static bool WatchScript { get; set; }
         
+        public static Dictionary<string, object> RunScriptArgs = new Dictionary<string, object>();
+        public static List<string> RunScriptArgV = new List<string>();
+
         public static bool Open { get; set; }
         
         public static string ToolFavIcon = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "favicon.ico");
@@ -165,8 +168,6 @@ namespace Web
             var publishExe = false;
             string createShortcutFor = null;
             string runProcess = null;
-            var runScriptArgs = new Dictionary<string, object>();
-            var runScriptArgV = new List<string>();
             var runSharpApp = false;
             var runLispRepl = false;
             var appSettingPaths = new[]
@@ -269,20 +270,19 @@ namespace Web
                         
                     RunScript = script;
                     WatchScript = arg == "watch";
+
                     i += 2; //'run' 'script.ss'
-                    for (; i < args.Length; i += 2)
+                    for (; i < args.Length; i++)
                     {
+                        RunScriptArgV.Add(args[i]);
+
                         var key = args[i];
-                        runScriptArgV.Add(args[i]);
-                        if (!key.FirstCharEquals('-') && key.FirstCharEquals('/'))
-                        {
-                            $"Unknown run script argument '{key}', argument example: -name value".Print();
-                            return null;
-                        }
+                        if (!(key.FirstCharEquals('-') || key.FirstCharEquals('/')))
+                            continue;
 
-                        runScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
+                        RunScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
+                        i++;
                     }
-
                     continue;
                 }
                 if (arg == "open")
@@ -454,7 +454,7 @@ namespace Web
                 if (publishExe)
                     $"Command: publish-exe".Print();
                 if (RunScript != null)
-                    $"Command: run {RunScript} {runScriptArgs.ToJsv()}".Print();
+                    $"Command: run {RunScript} {RunScriptArgs.ToJsv()}".Print();
                 if (runLispRepl)
                     $"Command: LISP REPL".Print();
             }
@@ -754,7 +754,7 @@ namespace Web
             {
                 void ExecScript(SharpPagesFeature feature)
                 {
-                    var ErrorPrefix = $"FAILED run {RunScript} [{string.Join(' ', runScriptArgV)}]:";
+                    var ErrorPrefix = $"FAILED run {RunScript} [{string.Join(' ', RunScriptArgV)}]:";
 
                     try
                     {
@@ -762,10 +762,10 @@ namespace Web
                         var page = OneTimePage(feature, script);
                         var pageResult = new PageResult(page) {
                             Args = {
-                                ["ARGV"] = runScriptArgV.ToArray(),
+                                ["ARGV"] = RunScriptArgV.ToArray(),
                             }
                         };
-                        runScriptArgs.Each(entry => pageResult.Args[entry.Key] = entry.Value);
+                        RunScriptArgs.Each(entry => pageResult.Args[entry.Key] = entry.Value);
                         var output = pageResult.RenderToStringAsync().Result;
                         output.Print();
 
@@ -2284,11 +2284,19 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             return value;
         }
 
-        public static string GetAppSetting(this string name) => ResolveValue(AppSettings.GetString(name));
+        public static string GetSetting(string name)
+        {
+            if (Startup.RunScriptArgs.TryGetValue(name, out var val))
+                return val.ToString();
+            
+            return AppSettings.GetString(name);
+        }
+
+        public static string GetAppSetting(this string name) => ResolveValue(GetSetting(name));
 
         public static bool TryGetAppSetting(this string name, out string value) 
         {
-            value = AppSettings.GetString(name);
+            value = GetSetting(name);
             if (value == null)
                 return false;
             value = ResolveValue(value);
@@ -2297,7 +2305,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public static T GetAppSetting<T>(this string name, T defaultValue)
         {
-            var value = AppSettings.GetString(name);
+            var value = GetSetting(name);
             if (value == null) return defaultValue;
 
             var resolvedValue = ResolveValue(value);
@@ -2391,27 +2399,43 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         }
                     }
                     if (Startup.Verbose) $"SQLite connectionString: {connectionString}".Print();
-                    return new OrmLiteConnectionFactory(connectionString, SqliteDialect.Provider);
+                    return new OrmLiteConnectionFactory(connectionString, SqliteDialect.Provider).Configure();
                 case "mssql":
                 case "sqlserver":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServerDialect.Provider);
+                    return new OrmLiteConnectionFactory(connectionString, SqlServerDialect.Provider).Configure();
                 case "sqlserver2012":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServer2012Dialect.Provider);
+                    return new OrmLiteConnectionFactory(connectionString, SqlServer2012Dialect.Provider).Configure();
                 case "sqlserver2014":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServer2014Dialect.Provider);
+                    return new OrmLiteConnectionFactory(connectionString, SqlServer2014Dialect.Provider).Configure();
                 case "sqlserver2016":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServer2016Dialect.Provider);
+                    return new OrmLiteConnectionFactory(connectionString, SqlServer2016Dialect.Provider).Configure();
                 case "sqlserver2017":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServer2017Dialect.Provider);
+                    return new OrmLiteConnectionFactory(connectionString, SqlServer2017Dialect.Provider).Configure();
                 case "mysql":
-                    return new OrmLiteConnectionFactory(connectionString, MySqlDialect.Provider);
+                    return new OrmLiteConnectionFactory(connectionString, MySqlDialect.Provider).Configure();
                 case "pgsql":
                 case "postgres":
                 case "postgresql":
-                    return new OrmLiteConnectionFactory(connectionString, PostgreSqlDialect.Provider);
+                    return new OrmLiteConnectionFactory(connectionString, PostgreSqlDialect.Provider).Configure();
             }
 
             throw new NotSupportedException($"Unknown DB Provider '{dbProvider}'");
+        }
+
+        public static OrmLiteConnectionFactory Configure(this OrmLiteConnectionFactory dbFactory)
+        {
+            dbFactory.RegisterDialectProvider("sqlite", SqliteDialect.Provider);
+            dbFactory.RegisterDialectProvider("sqlserver", SqlServerDialect.Provider);
+            dbFactory.RegisterDialectProvider("sqlserver2012", SqlServer2012Dialect.Provider);
+            dbFactory.RegisterDialectProvider("sqlserver2014", SqlServer2012Dialect.Provider);
+            dbFactory.RegisterDialectProvider("sqlserver2016", SqlServer2016Dialect.Provider);
+            dbFactory.RegisterDialectProvider("sqlserver2017", SqlServer2016Dialect.Provider);
+            dbFactory.RegisterDialectProvider("sqlserver2016", SqlServer2017Dialect.Provider);
+            dbFactory.RegisterDialectProvider("mysql", MySqlDialect.Provider);
+            dbFactory.RegisterDialectProvider("pgsql", PostgreSqlDialect.Provider);
+            dbFactory.RegisterDialectProvider("postgres", PostgreSqlDialect.Provider);
+            dbFactory.RegisterDialectProvider("postgresql", PostgreSqlDialect.Provider);
+            return dbFactory;
         }
 
         public static IEnumerable<Type> ScanAllTypes(this ServiceStackHost appHost)
