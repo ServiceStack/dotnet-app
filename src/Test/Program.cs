@@ -433,5 +433,113 @@ namespace Run
         {
             await Startup.CreateWebHost("web", new[]{ "ts", "https://localhost:5001" });
         }
+
+        [Test]
+        public async Task Run_proto_url()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5001" });
+        }
+
+        [Test]
+        public async Task Run_proto_url_file()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5001", "grpc.services.proto" });
+        }
+
+        [Test]
+        public async Task Run_proto_update_multiple()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5001", "todoworld" });
+            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5002", "alltypes" });
+            await Startup.CreateWebHost("web", new[]{ "proto" });
+        }
+
+        [Test]
+        public async Task Run_proto_langs()
+        {
+            await Startup.CreateWebHost("web", new[]{ "proto-langs" });
+        }
+
+        [Test]
+        public async Task Run_proto_test_error()
+        {
+//            await Startup.CreateWebHost("web", new[]{ "proto-test" });
+            await Startup.CreateWebHost("web", new[]{ "proto-test", "https://localhost:5001" });
+        }
+
+        [Test]
+        public async Task Run_proto_csharp()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            await Startup.CreateWebHost("web", new[]{ "proto-csharp", "https://localhost:5001", "todoworld" });
+        }
+
+        [Test]
+        public async Task Run_proto_csharp_with_flags()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            await Startup.CreateWebHost("web", new[]{ "-v", "proto-csharp", "https://localhost:5001", "todoworld" });
+        }
+
+        [Test]
+        public async Task Run_proto_csharp_with_outdir()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            await Startup.CreateWebHost("web", new[]{ "-v", "proto-csharp", "https://localhost:5001", "todoworld", "--out", "CSharp" });
+        }
+
+        [Test]
+        public async Task Run_proto_all_langs()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            
+            var client = new JsonServiceClient(Startup.GrpcSource);
+            var response = client.Get(new GetLanguages());
+
+            foreach (var entry in response.Results)
+            {
+                var lang = entry.Key;
+                await Startup.CreateWebHost("web", new[]{ "-v", "proto-" + lang, "https://localhost:5001", "todoworld", "--out", lang.ToPascalCase() });
+            }
+        }
+ 
+        [Test]
+        public async Task Run_proto_csharp_proto_and_file_update()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5001", "todoworld" });
+            
+            await Startup.CreateWebHost("web", new[]{ "proto", "todoworld.services.proto" }); // update .proto
+            await Startup.CreateWebHost("web", new[]{ "proto-csharp", "todoworld.services.proto" }); // update .cs
+        }
+ 
+        [Test]
+        public async Task Run_proto_csharp_dir_update()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            "..\\..\\protos\\alltypes".CopyAllTo(Environment.CurrentDirectory);
+            
+            await Startup.CreateWebHost("web", new[]{ "proto-csharp", "." }); // update .cs
+        }
+ 
+        [Test]
+        public async Task Run_proto_csharp_dir_update_out_dir()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            
+            await Startup.CreateWebHost("web", new[]{ "proto-csharp", "..\\..\\protos\\alltypes", "-out", "CSharp" }); // update .cs
+        }
+ 
+        [Test]
+        public async Task Run_proto_csharp_all_update()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestGrpc");
+            "..\\..\\protos\\alltypes".CopyAllTo(Path.Combine(Environment.CurrentDirectory, "alltypes"));
+            
+            await Startup.CreateWebHost("web", new[]{ "proto-csharp" }); // update .cs
+        }
     }
 }

@@ -111,6 +111,8 @@ namespace Web
 
         public static string GistAppsId { get; set; } = "802daba52b6fe6e2ed1430348dc596cb";
 
+        public static string GrpcSource { get; set; } = "https://grpc.servicestack.net";
+
         public static List<GistLink> GetGistAppsLinks() => GetGistLinks(GistAppsId, "apps.md");
         public static string GetAppsPath(string gistAlias)
         {
@@ -138,6 +140,9 @@ namespace Web
         public static Task<Gist> GistVfsTask;
         public static Task GistVfsLoadTask;
 
+        static string[] OutArgs = { "/out", "-out", "--out" };
+        public static string OutDir { get; set; }
+
         public static async Task<WebAppContext> CreateWebHost(string tool, string[] args, WebAppEvents events = null)
         {
             Events = events;
@@ -160,6 +165,8 @@ namespace Web
                 GistAppsId = Environment.GetEnvironmentVariable("APP_SOURCE_APPS");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN")))
                 GitHubGistToken = Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_GRPC")))
+                GrpcSource = Environment.GetEnvironmentVariable("APP_SOURCE_GRPC");
             
             InitMix();
 
@@ -409,6 +416,38 @@ namespace Web
                     DebugMode = false;
                     continue;
                 }
+                if (OutArgs.Contains(arg))
+                {
+                    OutDir = args[i + 1];
+                    i++;
+                    continue;
+                }
+                if (arg == "proto-langs")
+                {
+                    var client = new JsonServiceClient(GrpcSource);
+                    var response = client.Get(new GetLanguages());
+
+                    "".Print();
+                    $"gRPC Supported Languages:".Print();
+                    "".Print();
+                    var maxKeyLen = response.Results.Max(x => x.Key.Length);
+                    foreach (var kvp in response.Results)
+                    {
+                        $"  {kvp.Key.PadRight(maxKeyLen)}   {kvp.Value}".Print();
+                    }
+
+                    "".Print();
+                    "Usage:".Print();
+                    $"{tool} proto-<lang> <url>             Add gRPC .proto and generate language".Print();
+                    "".Print();
+                    $"{tool} proto-<lang> <file|dir>        Update gRPC .proto and re-gen language".Print();
+                    $"{tool} proto-<lang>                   Update all gRPC .proto's and re-gen lang".Print();
+                    "".Print();
+                    "Options:".Print();
+                    "   --out <dir>                     Save generated gRPC language sources to <dir>".Print();
+                    return null;
+                }
+                
 //                if (arg == "openfolder")
 //                {
 //                    if (Events.SelectFolder != null)
@@ -439,6 +478,10 @@ namespace Web
 //                }
                 dotnetArgs.Add(arg);
             }
+
+            var unknownFlag = dotnetArgs.FirstOrDefault(x => x.StartsWith("-")); 
+            if (unknownFlag != null)
+                throw new Exception($"Unknown flag: '{unknownFlag}'");
 
             if (Verbose)
             {
@@ -1006,7 +1049,7 @@ namespace Web
             {
                 var tempFile = Path.GetTempFileName();
                 if (Verbose) $"Downloading {zipUrl} => {tempFile} (nocache)".Print();
-                GitHubUtils.Gateway.DownloadFile(zipUrl, tempFile.AssertDirectory());
+                GitHubUtils.Gateway.DownloadFile(zipUrl, Path.GetDirectoryName(tempFile).AssertDirectory());
                 return tempFile;
             }
             
@@ -1018,7 +1061,7 @@ namespace Web
             if (!isCached)
             {
                 if (Verbose) $"Downloading {zipUrl} => {cachedVersionPath}".Print();
-                GitHubUtils.Gateway.DownloadFile(zipUrl, cachedVersionPath.AssertDirectory());
+                GitHubUtils.Gateway.DownloadFile(zipUrl, Path.GetDirectoryName(cachedVersionPath).AssertDirectory());
             }
 
             return cachedVersionPath;
@@ -1136,7 +1179,7 @@ namespace Web
             var additional = new StringBuilder();
 
             var indt = "".PadLeft(tool.Length, ' ');
-
+            
             string USAGE = $@"
 Version:  {GetVersion()}
 
@@ -1148,19 +1191,26 @@ Usage:
   {tool} <lang>                  Update all ServiceStack References in directory (recursive)
   {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
   {tool} <lang>     <url> <file> Add ServiceStack Reference and save to file name
-  {tool} csharp     <url>        Add C# ServiceStack Reference         (Alias 'cs')
-  {tool} typescript <url>        Add TypeScript ServiceStack Reference (Alias 'ts')
-  {tool} swift      <url>        Add Swift ServiceStack Reference      (Alias 'sw')
-  {tool} java       <url>        Add Java ServiceStack Reference       (Alias 'ja')
-  {tool} kotlin     <url>        Add Kotlin ServiceStack Reference     (Alias 'kt')
-  {tool} dart       <url>        Add Dart ServiceStack Reference       (Alias 'da')
-  {tool} fsharp     <url>        Add F# ServiceStack Reference         (Alias 'fs')
-  {tool} vbnet      <url>        Add VB.NET ServiceStack Reference     (Alias 'vb')
+  {tool} csharp     <url>        Add C# ServiceStack Reference            (Alias 'cs')
+  {tool} typescript <url>        Add TypeScript ServiceStack Reference    (Alias 'ts')
+  {tool} swift      <url>        Add Swift ServiceStack Reference         (Alias 'sw')
+  {tool} java       <url>        Add Java ServiceStack Reference          (Alias 'ja')
+  {tool} kotlin     <url>        Add Kotlin ServiceStack Reference        (Alias 'kt')
+  {tool} dart       <url>        Add Dart ServiceStack Reference          (Alias 'da')
+  {tool} fsharp     <url>        Add F# ServiceStack Reference            (Alias 'fs')
+  {tool} vbnet      <url>        Add VB.NET ServiceStack Reference        (Alias 'vb')
   {tool} tsd        <url>        Add TypeScript Definition ServiceStack Reference
-  {tool} proto      <url>        Add gRPC ServiceStack Reference
 
-  {tool} mix                     Show available gists to mixin         (Alias '+')
-  {tool} mix <name>              Write gist files locally, e.g:        (Alias +init)
+  {tool} proto <url>             Add gRPC .proto ServiceStack Reference
+  {tool} proto <url> <name>      Add gRPC .proto and save to <name>.services.proto
+  {tool} proto                   Update all gRPC *.services.proto ServiceStack References
+  {tool} proto-langs             Display list of gRPC supported languages
+  {tool} proto-<lang> <url>      Add gRPC .proto and generate language    (-out <dir>)
+  {tool} proto-<lang> <file|dir> Update gRPC .proto and re-gen language   (-out <dir>)
+  {tool} proto-<lang>            Update all gRPC .proto's and re-gen lang (-out <dir>)
+
+  {tool} mix                     Show available gists to mixin            (Alias '+')
+  {tool} mix <name>              Write gist files locally, e.g:           (Alias +init)
   {tool} mix init                Create empty .NET Core ServiceStack App
   {tool} mix #<tag>              Search available gists
   {tool} mix <gist-url>          Write all Gist text files to current directory
@@ -1181,13 +1231,13 @@ Usage:
   {tool} run <name>              Run Installed Sharp App
   {tool} run path/app.settings   Run Sharp App at directory containing specified app.settings
 {runProcess}
-  {tool} install                 List available Sharp Apps to install (Alias 'l')
-  {tool} install <app>           Install Sharp App                    (Alias 'i')
+  {tool} install                 List available Sharp Apps to install     (Alias 'l')
+  {tool} install <app>           Install Sharp App                        (Alias 'i')
 
   {tool} uninstall               List Installed Sharp Apps
   {tool} uninstall <app>         Uninstall Sharp App
   
-  {tool} publish                 Publish Sharp App to Gist       (requires token)
+  {tool} publish                 Publish Sharp App to Gist (requires token)
   
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
@@ -1273,42 +1323,77 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else if (args.Length >= 2)
                 {
                     var target = args[1];
-                    var isUrl = target.IndexOf("://", StringComparison.Ordinal) >= 0;
-                    if (isUrl)
+                    if (target.IsUrl())
                     {
-                        string fileName;
-                        if (args.Length == 3)
-                        {
-                            fileName = args[2];
-                        }
-                        else if (!File.Exists(dtosExt)) // if it's the first, use shortest convention
-                        {
-                            fileName = dtosExt;
-                        }
-                        else
-                        {
-                            var parts = new Uri(target).Host.Split('.');
-                            fileName = parts.Length >= 2
-                                ? parts[parts.Length - 2]
-                                : parts[0];
-                        }
-
-                        if (!fileName.EndsWith(dtosExt))
-                        {
-                            fileName = $"{fileName}.{dtosExt}";
-                        }
+                        var fileName = args.Length == 3 ? args[2] : null;
+                        var filePath = GetDtoTypesFilePath(target, dtosExt, fileName);
 
                         var typesUrl = target.IndexOf($"/types/{lang}", StringComparison.Ordinal) == -1
                             ? target.CombineWith($"/types/{lang}")
                             : target;
 
-                        SaveReference(tool, lang, typesUrl, Path.GetFullPath(fileName));
+                        SaveReference(tool, lang, typesUrl, filePath);
                     } 
                     else 
                     {
                         UpdateReference(tool, lang, Path.GetFullPath(target));
                     }
                 }
+                return new Instruction { Handled = true };
+            }
+
+            if (arg.StartsWith("proto-"))
+            {
+                var lang = arg.RightPart('-');
+                var target = args.Length > 1 ? args[1] : null;
+                if (lang == null)
+                    return null;
+
+                if (target == null) //find first *.proto + re-gen dir
+                {
+                    var fs = new FileSystemVirtualFiles(Environment.CurrentDirectory);
+                    var protoFiles = fs.GetAllMatchingFiles("*services.proto");
+
+                    var firstProto = protoFiles.FirstOrDefault();
+                    if (firstProto == null)
+                        throw new Exception("Could not find any *.services.proto gRPC Service Descriptions");
+                    
+                    fs = new FileSystemVirtualFiles(firstProto.Directory.RealPath);
+                    protoFiles = fs.GetAllMatchingFiles("*.proto");
+                    var protoFilePaths = protoFiles.Map(x => x.RealPath);
+                    
+                    WriteGrpcFiles(lang, protoFilePaths, GetOutDir(firstProto.RealPath));
+                }
+                else if (target.IsUrl())
+                {
+                    var fileName = args.Length > 2 ? args[2] : null;
+                    if (fileName != null && !fileName.IsValidFileName())
+                        throw new Exception($"Not a valid file name '{fileName}'");
+                        
+                    var filePath = GetDtoTypesFilePath(target, "services.proto", fileName);
+                    
+                    var typesUrl = target.IndexOf($"/types/", StringComparison.Ordinal ) == -1
+                        ? target.CombineWith($"/types/proto")
+                        : target;
+
+                    var writtenFiles = SaveReference(tool, lang, typesUrl, filePath);
+
+                    WriteGrpcFiles(lang, writtenFiles, GetOutDir(filePath));
+                }
+                else if (File.Exists(target))
+                {
+                    WriteGrpcFiles(lang, new[]{ target }, GetOutDir(target));
+                }
+                else if (Directory.Exists(target))
+                {
+                    var fs = new FileSystemVirtualFiles(target);
+                    var protoFiles = fs.GetAllMatchingFiles("*.proto");
+                    var protoFilePaths = protoFiles.Map(x => x.RealPath);
+                    
+                    WriteGrpcFiles(lang, protoFilePaths, GetOutDir(target));
+                }
+                else throw new Exception($"Could not find valid *.services.proto from '{target}'");
+
                 return new Instruction { Handled = true };
             }
             
@@ -1555,6 +1640,71 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             return null;
         }
 
+        private static void WriteGrpcFiles(string lang, IEnumerable<string> protoFiles, string outDir)
+        {
+            var client = new JsonServiceClient(GrpcSource);
+
+            var request = new Protoc {
+                Lang = lang,
+                Files = new Dictionary<string, string>()
+            };
+
+            foreach (var writtenFilePath in protoFiles)
+            {
+                var fi = new FileInfo(writtenFilePath);
+                request.Files[fi.Name] = fi.ReadAllText();
+            }
+
+            if (Verbose) $"API: {GrpcSource}{request.ToPostUrl()}".Print();
+            var response = client.Post(request);
+
+            outDir.AssertDirectory();
+
+            var fileNames = string.Join(", ", response.GeneratedFiles.Keys);
+            if (Verbose) $"writing {fileNames} to {outDir} ...".Print();
+
+            var fs = new FileSystemVirtualFiles(outDir);
+            fs.WriteFiles(response.GeneratedFiles);
+        }
+
+        private static string GetOutDir(string filePath)
+        {
+            var outDir = OutDir != null
+                ? Path.GetFullPath(OutDir)
+                : Directory.Exists(filePath)
+                    ? Path.GetFullPath(filePath)
+                    : File.Exists(filePath) 
+                        ? Path.GetDirectoryName(Path.GetFullPath(filePath))
+                        : Environment.CurrentDirectory;
+            return outDir;
+        }
+
+        private static string GetDtoTypesFilePath(string targetUrl, string dtosExt, string fileName=null)
+        {
+            if (fileName == null)
+            {
+                // if it's the first, use shortest convention or allow overriding default .proto
+                if (!File.Exists(dtosExt) || dtosExt == "services.proto") 
+                {
+                    fileName = dtosExt;
+                }
+                else
+                {
+                    var parts = new Uri(targetUrl).Host.Split('.');
+                    fileName = parts.Length >= 2
+                        ? parts[parts.Length - 2]
+                        : parts[0];
+                }
+            }
+
+            if (!fileName.EndsWith(dtosExt))
+            {
+                fileName = $"{fileName}.{dtosExt}";
+            }
+
+            return Path.GetFullPath(fileName);
+        }
+
         private static string GetCacheDir()
         {
             var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -1599,7 +1749,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
         }
 
-        public static void SaveReference(string tool, string lang, string typesUrl, string filePath)
+        public static List<string> SaveReference(string tool, string lang, string typesUrl, string filePath)
         {
             var exists = File.Exists(filePath);
             RegisterStat(tool, lang, exists ? "updateref" : "addref");
@@ -1622,8 +1772,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             if (dtosSrc.IndexOf("Options:", StringComparison.Ordinal) == -1) 
                 throw new Exception($"Invalid Response from {typesUrl}");
-            
+
+            var filesWritten = new List<string>();
             File.WriteAllText(filePath, dtosSrc, Utf8WithoutBom);
+            filesWritten.Add(filePath);
 
             if (lang == "proto")
             {
@@ -1644,12 +1796,15 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         var protoFilePath = Path.Combine(dirPath, protoFileName);
                         if (Verbose) $"Writing protobuf-net/{protoFileName}".Print();
                         File.WriteAllText(protoFilePath, protoContents, Utf8WithoutBom);
+                        filesWritten.Add(protoFilePath);
                     }
                 }
             }
 
             var fileName = Path.GetFileName(filePath);
             (exists ? $"Updated: {fileName}" : $"Saved to: {fileName}").Print();
+
+            return filesWritten;
         }
 
         public static void UpdateReference(string tool, string lang, string existingRefPath)
@@ -2258,8 +2413,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public static string AssertDirectory(this string filePath)
         {
-            try { 
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath)); 
+            try {
+                Directory.CreateDirectory(filePath); 
             } catch { }
             return filePath;
         }
@@ -2644,4 +2799,27 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
     {
         public ResponseStatus ResponseStatus { get; set; }
     }
+    
+    [Route("/langs", "GET")]
+    public partial class GetLanguages : IReturn<GetLanguagesResponse> {}
+    public partial class GetLanguagesResponse
+    {
+        public virtual List<KeyValuePair<string,string>> Results { get; set; }
+    }
+
+    [Route("/protoc/{Lang}")]
+    public partial class Protoc : IReturn<ProtocResponse>
+    {
+        public virtual string Lang { get; set; }
+        public virtual Dictionary<string, string> Files { get; set; }
+    }
+
+    public partial class ProtocResponse
+    {
+        public virtual string Lang { get; set; }
+        public virtual Dictionary<string, string> GeneratedFiles { get; set; }
+        public virtual string ArchiveUrl { get; set; }
+        public virtual ResponseStatus ResponseStatus { get; set; }
+    }
 }
+

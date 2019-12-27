@@ -22,7 +22,7 @@ namespace Web
 
         public static bool Verbose { get; set; }
         public static bool Silent { get; set; }
-        static string[] VerboseArgs = {"/verbose", "--verbose"};
+        static string[] VerboseArgs = {"/v", "-v", "/verbose", "--verbose"};
 
         static string[] SourceArgs = { "/s", "-s", "/source", "-source", "--source" };
 
@@ -1127,6 +1127,9 @@ namespace Web
                 Console.WriteLine("SSL Connection Errors can be ignored with care using switch: --ignore-ssl-errors");
             }
         }
+
+        public static bool IsValidFileName(this string filename) =>
+            !string.IsNullOrEmpty(filename) && filename.IndexOfAny(Path.GetInvalidFileNameChars()) == -1 && filename[0] != '-';
     }
 
     public static class GitHubUtils

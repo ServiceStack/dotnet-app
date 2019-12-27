@@ -87,5 +87,10 @@
     </ItemGroup>
     <ItemGroup>
       <Folder Include="wwwroot\assets\svg" />
-    </ItemGroup>    
+    </ItemGroup>
+    <ItemGroup>
+        <None Update="protos\**\*.proto">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 </Project>

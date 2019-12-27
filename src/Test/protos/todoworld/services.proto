@@ -1,0 +1,286 @@
+/* Options:
+Date: 2019-11-09 16:54:28
+Version: 5.71
+Tip: To override a DTO option, remove "//" prefix before updating
+BaseUrl: https://localhost:5001
+
+//GlobalNamespace: 
+//AddDescriptionAsComments: True
+*/
+
+syntax = "proto3";
+
+option csharp_namespace = "TodoWorld";
+
+service GrpcServices {
+
+    rpc PostAssignRoles(AssignRoles) returns (AssignRolesResponse) {}
+
+    rpc OptionsAuthenticate(Authenticate) returns (AuthenticateResponse) {}
+
+    rpc GetAuthenticate(Authenticate) returns (AuthenticateResponse) {}
+
+    rpc PostAuthenticate(Authenticate) returns (AuthenticateResponse) {}
+
+    rpc DeleteAuthenticate(Authenticate) returns (AuthenticateResponse) {}
+
+    rpc PostConvertSessionToToken(ConvertSessionToToken) returns (ConvertSessionToTokenResponse) {}
+
+    rpc PostCreateTodo(CreateTodo) returns (CreateTodoResponse) {}
+
+    rpc CallDeleteTodo(DeleteTodo) returns (EmptyResponse) {}
+
+    rpc CallDeleteTodos(DeleteTodos) returns (EmptyResponse) {}
+
+    rpc PostGetAccessToken(GetAccessToken) returns (GetAccessTokenResponse) {}
+
+    rpc CallGetFile(GetFile) returns (FileContent) {}
+
+    rpc CallGetTodo(GetTodo) returns (GetTodoResponse) {}
+
+    rpc CallGetTodos(GetTodos) returns (GetTodosResponse) {}
+
+    rpc GetHello(Hello) returns (HelloResponse) {}
+
+    rpc PostHello(Hello) returns (HelloResponse) {}
+
+    rpc PutHello(Hello) returns (HelloResponse) {}
+
+    rpc DeleteHello(Hello) returns (HelloResponse) {}
+
+    rpc PatchHello(Hello) returns (HelloResponse) {}
+
+    rpc GetHelloSecure(HelloSecure) returns (HelloResponse) {}
+
+    rpc PostHelloSecure(HelloSecure) returns (HelloResponse) {}
+
+    rpc PutHelloSecure(HelloSecure) returns (HelloResponse) {}
+
+    rpc DeleteHelloSecure(HelloSecure) returns (HelloResponse) {}
+
+    rpc PatchHelloSecure(HelloSecure) returns (HelloResponse) {}
+
+    rpc PutRegister(Register) returns (RegisterResponse) {}
+
+    rpc PostRegister(Register) returns (RegisterResponse) {}
+
+    rpc PostResetTodos(ResetTodos) returns (EmptyResponse) {}
+
+    rpc ServerStreamFiles(StreamFiles) returns (stream FileContent) {}
+
+    rpc ServerStreamServerEvents(StreamServerEvents) returns (stream StreamServerEventsResponse) {}
+
+    rpc PostUnAssignRoles(UnAssignRoles) returns (UnAssignRolesResponse) {}
+
+    rpc PutUpdateTodo(UpdateTodo) returns (EmptyResponse) {}
+}
+
+message AssignRoles {
+   string UserName = 1;
+   repeated string Permissions = 2;
+   repeated string Roles = 3;
+   map<string,string> Meta = 4;
+}
+message AssignRolesResponse {
+   repeated string AllRoles = 1;
+   repeated string AllPermissions = 2;
+   map<string,string> Meta = 3;
+   ResponseStatus ResponseStatus = 4;
+}
+message Authenticate {
+   string provider = 1;
+   string State = 2;
+   string oauth_token = 3;
+   string oauth_verifier = 4;
+   string UserName = 5;
+   string Password = 6;
+   bool RememberMe = 7;
+   string Continue = 8;
+   string ErrorView = 9;
+   string nonce = 10;
+   string uri = 11;
+   string response = 12;
+   string qop = 13;
+   string nc = 14;
+   string cnonce = 15;
+   bool UseTokenCookie = 16;
+   string AccessToken = 17;
+   string AccessTokenSecret = 18;
+   string scope = 19;
+   map<string,string> Meta = 20;
+}
+message AuthenticateResponse {
+   string UserId = 1;
+   string SessionId = 2;
+   string UserName = 3;
+   string DisplayName = 4;
+   string ReferrerUrl = 5;
+   string BearerToken = 6;
+   string RefreshToken = 7;
+   string ProfileUrl = 8;
+   repeated string Roles = 9;
+   repeated string Permissions = 10;
+   ResponseStatus ResponseStatus = 11;
+   map<string,string> Meta = 12;
+}
+message ConvertSessionToToken {
+   bool PreserveSession = 1;
+   map<string,string> Meta = 2;
+}
+message ConvertSessionToTokenResponse {
+   map<string,string> Meta = 1;
+   string AccessToken = 2;
+   string RefreshToken = 3;
+   ResponseStatus ResponseStatus = 4;
+}
+message CreateTodo {
+   string Title = 1;
+   int32 Order = 2;
+}
+message CreateTodoResponse {
+   Todo Result = 1;
+   ResponseStatus ResponseStatus = 2;
+}
+message DeleteTodo {
+   int64 Id = 1;
+}
+message DeleteTodos {
+   repeated int64 Ids = 1 [packed = false];
+}
+message EmptyResponse {
+   ResponseStatus ResponseStatus = 1;
+}
+message FileContent {
+   string Name = 1;
+   string Type = 2;
+   int32 Length = 3;
+   bytes Body = 4;
+   ResponseStatus ResponseStatus = 5;
+}
+message GetAccessToken {
+   string RefreshToken = 1;
+   bool UseTokenCookie = 2;
+   map<string,string> Meta = 3;
+}
+message GetAccessTokenResponse {
+   string AccessToken = 1;
+   map<string,string> Meta = 2;
+   ResponseStatus ResponseStatus = 3;
+}
+message GetFile {
+   string Path = 1;
+}
+message GetTodo {
+   int64 Id = 1;
+}
+message GetTodoResponse {
+   Todo Result = 1;
+   ResponseStatus ResponseStatus = 2;
+}
+message GetTodos {
+}
+message GetTodosResponse {
+   repeated Todo Results = 1;
+   ResponseStatus ResponseStatus = 2;
+}
+message Hello {
+   string Name = 1;
+}
+message HelloResponse {
+   string Result = 1;
+   ResponseStatus ResponseStatus = 2;
+}
+message HelloSecure {
+   string Name = 1;
+}
+message Register {
+   string UserName = 1;
+   string FirstName = 2;
+   string LastName = 3;
+   string DisplayName = 4;
+   string Email = 5;
+   string Password = 6;
+   string ConfirmPassword = 7;
+   bool AutoLogin = 8;
+   string Continue = 9;
+   string ErrorView = 10;
+   map<string,string> Meta = 11;
+}
+message RegisterResponse {
+   string UserId = 1;
+   string SessionId = 2;
+   string UserName = 3;
+   string ReferrerUrl = 4;
+   string BearerToken = 5;
+   string RefreshToken = 6;
+   ResponseStatus ResponseStatus = 7;
+   map<string,string> Meta = 8;
+}
+message ResetTodos {
+}
+message ResponseError {
+   string ErrorCode = 1;
+   string FieldName = 2;
+   string Message = 3;
+   map<string,string> Meta = 4;
+}
+message ResponseStatus {
+   string ErrorCode = 1;
+   string Message = 2;
+   string StackTrace = 3;
+   repeated ResponseError Errors = 4;
+   map<string,string> Meta = 5;
+}
+message StreamFiles {
+   repeated string Paths = 1;
+}
+message StreamServerEvents {
+   repeated string Channels = 1;
+}
+message StreamServerEventsResponse {
+   int64 EventId = 1;
+   string Channel = 2;
+   string Selector = 4;
+   string Json = 5;
+   string Op = 6;
+   string Target = 7;
+   string CssSelector = 8;
+   map<string,string> Meta = 9;
+   string UserId = 10;
+   string DisplayName = 11;
+   string ProfileUrl = 12;
+   bool IsAuthenticated = 13;
+   repeated string Channels = 14;
+   int64 CreatedAt = 15;
+   string Id = 21;
+   string UnRegisterUrl = 22;
+   string UpdateSubscriberUrl = 23;
+   string HeartbeatUrl = 24;
+   int64 HeartbeatIntervalMs = 25;
+   int64 IdleTimeoutMs = 26;
+   ResponseStatus ResponseStatus = 30;
+}
+message Todo {
+   int64 Id = 1;
+   string Title = 2;
+   int32 Order = 3;
+   bool Completed = 4;
+}
+message UnAssignRoles {
+   string UserName = 1;
+   repeated string Permissions = 2;
+   repeated string Roles = 3;
+   map<string,string> Meta = 4;
+}
+message UnAssignRolesResponse {
+   repeated string AllRoles = 1;
+   repeated string AllPermissions = 2;
+   map<string,string> Meta = 3;
+   ResponseStatus ResponseStatus = 4;
+}
+message UpdateTodo {
+   int64 Id = 1;
+   string Title = 2;
+   int32 Order = 3;
+   bool Completed = 4;
+}
