@@ -51,7 +51,7 @@
   <!--</Target>-->
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.4" />
 
     <PackageReference Include="Microsoft.Data.Sqlite" Version="3.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
