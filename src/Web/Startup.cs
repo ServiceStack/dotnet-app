@@ -1242,6 +1242,8 @@ Usage:
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
 {additional}
+  {tool} get <url>               Download remote file                     (-out <file|dir>)
+
   dotnet tool update -g {tool}   Update to latest version
 
 Options:
@@ -1500,6 +1502,46 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     RegisterStat(tool, gist, "gist");
                     WriteGistFile(gist, gistAlias:null, to:".", projectName:null, getUserApproval:UserInputYesNo);
                     return new Instruction { Command = "gist", Handled = true };
+                }
+                if (arg == "get")
+                {
+                    var url = args[1];
+                    if (!url.IsUrl())
+                        throw new Exception($"'{url}' is not a URL");
+
+                    string fileName = url.LastRightPart('/');
+
+                    RegisterStat(tool, fileName, "get");
+                    checkUpdatesAndQuit = beginCheckUpdates();
+
+                    var bytes = url.GetBytesFromUrl(requestFilter: req => {
+                        req.UserAgent = GitHubUtils.UserAgent;
+                    }, responseFilter: res => {
+                        var disposition = res.Headers[HttpHeaders.ContentDisposition];
+                        if (!string.IsNullOrEmpty(disposition))
+                        {
+                            var parts = disposition.Split(';');
+                            foreach (var part in parts)
+                            {
+                                if (part.TrimStart().StartsWithIgnoreCase("filename"))
+                                {
+                                    var name = part.RightPart('=');
+                                    name = OrmLiteUtils.StripQuotes(name);
+                                    if (!name.IsValidFileName())
+                                        fileName = name;
+                                    return;
+                                }
+                            }
+                        }
+                    });
+
+                    if (!string.IsNullOrEmpty(OutDir))
+                    {
+                        fileName = Directory.Exists(OutDir)
+                            ? Path.Combine(OutDir, fileName)
+                            : OutDir;
+                    }
+                    File.WriteAllBytes(Path.GetFullPath(fileName), bytes);
                 }
             }
             
