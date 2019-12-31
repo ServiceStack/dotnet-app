@@ -541,5 +541,13 @@ namespace Run
             
             await Startup.CreateWebHost("web", new[]{ "proto-csharp" }); // update .cs
         }
+
+        [Test]
+        public async Task Can_create_template()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestAurelia");
+            //"web new aurelia-spa testproject --verbose"
+            await Startup.CreateWebHost("web", new[]{ "new", "aurelia-spa", "testpoject" });
+        }
     }
 }

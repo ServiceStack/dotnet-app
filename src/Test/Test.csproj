@@ -19,6 +19,7 @@
         <PackageProjectUrl>https://github.com/NetCoreWebApps/WebApp</PackageProjectUrl>
         <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
         <LangVersion>latest</LangVersion>
+        <DefineConstants>$(DefineConstants);NET3</DefineConstants>
     </PropertyGroup>
     <ItemGroup>
         <!--<PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />-->

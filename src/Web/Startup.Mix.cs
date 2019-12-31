@@ -39,6 +39,10 @@ namespace Web
 
         static string[] HelpArgs = { "/help", "--help", "-help", "?" };
 
+        static string[] OutArgs = { "/out", "-out", "--out" };
+        public static string OutDir { get; set; }
+
+
         public static List<KeyValuePair<string,string>> ReplaceTokens { get; set; } = new List<KeyValuePair<string, string>>();
         
         public static Func<bool> UserInputYesNo { get; set; } = UseConsoleRead;
@@ -249,7 +253,7 @@ namespace Web
             {
                 if (gistAlias.StartsWith("https://gist.github.com/"))
                 {
-                    WriteGistFile(gistAlias, gistAlias, to: ".", projectName: projectName, getUserApproval: UserInputYesNo);
+                    WriteGistFile(gistAlias, gistAlias, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
                     ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
                     continue;
                 }
@@ -262,7 +266,7 @@ namespace Web
                     return false;
                 }
                             
-                WriteGistFile(gistLink.Url, gistAlias, to: gistLink.To, projectName: projectName, getUserApproval: UserInputYesNo);
+                WriteGistFile(gistLink.Url, gistAlias, to: OutDir ?? gistLink.To, projectName: projectName, getUserApproval: UserInputYesNo);
                 ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
             }
             return true;
@@ -970,6 +974,14 @@ namespace Web
                 if (DeleteArgs.Contains(arg))
                 {
                     deleteMode = true;
+                    continue;
+                }
+                if (OutArgs.Contains(arg))
+                {
+                    OutDir = args[i + 1];
+                    if (!OutDir.EndsWith("/"))
+                        OutDir += "/"; //required for mix to specify directory
+                    i++;
                     continue;
                 }
                 if (NameArgs.Contains(arg))

@@ -140,9 +140,6 @@ namespace Web
         public static Task<Gist> GistVfsTask;
         public static Task GistVfsLoadTask;
 
-        static string[] OutArgs = { "/out", "-out", "--out" };
-        public static string OutDir { get; set; }
-
         public static async Task<WebAppContext> CreateWebHost(string tool, string[] args, WebAppEvents events = null)
         {
             Events = events;
@@ -479,7 +476,8 @@ namespace Web
                 dotnetArgs.Add(arg);
             }
 
-            var unknownFlag = dotnetArgs.FirstOrDefault(x => x.StartsWith("-")); 
+            var allow = new[] { "-h", "-help", "--help", "-v", "-version", "--version", "-clear", "--clear", "-clean", "--clean" };
+            var unknownFlag = dotnetArgs.FirstOrDefault(x => x.StartsWith("-") && !allow.Contains(x)); 
             if (unknownFlag != null)
                 throw new Exception($"Unknown flag: '{unknownFlag}'");
 
@@ -1049,7 +1047,8 @@ namespace Web
             {
                 var tempFile = Path.GetTempFileName();
                 if (Verbose) $"Downloading {zipUrl} => {tempFile} (nocache)".Print();
-                GitHubUtils.Gateway.DownloadFile(zipUrl, Path.GetDirectoryName(tempFile).AssertDirectory());
+                Path.GetDirectoryName(tempFile).AssertDirectory();
+                GitHubUtils.Gateway.DownloadFile(zipUrl, tempFile);
                 return tempFile;
             }
             
@@ -1061,7 +1060,8 @@ namespace Web
             if (!isCached)
             {
                 if (Verbose) $"Downloading {zipUrl} => {cachedVersionPath}".Print();
-                GitHubUtils.Gateway.DownloadFile(zipUrl, Path.GetDirectoryName(cachedVersionPath).AssertDirectory());
+                Path.GetDirectoryName(cachedVersionPath).AssertDirectory();
+                GitHubUtils.Gateway.DownloadFile(zipUrl, cachedVersionPath);
             }
 
             return cachedVersionPath;
@@ -1512,7 +1512,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     string fileName = url.LastRightPart('/');
 
                     RegisterStat(tool, fileName, "get");
-                    checkUpdatesAndQuit = beginCheckUpdates();
+                    // checkUpdatesAndQuit = beginCheckUpdates();
 
                     var bytes = url.GetBytesFromUrl(requestFilter: req => {
                         req.UserAgent = GitHubUtils.UserAgent;
@@ -1526,7 +1526,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                                 if (part.TrimStart().StartsWithIgnoreCase("filename"))
                                 {
                                     var name = part.RightPart('=');
-                                    name = OrmLiteUtils.StripQuotes(name);
+                                    name = name.StripQuotes();
                                     if (!name.IsValidFileName())
                                         fileName = name;
                                     return;
@@ -1542,6 +1542,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             : OutDir;
                     }
                     File.WriteAllBytes(Path.GetFullPath(fileName), bytes);
+                    return new Instruction { Command = "get", Handled = true };
                 }
             }
             
@@ -1744,6 +1745,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 fileName = $"{fileName}.{dtosExt}";
             }
 
+            if (OutDir != null)
+                fileName = Path.Combine(OutDir, fileName);
+
             return Path.GetFullPath(fileName);
         }
 
@@ -1804,12 +1808,21 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
             catch (WebException) // .NET HttpWebRequest doesn't support HTTP/2 yet, try with HttpClient/WinHttpHandler
             {
+#if !NETCORE3
                 var handler = new Http2CustomHandler();
                 using (var client = new HttpClient(handler))
                 {
                     var res = TaskExt.RunSync(async () => await client.GetAsync(typesUrl));
                     dtosSrc = res.Content.ReadAsStringAsync().Result;
                 }
+#else
+                AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+                var req = new HttpRequestMessage(HttpMethod.Get, typesUrl) {
+                     Version = new Version(2, 0) 
+                };
+                var client = new HttpClient();
+                dtosSrc = client.SendAsync(req).Result.Content.ReadAsStringAsync().Result;
+#endif
             }
 
             if (dtosSrc.IndexOf("Options:", StringComparison.Ordinal) == -1) 
