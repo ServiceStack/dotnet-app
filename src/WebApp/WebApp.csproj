@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <Version>0.0.48</Version>
-    <RuntimeIdentifiers>win-x64;win-x32;ubuntu.16.10-x64</RuntimeIdentifiers>
-    <Platforms>x64;x86</Platforms>
+    <RuntimeIdentifiers>win-x64;ubuntu.16.10-x64</RuntimeIdentifiers>
+    <Platforms>x64</Platforms>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <AssemblyName>app</AssemblyName>
     <IsPackable>true</IsPackable>
@@ -13,7 +13,7 @@
     <PackAsTool>true</PackAsTool>
     <TrimUnusedDependencies>true</TrimUnusedDependencies>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
-    <RuntimeFrameworkVersion>2.1.2</RuntimeFrameworkVersion>
+<!--    <RuntimeFrameworkVersion>2.1.2</RuntimeFrameworkVersion>-->
     <Authors>ServiceStack</Authors>
     <Company>ServiceStack</Company>
     <Copyright>Copyright © 2008-present ServiceStack</Copyright>
@@ -51,8 +51,9 @@
   <!--</Target>-->
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.14" />
-
+<!--    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.14" />-->
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
+      
     <PackageReference Include="Microsoft.Data.Sqlite" Version="3.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
     <PackageReference Include="Mysql.Data" Version="8.0.17" />
