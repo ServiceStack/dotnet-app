@@ -21,8 +21,10 @@ namespace Web
         public static string GistLinksId { get; set; } = "9b32b03f207a191099137429051ebde8";
 
         public static bool Verbose { get; set; }
-        public static bool Silent { get; set; }
         static string[] VerboseArgs = {"/v", "-v", "/verbose", "--verbose"};
+
+        public static bool Silent { get; set; }
+        static string[] QuietArgs = { "/q", "-q", "/quiet", "-quiet", "--quiet" };
 
         static string[] SourceArgs = { "/s", "-s", "/source", "-source", "--source" };
 
@@ -40,8 +42,10 @@ namespace Web
         static string[] HelpArgs = { "/help", "--help", "-help", "?" };
 
         static string[] OutArgs = { "/out", "-out", "--out" };
-        public static string OutDir { get; set; }
 
+        public static string OutDir { get; set; }
+        
+        public static string GitHubToken { get; set; } 
 
         public static List<KeyValuePair<string,string>> ReplaceTokens { get; set; } = new List<KeyValuePair<string, string>>();
         
@@ -62,6 +66,8 @@ namespace Web
         {
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MIX_SOURCE")))
                 GistLinksId = Environment.GetEnvironmentVariable("MIX_SOURCE");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_TOKEN")))
+                GitHubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
         }
 
         public static string GetVersion() => Assembly.GetEntryAssembly()?
@@ -359,7 +365,7 @@ namespace Web
             }
 
             var getUserApproval = UserInputYesNo;
-            var silentMode = getUserApproval == null;
+            var silentMode = Silent || getUserApproval == null;
             if (!silentMode)
             {
                 if (!ForceApproval)
@@ -1147,11 +1153,13 @@ namespace Web
     public static class GitHubUtils
     {
         public const string UserAgent = "web dotnet tool";
-        
-        public static GitHubGateway Gateway { get; } = new GitHubGateway {
+
+        private static GitHubGateway gateway;
+        public static GitHubGateway Gateway => gateway ?? (gateway = new GitHubGateway {
+            AccessToken = Startup.GitHubToken,
             UserAgent = UserAgent,
             GetJsonFilter = GetJson
-        };
+        });
             
         public static string GetJson(string apiUrl)
         {
@@ -1161,7 +1169,7 @@ namespace Web
             return apiUrl.GetJsonFromUrl(req => req.ApplyRequestFilters());
         }
 
-        public static ConcurrentDictionary<string, Dictionary<string, string>> GistFilesCache =
+        public static readonly ConcurrentDictionary<string, Dictionary<string, string>> GistFilesCache =
             new ConcurrentDictionary<string, Dictionary<string, string>>();
 
         public static Dictionary<string, string> GetGistFiles(this GitHubGateway gateway, string gistId)
@@ -1194,8 +1202,6 @@ namespace Web
         }
         
         public static string ToGistId(this string url) => url?.LastRightPart('/');
-
     }
-
     
 }

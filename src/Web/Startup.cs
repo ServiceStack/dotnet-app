@@ -106,8 +106,6 @@ namespace Web
 
         public static string GitHubSource { get; set; } = "sharp-apps Sharp Apps";
         public static string GitHubSourceTemplates { get; set; } = "NetCoreTemplates .NET Core C# Templates;NetFrameworkTemplates .NET Framework C# Templates;NetFrameworkCoreTemplates ASP.NET Core Framework Templates";
-        
-        public static string GitHubGistToken { get; set; } 
 
         public static string GistAppsId { get; set; } = "802daba52b6fe6e2ed1430348dc596cb";
 
@@ -161,7 +159,9 @@ namespace Web
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_APPS")))
                 GistAppsId = Environment.GetEnvironmentVariable("APP_SOURCE_APPS");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN")))
-                GitHubGistToken = Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN");
+                GitHubToken = Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_TOKEN")))
+                GitHubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_GRPC")))
                 GrpcSource = Environment.GetEnvironmentVariable("APP_SOURCE_GRPC");
             
@@ -199,6 +199,11 @@ namespace Web
                     Verbose = true;
                     continue;
                 }
+                if (QuietArgs.Contains(arg))
+                {
+                    Silent = true;
+                    continue;
+                }
                 if (SourceArgs.Contains(arg))
                 {
                     GitHubSource = GitHubSourceTemplates = args[++i];
@@ -211,7 +216,7 @@ namespace Web
                 }
                 if (TokenArgs.Contains(arg))
                 {
-                    GitHubGistToken = args[++i];
+                    GitHubToken = args[++i];
                     continue;
                 }
                 if (arg == "shortcut")
@@ -682,7 +687,7 @@ namespace Web
                 if (!File.Exists("app.settings"))
                     throw new Exception($"No app.settings exists");
 
-                if (string.IsNullOrEmpty(GitHubGistToken))
+                if (string.IsNullOrEmpty(GitHubToken))
                 {
                     var CR = Environment.NewLine;
                     throw new Exception($"GitHub Access Token required to publish App to Gist.{CR}" +
@@ -714,7 +719,7 @@ namespace Web
                     }
                 }
 
-                var gateway = new GitHubGateway(GitHubGistToken);
+                var gateway = new GitHubGateway(GitHubToken);
 
                 "".Print();
 
@@ -810,7 +815,7 @@ namespace Web
                         var output = pageResult.RenderToStringAsync().Result;
                         output.Print();
 
-                        if (pageResult.LastFilterError != null)
+                        if (!Silent && pageResult.LastFilterError != null)
                         {
                             ErrorPrefix.Print();
                             pageResult.LastFilterStackTrace.Map(x => "   at " + x)
