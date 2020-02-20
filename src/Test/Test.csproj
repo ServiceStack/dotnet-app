@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp2.1</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
         <Version>0.0.16</Version>
         <AssemblyName>Run</AssemblyName>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -22,19 +22,19 @@
         <DefineConstants>$(DefineConstants);NET3</DefineConstants>
     </PropertyGroup>
     <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+
         <!--<PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />-->
         <!--<PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />-->
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
         <PackageReference Include="NUnit" Version="3.12.0" />
 
-        <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.8" />
-
         <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
         <PackageReference Include="System.Memory" Version="4.5.3" />
         <PackageReference Include="Microsoft.Data.Sqlite" Version="3.0.0" />
-        <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
-        <PackageReference Include="Mysql.Data" Version="8.0.17" />
-        <PackageReference Include="Npgsql" Version="4.1.1" />
+        <PackageReference Include="System.Data.SqlClient" Version="4.8.0" />
+        <PackageReference Include="Mysql.Data" Version="8.0.18" />
+        <PackageReference Include="Npgsql" Version="4.1.2" />
         <PackageReference Include="Markdig" Version="0.17.1" />
         <PackageReference Include="NUglify" Version="1.5.13" />
         <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.6.0" />
