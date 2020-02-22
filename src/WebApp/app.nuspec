@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>app</id>
-        <version>0.0.48</version>
+        <version>0.0.49</version>
         <authors>ServiceStack</authors>
         <owners>ServiceStack</owners>
         <requireLicenseAcceptance>true</requireLicenseAcceptance>
@@ -130,6 +130,7 @@
         <file src="bin\Release\netcoreapp3.1\publish\System.IdentityModel.Tokens.Jwt.dll" target="tools\netcoreapp3.1\any\System.IdentityModel.Tokens.Jwt.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.IO.Pipelines.dll" target="tools\netcoreapp3.1\any\System.IO.Pipelines.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Net.Http.WinHttpHandler.dll" target="tools\netcoreapp3.1\any\System.Net.Http.WinHttpHandler.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\System.Resources.Extensions.dll" target="tools\netcoreapp3.1\any\System.Resources.Extensions.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Security.Cryptography.ProtectedData.dll" target="tools\netcoreapp3.1\any\System.Security.Cryptography.ProtectedData.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Security.Permissions.dll" target="tools\netcoreapp3.1\any\System.Security.Permissions.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.ServiceModel.Primitives.dll" target="tools\netcoreapp3.1\any\System.ServiceModel.Primitives.dll" />
