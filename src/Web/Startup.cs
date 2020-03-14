@@ -1580,10 +1580,30 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 RegisterStat(tool, repo, "new");
 
                 var orgs = GitHubSourceTemplates.Split(';').Select(x => x.LeftPart(' ')).ToArray();
-                var fullRepo = GitHubUtils.Gateway.FindRepo(orgs, repo);
+                string downloadUrl = repo.IndexOf("://", StringComparison.OrdinalIgnoreCase) >= 0
+                    ? repo
+                    : null;
+
+                if (downloadUrl == null)
+                {
+                    var isFullRepo = repo.IndexOf('/') >= 0;
+                    var fullRepo = isFullRepo 
+                        ? Tuple.Create(repo.LeftPart('/'), repo.RightPart('/'))
+                        : GitHubUtils.Gateway.FindRepo(orgs, repo);
+
+                    if (isFullRepo)
+                    {
+                        repo = repo.RightPart('/');
+                    }
                 
-                var downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(fullRepo.Item1, fullRepo.Item2);
-                $"Installing {repo}...".Print();
+                    downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(fullRepo.Item1, fullRepo.Item2);
+                    $"Installing {repo}...".Print();
+                }
+                else
+                {
+                    repo = "master";
+                    $"Installing {downloadUrl}...".Print();
+                }
 
                 var cachedVersionPath = DownloadCachedZipUrl(downloadUrl);
                 var tmpDir = Path.Combine(Path.GetTempPath(), "servicestack", repo);

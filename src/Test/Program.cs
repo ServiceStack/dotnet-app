@@ -549,5 +549,22 @@ namespace Run
             //"web new aurelia-spa testproject --verbose"
             await Startup.CreateWebHost("web", new[]{ "new", "aurelia-spa", "testpoject" });
         }
+
+        [Test]
+        public async Task Can_create_template_from_private_repo()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            //"web new aurelia-spa testproject --verbose"
+            await Startup.CreateWebHost("web", new[]{ "new", "mythz/web", "TheProject" });
+        }
+
+        [Test]
+        public async Task Can_create_template_from_URL()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            //"web new aurelia-spa testproject --verbose"
+            await Startup.CreateWebHost("web", new[]{ "new", "https://github.com/mythz/web/archive/master.zip", "TheProject" });
+        }
+
     }
 }

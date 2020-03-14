@@ -1128,6 +1128,12 @@ namespace Web
         {
             req.UserAgent = GitHubUtils.UserAgent;
 
+            if (!string.IsNullOrEmpty(Startup.GitHubToken))
+            {
+                req.Headers["Authorization"] = "token " + Startup.GitHubToken;
+            }
+            
+
             if (Startup.IgnoreSslErrors)
             {
                 req.ServerCertificateValidationCallback = (webReq, cert, chain, errors) => true;
