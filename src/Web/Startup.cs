@@ -1053,7 +1053,7 @@ namespace Web
                 var tempFile = Path.GetTempFileName();
                 if (Verbose) $"Downloading {zipUrl} => {tempFile} (nocache)".Print();
                 Path.GetDirectoryName(tempFile).AssertDirectory();
-                GitHubUtils.Gateway.DownloadFile(zipUrl, tempFile);
+                GitHubUtils.DownloadFile(zipUrl, tempFile);
                 return tempFile;
             }
             
@@ -1066,7 +1066,7 @@ namespace Web
             {
                 if (Verbose) $"Downloading {zipUrl} => {cachedVersionPath}".Print();
                 Path.GetDirectoryName(cachedVersionPath).AssertDirectory();
-                GitHubUtils.Gateway.DownloadFile(zipUrl, cachedVersionPath);
+                GitHubUtils.DownloadFile(zipUrl, cachedVersionPath);
             }
 
             return cachedVersionPath;

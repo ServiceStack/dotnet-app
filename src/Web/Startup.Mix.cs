@@ -1158,7 +1158,7 @@ namespace Web
 
     public static class GitHubUtils
     {
-        public const string UserAgent = "web dotnet tool";
+        public const string UserAgent = "x dotnet tool";
 
         private static GitHubGateway gateway;
         public static GitHubGateway Gateway => gateway ?? (gateway = new GitHubGateway {
@@ -1208,6 +1208,17 @@ namespace Web
         }
         
         public static string ToGistId(this string url) => url?.LastRightPart('/');
+
+        public static void DownloadFile(string downloadUrl, string fileName)
+        {
+            var webClient = new WebClient();
+            webClient.Headers.Add(HttpHeaders.UserAgent, UserAgent);
+            if (!string.IsNullOrEmpty(Startup.GitHubToken))
+                webClient.Headers.Add(HttpHeaders.Authorization, "token " + Startup.GitHubToken);
+                
+            webClient.DownloadFile(downloadUrl, fileName);
+        }
+
     }
     
 }
