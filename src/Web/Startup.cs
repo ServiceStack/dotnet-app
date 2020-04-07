@@ -188,7 +188,7 @@ namespace Web
                 }
                 if (arg.EndsWith(".dll") || arg.EndsWith(".exe"))
                 {
-                    if (Events.RunNetCoreProcess == null)
+                    if (Events?.RunNetCoreProcess == null)
                         throw new NotSupportedException($"This {tool} tool does not support running processes");
 
                     runProcess = arg;

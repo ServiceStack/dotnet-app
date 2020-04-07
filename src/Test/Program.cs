@@ -566,5 +566,20 @@ namespace Run
             await Startup.CreateWebHost("web", new[]{ "new", "https://github.com/mythz/web/archive/master.zip", "TheProject" });
         }
 
+        [Test]
+        public async Task Can_run_app()
+        {
+            Directory.SetCurrentDirectory(@"C:\Source\projects\VueSpa\VueSpa\bin\Release\netcoreapp3.1\publish");
+            try 
+            {
+                await Startup.CreateWebHost("x", new[]{ "VueSpa.dll" });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
     }
 }
