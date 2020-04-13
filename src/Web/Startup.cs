@@ -194,31 +194,8 @@ namespace Web
                     runProcess = arg;
                     continue;
                 }
-                if (VerboseArgs.Contains(arg))
-                {
-                    Verbose = true;
+                if (ProcessFlags(args, arg, ref i)) 
                     continue;
-                }
-                if (QuietArgs.Contains(arg))
-                {
-                    Silent = true;
-                    continue;
-                }
-                if (SourceArgs.Contains(arg))
-                {
-                    GitHubSource = GitHubSourceTemplates = args[++i];
-                    continue;
-                }
-                if (ForceArgs.Contains(arg))
-                {
-                    ForceApproval = true;
-                    continue;
-                }
-                if (TokenArgs.Contains(arg))
-                {
-                    GitHubToken = args[++i];
-                    continue;
-                }
                 if (arg == "shortcut")
                 {
                     createShortcut = true;
@@ -229,6 +206,16 @@ namespace Web
                 if (arg == "lisp")
                 {
                     runLispRepl = runSharpApp = true;
+                    continue;
+                }
+                if (arg == "publish")
+                {
+                    publish = true;
+                    continue;
+                }
+                if (arg == "publish-exe")
+                {
+                    publishExe = true;
                     continue;
                 }
                 if (arg == "run" || arg == "watch")
@@ -303,11 +290,19 @@ namespace Web
                     }
                     
                     var target = args[i+1];
+
+                    for (var j=i+2; j<args.Length; j++)
+                        ProcessFlags(args, args[j], ref j);
                     
                     RegisterStat(tool, target, "open");
 
                     var isGitHubUrl = target.StartsWith("https://gist.github.com/") ||
                                       target.StartsWith("https://github.com/");
+                    if (!isGitHubUrl && !target.IsUrl() && target.IndexOf('/') >= 0)
+                    {
+                        target = "https://github.com/" + target;
+                        isGitHubUrl = true;
+                    }
 
                     var gistLinks = !isGitHubUrl ? GetGistAppsLinks() : null;
                     var gistLink = gistLinks?.FirstOrDefault(x => x.Name == target);
@@ -331,7 +326,24 @@ namespace Web
                     }
                     
                     var target = args[i+1];
+
+                    for (var j=i+2; j<args.Length; j++)
+                        ProcessFlags(args, args[j], ref j);
+                    
                     RegisterStat(tool, target, "install");
+                    
+                    var isGitHubUrl = target.StartsWith("https://gist.github.com/") ||
+                                      target.StartsWith("https://github.com/");
+                    if (!isGitHubUrl && !target.IsUrl() && target.IndexOf('/') >= 0)
+                    {
+                        target = "https://github.com/" + target;
+                        isGitHubUrl = true;
+                    }
+                    if (isGitHubUrl)
+                    {
+                        InstallGistApp(tool, target, null, null, out var appsDir);
+                        return null;
+                    }
                     
                     var gistLink = gistLinks.FirstOrDefault(x => x.Name == target);
                     if (gistLink == null)
@@ -378,6 +390,10 @@ namespace Web
                     }
 
                     var target = args[i + 1];
+
+                    for (var j=i+2; j<args.Length; j++)
+                        ProcessFlags(args, args[j], ref j);
+
                     var installDir = GetAppsPath(target);
                     var gistFile = installDir + ".gist";
 
@@ -397,32 +413,6 @@ namespace Web
                     "".Print();
                     $"App '{target}' was uninstalled.".Print();
                     return null;
-                }
-                if (arg == "publish")
-                {
-                    publish = true;
-                    continue;
-                }
-                if (arg == "publish-exe")
-                {
-                    publishExe = true;
-                    continue;
-                }
-                if (DebugArgs.Contains(arg))
-                {
-                    DebugMode = true;
-                    continue;
-                }
-                if (ReleaseArgs.Contains(arg))
-                {
-                    DebugMode = false;
-                    continue;
-                }
-                if (OutArgs.Contains(arg))
-                {
-                    OutDir = args[i + 1];
-                    i++;
-                    continue;
                 }
                 if (arg == "proto-langs")
                 {
@@ -615,7 +605,7 @@ namespace Web
             }
 
             var usingWebSettings = File.Exists(appSettingsPath);
-            if (Verbose || (usingWebSettings && !createShortcut && tool == "web" && instruction == null && appSettingsPath != null && !publish))
+            if (Verbose || (usingWebSettings && !createShortcut && (tool == "x") && instruction == null && appSettingsPath != null && !publish))
                 $"Using '{appSettingsPath}'".Print();
 
             if (appSettingsContent == null && RunScript == null)
@@ -923,6 +913,60 @@ namespace Web
             }
 
             return CreateWebAppContext(ctx);
+        }
+
+        private static bool ProcessFlags(string[] args, string arg, ref int i)
+        {
+            if (VerboseArgs.Contains(arg))
+            {
+                Verbose = true;
+                return true;
+            }
+
+            if (QuietArgs.Contains(arg))
+            {
+                Silent = true;
+                return true;
+            }
+
+            if (SourceArgs.Contains(arg))
+            {
+                GitHubSource = GitHubSourceTemplates = args[++i];
+                return true;
+            }
+
+            if (ForceArgs.Contains(arg))
+            {
+                ForceApproval = true;
+                return true;
+            }
+
+            if (TokenArgs.Contains(arg))
+            {
+                GitHubToken = args[++i];
+                return true;
+            }
+
+            if (DebugArgs.Contains(arg))
+            {
+                DebugMode = true;
+                return true;
+            }
+
+            if (ReleaseArgs.Contains(arg))
+            {
+                DebugMode = false;
+                return true;
+            }
+
+            if (OutArgs.Contains(arg))
+            {
+                OutDir = args[i + 1];
+                i++;
+                return true;
+            }
+
+            return false;
         }
 
         private static SharpPage OneTimePage(ScriptContext context, string script)

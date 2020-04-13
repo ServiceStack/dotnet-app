@@ -581,5 +581,20 @@ namespace Run
             }
         }
 
+        [Test]
+        public async Task Can_run_private_SharpApp()
+        {
+            Directory.SetCurrentDirectory(@"C:\Source\wip\");
+            try 
+            {
+                await Startup.CreateWebHost("x", new[]{ "open", "mythz/spirals-private" });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
     }
 }
