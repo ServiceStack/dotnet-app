@@ -48,6 +48,7 @@ namespace Web
             shortcut.TargetPath = targetPath;
             shortcut.WorkingDirectory = workingDirectory;
             shortcut.Arguments = arguments;
+            shortcut.WindowStyle = 7; //Minimizes the window and activates the next top-level window.
             if (!string.IsNullOrEmpty(iconPath))
                 shortcut.IconLocation = iconPath;
             shortcut.Save();

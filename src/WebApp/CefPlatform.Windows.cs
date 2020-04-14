@@ -10,7 +10,7 @@ namespace ServiceStack.CefGlue
     public sealed class CefPlatformWindows : CefPlatform
     {
         private static CefPlatformWindows provider;
-        public static CefPlatformWindows Provider => provider ?? (provider = new CefPlatformWindows());
+        public static CefPlatformWindows Provider => provider ??= new CefPlatformWindows();
         private CefPlatformWindows() { }
         
         public static Action OnExit { get; set; }
@@ -82,7 +82,7 @@ namespace ServiceStack.CefGlue
 
         public void ShowConsoleWindow()
         {
-            if (!this.config.HideConsoleWindow)
+            if (this.config?.HideConsoleWindow != true)
                 return;
             
             Console.Title = typeof(CefPlatformWindows).Namespace + " " + Guid.NewGuid().ToString().Substring(0,5);

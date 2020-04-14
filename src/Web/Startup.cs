@@ -20,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Funq;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Logging;
 using NUglify;
 using ServiceStack;
 using ServiceStack.IO;
@@ -850,6 +851,15 @@ namespace Web
                     .UseSetting(WebHostDefaults.SuppressStatusMessagesKey, "True")
                     .UseContentRoot(contentRoot)
                     .UseWebRoot(useWebRoot)
+                    .ConfigureLogging(config =>
+                    {
+                        if (!GetDebugMode() && !Verbose &&
+                            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
+                        {
+                            config.ClearProviders();
+                            config.SetMinimumLevel(LogLevel.None);
+                        }
+                    })
                     .UseStartup<Startup>();
 
                 using (var webHost = builder.Build())
@@ -1207,6 +1217,15 @@ namespace Web
                 .UseContentRoot(contentRoot)
                 .UseWebRoot(useWebRoot)
                 .UseStartup<Startup>()
+                .ConfigureLogging(config =>
+                {
+                    if (!GetDebugMode() && !Verbose &&
+                        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
+                    {
+                        config.ClearProviders();
+                        config.SetMinimumLevel(LogLevel.None);
+                    }
+                })
                 .UseUrls(ctx.UseUrls);
 
             ctx.Builder = builder;

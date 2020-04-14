@@ -22,63 +22,62 @@ namespace Web
                     if (Startup.Verbose) $"OnExit".Print();
                     cts?.Cancel();
                     process?.Close();
-                    CefPlatformWindows.Provider.ShowConsoleWindow();
                 };
-                
-                var host = await Startup.CreateWebHost("app", args, new WebAppEvents
-                    {
-                        CreateShortcut = Shortcut.Create,
-                        HandleUnknownCommand = ctx => Startup.PrintUsage("app"),
-                        OpenBrowser = url => CefPlatformWindows.Start(new CefConfig { 
-                            StartUrl = url, Width = 1040, DevTools = false, Icon = Startup.ToolFavIcon }),
-                        RunNetCoreProcess = ctx =>
+
+                var host = await Startup.CreateWebHost("app", args, new WebAppEvents {
+                    CreateShortcut = Shortcut.Create,
+                    HandleUnknownCommand = ctx => Startup.PrintUsage("app"),
+                    OpenBrowser = url => CefPlatformWindows.Start(new CefConfig {
+                        StartUrl = url, Width = 1040, DevTools = false, Icon = Startup.ToolFavIcon
+                    }),
+                    RunNetCoreProcess = ctx => {
+                        var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.LeftPart(';') ??
+                                  "http://localhost:5000";
+                        var target = ctx.RunProcess;
+
+                        var fileName = ctx.RunProcess;
+                        var arguments = "";
+                        if (target.EndsWith(".dll"))
                         {
-                            var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.LeftPart(';') ?? "http://localhost:5000";
-                            var target = ctx.RunProcess;
-
-                            var fileName = ctx.RunProcess;
-                            var arguments = "";
-                            if (target.EndsWith(".dll"))
-                            {
-                                fileName = "dotnet";
-                                arguments = ctx.RunProcess;
-                            }
-                            
-                            process = Startup.PipeProcess(fileName, arguments, fn: () => 
-                                CefPlatformWindows.Start(new CefConfig { StartUrl = url, Icon = ctx.FavIcon }));
-                        },
-                        SelectFolder = options => {
-
-                            var dlgArgs = new OpenFileName {
-                                hwndOwner = Process.GetCurrentProcess().MainWindowHandle,
-                                
-                                Flags = options.Flags.GetValueOrDefault(),
-                                lpstrTitle = options.Title,
-                                lpstrFilter = options.Filter,
-                                lpstrInitialDir = options.InitialDir,
-                                lpstrDefExt = options.DefaultExt,
-                            };
-
-                            if (options.IsFolderPicker)
-                            {
-                                //HACK http://unafaltadecomprension.blogspot.com/2013/04/browsing-for-files-and-folders-c.html
-                                dlgArgs.Flags |= (int)(FileOpenOptions.NoValidate | FileOpenOptions.PathMustExist);
-                                dlgArgs.lpstrFile = "Folder Selection.";
-                            }
-
-                            if (GetOpenFileName(dlgArgs))
-                            {
-                                //var fileName = Marshal.PtrToStringAuto(dlgArgs.lpstrFile);
-                                var fileName = dlgArgs.lpstrFile.Replace("Folder Selection", "");
-                                var ret = new DialogResult {
-                                    FolderPath = fileName,
-                                    Ok = true,
-                                };
-                                return ret;
-                            }
-                            
-                            return new DialogResult();
+                            fileName = "dotnet";
+                            arguments = ctx.RunProcess;
                         }
+
+                        process = Startup.PipeProcess(fileName, arguments, fn: () =>
+                            CefPlatformWindows.Start(new CefConfig {StartUrl = url, Icon = ctx.FavIcon}));
+                    },
+                    SelectFolder = options => {
+
+                        var dlgArgs = new OpenFileName {
+                            hwndOwner = Process.GetCurrentProcess().MainWindowHandle,
+
+                            Flags = options.Flags.GetValueOrDefault(),
+                            lpstrTitle = options.Title,
+                            lpstrFilter = options.Filter,
+                            lpstrInitialDir = options.InitialDir,
+                            lpstrDefExt = options.DefaultExt,
+                        };
+
+                        if (options.IsFolderPicker)
+                        {
+                            //HACK http://unafaltadecomprension.blogspot.com/2013/04/browsing-for-files-and-folders-c.html
+                            dlgArgs.Flags |= (int) (FileOpenOptions.NoValidate | FileOpenOptions.PathMustExist);
+                            dlgArgs.lpstrFile = "Folder Selection.";
+                        }
+
+                        if (GetOpenFileName(dlgArgs))
+                        {
+                            //var fileName = Marshal.PtrToStringAuto(dlgArgs.lpstrFile);
+                            var fileName = dlgArgs.lpstrFile.Replace("Folder Selection", "");
+                            var ret = new DialogResult {
+                                FolderPath = fileName,
+                                Ok = true,
+                            };
+                            return ret;
+                        }
+
+                        return new DialogResult();
+                    }
                 });
                 if (host == null)
                     return 0;
@@ -86,9 +85,8 @@ namespace Web
 #pragma warning disable 4014
                 host.Build().StartAsync(cts.Token);
 #pragma warning restore 4014
-                
-                var config = new CefConfig(host.DebugMode)
-                {
+
+                var config = new CefConfig(host.DebugMode) {
                     Args = args,
                     StartUrl = host.StartUrl,
                     Icon = host.FavIcon,
@@ -103,6 +101,7 @@ namespace Web
                     if (cefConfig is Dictionary<string, object> objDictionary)
                         objDictionary.PopulateInstance(config);
                 }
+
                 if ("CefConfig.CefSettings".TryGetAppSetting(out var cefSettingsString))
                 {
                     var cefSettings = JS.eval(cefSettingsString);
@@ -111,11 +110,15 @@ namespace Web
                 }
 
                 return CefPlatformWindows.Start(config);
-            } 
+            }
             catch (Exception ex)
             {
                 ex.HandleProgramExceptions();
                 return -1;
+            }
+            finally
+            {
+                CefPlatformWindows.Provider?.ShowConsoleWindow();
             }
         }
 
