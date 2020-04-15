@@ -1,9 +1,11 @@
 using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xilium.CefGlue;
 using WinApi.Windows;
 using ServiceStack.CefGlue.Win64;
+using WinApi.User32;
 
 namespace ServiceStack.CefGlue
 {
@@ -31,8 +33,16 @@ namespace ServiceStack.CefGlue
             this.config = config;
             var res = Instance.GetScreenResolution();
             var scaleFactor = GetScalingFactor(GetDC(IntPtr.Zero));
-            config.Width = (int)(config.Width > 0 ? config.Width * scaleFactor : res.Width * .75);
-            config.Height = (int)(config.Height > 0 ? config.Height * scaleFactor : res.Height * .75);
+            if (config.FullScreen || config.Kiosk)
+            {
+                config.Width = (int) (scaleFactor * res.Width);
+                config.Height = (int) (scaleFactor * res.Height);
+            }
+            else
+            {
+                config.Width = (int)(config.Width > 0 ? config.Width * scaleFactor : res.Width * .75);
+                config.Height = (int)(config.Height > 0 ? config.Height * scaleFactor : res.Height * .75);
+            }
             
             if (config.HideConsoleWindow)
                 Instance.HideConsoleWindow();
@@ -51,8 +61,16 @@ namespace ServiceStack.CefGlue
                 {
                     window.SetPosition(config.X.GetValueOrDefault(), config.Y.GetValueOrDefault());
                 }
-
                 window.SetSize(config.Width, config.Height-1);
+                if (config.Kiosk || config.Kiosk)
+                {
+                    if (config.Kiosk)
+                    {
+                        window.SetStyle(WindowStyles.WS_MAXIMIZE);
+                    }
+                    Instance.SetWinFullScreen(window.Handle);
+                }
+
                 window.Browser.BrowserCreated += (sender, args) => {
                     window.SetSize(config.Width, config.Height); //trigger refresh to sync browser frame with window
                 };
@@ -71,6 +89,12 @@ namespace ServiceStack.CefGlue
                 (int)(GetSystemMetrics(SystemMetric.SM_CXSCREEN) * scalingFactor),
                 (int)(GetSystemMetrics(SystemMetric.SM_CYSCREEN) * scalingFactor)
             );
+        }
+        
+        public override Rectangle GetClientRectangle(IntPtr handle)
+        {
+            GetClientRect(handle, out var result);
+            return Rectangle.FromLTRB(result.Left, result.Top, result.Right, result.Bottom);
         }
 
         float GetScalingFactor(IntPtr hdc)
@@ -114,6 +138,19 @@ namespace ServiceStack.CefGlue
             }
         }
 
+        public override void SetWinFullScreen(IntPtr handle)
+        {
+            if (handle != IntPtr.Zero)
+            {
+                // var x = GetSystemMetrics(SystemMetric.SM_CXFULLSCREEN);
+                // var y = GetSystemMetrics(SystemMetric.SM_CYFULLSCREEN);
+                var res = GetScreenResolution();
+                SetWindowPos(handle, IntPtr.Zero,
+                    0, 0, res.Width, res.Height,
+                    SetWindowPosFlags.ShowWindow);
+            }
+        }
+        
         [DllImport("user32.dll")]
         static extern int GetSystemMetrics(SystemMetric smIndex);
 
@@ -150,7 +187,10 @@ namespace ServiceStack.CefGlue
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
-
+        
+        [DllImport("user32.dll")]
+        static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
+        
         [StructLayout(LayoutKind.Sequential)]
         internal struct RECT
         {
