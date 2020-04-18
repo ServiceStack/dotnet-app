@@ -278,7 +278,7 @@ namespace Web
                             continue;
 
                         RunScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
-                        i++;
+                        RunScriptArgV.Add(args[i++ + 1]);
                     }
                     continue;
                 }
@@ -313,7 +313,19 @@ namespace Web
 
                     runSharpApp = true;
                     Open = true;
-                    i++;
+
+                    i += 2; //'open' 'target'
+                    for (; i < args.Length; i++)
+                    {
+                        RunScriptArgV.Add(args[i]);
+
+                        var key = args[i];
+                        if (!(key.FirstCharEquals('-') || key.FirstCharEquals('/')))
+                            continue;
+
+                        RunScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
+                        RunScriptArgV.Add(args[i++ + 1]);
+                    }
                     continue;
                 }
                 if (arg == "install" || arg == "i")
@@ -500,7 +512,7 @@ namespace Web
             {
                 RegisterStat(tool, runProcess, "run");
 
-                var publishDir = Path.GetDirectoryName(Path.GetFullPath(runProcess));
+                var publishDir = Path.GetDirectoryName(Path.GetFullPath(runProcess)).AssertDirectory();
                 Events.RunNetCoreProcess(new WebAppContext { 
                     Arguments = dotnetArgs.ToArray(), 
                     RunProcess = runProcess,
@@ -547,7 +559,7 @@ namespace Web
                 RunProcess = runProcess,
                 WebSettingsPath = appSettingsPath,
                 AppSettings = WebTemplateUtils.AppSettings,
-                AppDir = appDir,
+                AppDir = appDir.AssertDirectory(),
                 ToolPath = Assembly.GetExecutingAssembly().Location,
                 DebugMode =  DebugMode ?? false,
             };
@@ -1089,8 +1101,6 @@ namespace Web
             if (Verbose) $"ExtractToDirectory: {cachedVersionPath} -> {tmpDir}".Print();
             ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
 
-            if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {installDir}".Print();
-
             DeleteDirectory(installDir);
             MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, installDir);
             
@@ -1132,6 +1142,7 @@ namespace Web
             if (Verbose) $"Directory Move: {fromPath} -> {toPath}".Print();
             try
             {
+                Directory.GetParent(toPath).AssertDirectory();
                 Directory.Move(fromPath, toPath);
             }
             catch (IOException ex) //Source and destination path must have identical roots. Move will not work across volumes.
@@ -1190,8 +1201,9 @@ namespace Web
             var publishAppDir = Path.Combine(publishDir, "app");
             var publishToolDir = Path.Combine(publishDir, toolName);
 
-            try { Directory.CreateDirectory(publishAppDir); } catch { }
-            try { Directory.CreateDirectory(publishToolDir); } catch { }
+            publishDir.AssertDirectory();
+            publishAppDir.AssertDirectory();
+            publishToolDir.AssertDirectory();
 
             return (publishDir, publishAppDir, publishToolDir);
         }
@@ -1677,7 +1689,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var installDir = Path.GetFullPath(repo);
 
                 var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
-                if (Verbose) $"Directory Move: {new DirectoryInfo(tmpDir).GetDirectories().First().FullName} -> {projectDir.FullName}".Print();
                 DeleteDirectory(projectDir.FullName);
                 MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
 
@@ -1843,7 +1854,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         {
             var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var cachesDir = Path.Combine(homeDir, ".servicestack", "cache");
-            return cachesDir;
+            return cachesDir.AssertDirectory();
         }
 
         private static readonly Dictionary<string,string> RefAlias = new Dictionary<string, string>
@@ -2377,7 +2388,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
                         : new SharpPagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
                 }
-                
+
+                feature.Args["ARGV"] = RunScriptArgV;
+                RunScriptArgs.Each(entry => feature.Args[entry.Key] = entry.Value);
+
                 // Use ~/.servicestack/cache for all downloaded scripts
                 feature.CacheFiles = new FileSystemVirtualFiles(GetCacheDir());
                 feature.ScriptLanguages.Add(ScriptLisp.Language);
@@ -2554,11 +2568,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public static IAppSettings AppSettings;
         public static IVirtualFiles VirtualFiles;
 
+        public static string AssertDirectory(this DirectoryInfo dir) => AssertDirectory(dir?.FullName);
         public static string AssertDirectory(this string filePath)
         {
-            try {
-                Directory.CreateDirectory(filePath); 
-            } catch { }
+            if (string.IsNullOrEmpty(filePath))
+                return null;
+            
+            ExecUtils.RetryOnException(() => {
+                if (!Directory.Exists(filePath))
+                    Directory.CreateDirectory(filePath);
+            }, TimeSpan.FromSeconds(10));
             return filePath;
         }
 

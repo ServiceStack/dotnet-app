@@ -1161,11 +1161,11 @@ namespace Web
         public const string UserAgent = "x dotnet tool";
 
         private static GitHubGateway gateway;
-        public static GitHubGateway Gateway => gateway ?? (gateway = new GitHubGateway {
+        public static GitHubGateway Gateway => gateway ??= new GitHubGateway {
             AccessToken = Startup.GitHubToken,
             UserAgent = UserAgent,
             GetJsonFilter = GetJson
-        });
+        };
             
         public static string GetJson(string apiUrl)
         {

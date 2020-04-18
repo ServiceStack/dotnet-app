@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xilium.CefGlue;
 using WinApi.Windows;
 using ServiceStack.CefGlue.Win64;
+using ServiceStack.Text;
 using WinApi.User32;
 
 namespace ServiceStack.CefGlue
@@ -37,6 +39,16 @@ namespace ServiceStack.CefGlue
             {
                 config.Width = (int) (scaleFactor * res.Width);
                 config.Height = (int) (scaleFactor * res.Height);
+
+                var meta = config.Meta ?? new Dictionary<string, string>();
+                var no = (meta.TryGetValue("no", out var _no) ? _no.Split(',') : new string[0]).ToHashSet();
+                if (config.Verbose) $"no: {no.ToArray().Join(",")}".Print(); 
+                
+                if (scaleFactor == 1.0d && !no.Contains("scroll-adjust"))
+                {
+                    var verticalScrollWidth = GetSystemMetrics(SystemMetric.SM_CXVSCROLL);
+                    config.Width += verticalScrollWidth;
+                }
             }
             else
             {
@@ -44,7 +56,7 @@ namespace ServiceStack.CefGlue
                 config.Height = (int)(config.Height > 0 ? config.Height * scaleFactor : res.Height * .75);
             }
             
-            if (config.HideConsoleWindow)
+            if (config.HideConsoleWindow && !config.Verbose)
                 Instance.HideConsoleWindow();
 
             var factory = WinapiHostFactory.Init(config.Icon);
@@ -53,6 +65,13 @@ namespace ServiceStack.CefGlue
                 config.WindowTitle,
                 constructionParams: new FrameWindowConstructionParams()))
             {
+                if (config.Verbose)
+                {
+                    Console.WriteLine($"GetScreenResolution: {res.Width}x{res.Height}, scale:{scaleFactor}, {(int) (scaleFactor * res.Width)}x{(int) (scaleFactor * res.Width)}");
+                    var rect = Instance.GetClientRectangle(window.Handle);
+                    Console.WriteLine($"GetClientRectangle:  [{rect.Top},{rect.Left}] [{rect.Bottom},{rect.Right}], scale: [{(int)(rect.Bottom * scaleFactor)},{(int)(rect.Right * scaleFactor)}]");
+                }
+                
                 if (config.CenterToScreen)
                 {
                     window.CenterToScreen();
@@ -62,17 +81,24 @@ namespace ServiceStack.CefGlue
                     window.SetPosition(config.X.GetValueOrDefault(), config.Y.GetValueOrDefault());
                 }
                 window.SetSize(config.Width, config.Height-1);
-                if (config.Kiosk || config.Kiosk)
+                if (config.Kiosk || config.FullScreen)
                 {
                     if (config.Kiosk)
                     {
                         window.SetStyle(WindowStyles.WS_MAXIMIZE);
+                        ShowScrollBar(window.Handle, SB_BOTH, false);
                     }
                     Instance.SetWinFullScreen(window.Handle);
                 }
 
                 window.Browser.BrowserCreated += (sender, args) => {
                     window.SetSize(config.Width, config.Height); //trigger refresh to sync browser frame with window
+
+                    var cef = (CefGlueBrowser) sender;
+                    if (cef.Config.Kiosk)
+                    {
+                        ShowScrollBar(cef.BrowserWindowHandle, SB_BOTH, false);
+                    }
                 };
 
                 window.Show();
@@ -150,7 +176,15 @@ namespace ServiceStack.CefGlue
                     SetWindowPosFlags.ShowWindow);
             }
         }
-        
+
+        public override void ShowScrollBar(IntPtr handle, bool show)
+        {
+            if (handle != IntPtr.Zero)
+            {
+                ShowScrollBar(handle, SB_BOTH, show);
+            }
+        }
+
         [DllImport("user32.dll")]
         static extern int GetSystemMetrics(SystemMetric smIndex);
 
@@ -190,6 +224,15 @@ namespace ServiceStack.CefGlue
         
         [DllImport("user32.dll")]
         static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
+        
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool ShowScrollBar(IntPtr hWnd, int wBar, [MarshalAs(UnmanagedType.Bool)] bool bShow);
+        
+        public const int SB_HORZ = 0;
+        public const int SB_VERT = 1;
+        public const int SB_CTL = 2;
+        public const int SB_BOTH = 3;
         
         [StructLayout(LayoutKind.Sequential)]
         internal struct RECT

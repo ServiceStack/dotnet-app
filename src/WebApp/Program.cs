@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 using ServiceStack;
 using ServiceStack.CefGlue;
 using ServiceStack.Text;
@@ -12,10 +15,38 @@ namespace Web
 {
     public class Program
     {
-        public static async Task<int> Main(string[] args)
+        private static readonly bool AppDebug = Environment.GetEnvironmentVariable("APP_DEBUG") == "1";
+        public static async Task<int> Main(string[] cmdArgs)
         {
             try
             {
+                var firstArg = cmdArgs.FirstOrDefault();
+                if (firstArg?.StartsWith("app:") == true || firstArg?.StartsWith("sharp:") == true)
+                {
+                    var hasQs = firstArg.IndexOf('?') >= 0;
+                    var qs = hasQs ? firstArg.RightPart('?') : null;
+                    var cmds = new List<string> {"open", firstArg.RightPart(':').LeftPart('?')};
+                    if (!string.IsNullOrEmpty(qs))
+                    {
+                        var nvc = PclExportClient.Instance.ParseQueryString(qs);
+                        for (var i = 0; i < nvc.Count; i++)
+                        {
+                            cmds.Add("-" + nvc.GetKey(i));
+                            cmds.Add(nvc.Get(i));
+                        }
+                    }
+                    if (AppDebug)
+                        MessageBox(0, cmdArgs.Join("|") + " => " + cmdArgs.ToArray().Join("|"), "app args", 0);
+                    cmdArgs = cmds.ToArray();
+                }
+                else
+                {
+                    CreateRegistryEntryFor("app");
+                    CreateRegistryEntryFor("sharp");
+                }
+
+                var args = cmdArgs;
+                
                 var cts = new CancellationTokenSource();
                 Process process = null;
                 CefPlatformWindows.OnExit = () => {
@@ -79,6 +110,7 @@ namespace Web
                         return new DialogResult();
                     }
                 });
+                
                 if (host == null)
                     return 0;
 
@@ -113,12 +145,77 @@ namespace Web
             }
             catch (Exception ex)
             {
+                if (AppDebug)
+                    MessageBox(0, ex.Message, "Exception", 0);
+                    
                 ex.HandleProgramExceptions();
                 return -1;
             }
             finally
             {
                 CefPlatformWindows.Provider?.ShowConsoleWindow();
+            }
+        }
+
+        private static void CreateRegistryEntryFor(string rootKey)
+        {
+            if (Environment.GetEnvironmentVariable("APP_NOSCHEME") == "1") return;
+            
+            var openKeys = new List<RegistryKey>();
+            RegistryKey recordKey(RegistryKey key)
+            {
+                if (key != null) openKeys.Add(key);
+                return key;
+            }
+
+            try
+            {
+                var appKey = recordKey(Registry.CurrentUser.OpenSubKey(rootKey));
+                if (appKey == null)
+                {
+                    var userRoot = recordKey(Registry.CurrentUser.OpenSubKey("Software", true))?
+                        .OpenSubKey("Classes", true);   
+                    var key = userRoot.CreateSubKey(rootKey);   
+                    key.SetValue("URL Protocol", "Sharp App");   
+                    var profilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    var commandStr = Path.Combine(profilePath, ".dotnet", "tools", "app.exe") + " \"%1\"";
+                    key.CreateSubKey(@"shell\open\command")?.SetValue("", commandStr); 
+                    
+                    
+                    // appKey = recordKey(Registry.CurrentUser.CreateSubKey($"Software\\Classes\\{rootKey}"));
+                    // if (appKey != null)
+                    // {
+                    //     appKey.SetValue("", "URL:Sharp App");
+                    //     var shellKey = recordKey(appKey.CreateSubKey("shell"));
+                    //     if (shellKey != null)
+                    //     {
+                    //         var openKey = recordKey(shellKey.CreateSubKey("open"));
+                    //         if (openKey != null)
+                    //         {
+                    //             var commandKey = recordKey(openKey.CreateSubKey("command"));
+                    //             if (commandKey != null)
+                    //             {
+                    //                 commandKey.SetValue("", commandStr);
+                    //             }
+                    //         }
+                    //     }
+                    // }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                foreach (var key in openKeys)
+                {
+                    try
+                    {
+                        key.Close();
+                    }
+                    catch { }
+                }
             }
         }
 
@@ -189,5 +286,9 @@ namespace Web
             [System.Security.SecuritySafeCritical]
             private static int SizeOf() => Marshal.SizeOf(typeof(OpenFileName));
         }
+
+        [DllImport("user32.dll", SetLastError = true, CharSet= CharSet.Auto)]
+        public static extern int MessageBox(int hWnd, String text, String caption, uint type);
+
     }
 }
