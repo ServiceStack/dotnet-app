@@ -2948,6 +2948,24 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
             }
         }
+
+        public static List<string> ConvertUrlSchemeToCommands(this string firstArg)
+        {
+            var hasQs = firstArg.IndexOf('?') >= 0;
+            var qs = hasQs ? firstArg.RightPart('?') : null;
+            var cmds = new List<string> {"open", firstArg.RightPart(':').Trim('/').LeftPart('?')};
+            if (!string.IsNullOrEmpty(qs))
+            {
+                var nvc = PclExportClient.Instance.ParseQueryString(qs);
+                for (var i = 0; i < nvc.Count; i++)
+                {
+                    cmds.Add("-" + nvc.GetKey(i));
+                    cmds.Add(nvc.Get(i));
+                }
+            }
+
+            return cmds;
+        }
     }
     
     [Route("/sharp-apps/registry", "POST")]
