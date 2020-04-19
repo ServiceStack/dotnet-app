@@ -21,27 +21,31 @@ namespace Web
         public static string GistLinksId { get; set; } = "9b32b03f207a191099137429051ebde8";
 
         public static bool Verbose { get; set; }
-        static string[] VerboseArgs = {"/v", "-v", "/verbose", "--verbose"};
+        static string[] VerboseArgs = CreateArgs("verbose", withFlag:'v');
 
         public static bool Silent { get; set; }
-        static string[] QuietArgs = { "/q", "-q", "/quiet", "-quiet", "--quiet" };
+        static string[] QuietArgs = CreateArgs("quiet", withFlag:'q');
 
-        static string[] SourceArgs = { "/s", "-s", "/source", "-source", "--source" };
+        static string[] SourceArgs = CreateArgs("source", withFlag:'s');
 
         public static bool ForceApproval { get; set; }
-        static string[] ForceArgs = { "/f", "-f", "/force", "-force", "--force" };
+        static string[] ForceArgs = CreateArgs("force", withFlag:'f');
 
         public static bool IgnoreSslErrors { get; set; }
         private static string[] IgnoreSslErrorsArgs = {"/ignore-ssl-errors", "--ignore-ssl-errors"};
 
-        static string[] NameArgs = { "/name", "-name", "--name" };
+        static string[] NameArgs = CreateArgs("name");
 
-        static string[] DeleteArgs = { "/delete", "-delete", "--delete" };
-        static string[] ReplaceArgs = { "/replace", "-replace", "--replace" };
+        static string[] DeleteArgs = CreateArgs("delete");
+        static string[] ReplaceArgs = CreateArgs("replace");
 
         static string[] HelpArgs = { "/help", "--help", "-help", "?" };
 
-        static string[] OutArgs = { "/out", "-out", "--out" };
+        static string[] OutArgs = CreateArgs("out");
+
+        public static string[] CreateArgs(string name, char? withFlag = null) => withFlag != null
+            ? new [] {"/" + withFlag, "-" + withFlag, "/" + name, "-" + name, "--" + name}
+            : new [] {"/" + name, "-" + name, "--" + name};
 
         public static string OutDir { get; set; }
         
@@ -250,7 +254,7 @@ namespace Web
 
         public static bool ApplyGists(string tool, string[] gistAliases, string projectName = null)
         {
-            projectName = projectName ?? new DirectoryInfo(Environment.CurrentDirectory).Name;
+            projectName ??= new DirectoryInfo(Environment.CurrentDirectory).Name;
             var links = GetGistApplyLinks();
             
             gistAliases = ResolveGistAliases(gistAliases, links);
@@ -280,7 +284,7 @@ namespace Web
 
         public static void DeleteGists(string tool, string[] gistAliases, string projectName)
         {
-            projectName = projectName ?? new DirectoryInfo(Environment.CurrentDirectory).Name;
+            projectName ??= new DirectoryInfo(Environment.CurrentDirectory).Name;
             var links = GetGistApplyLinks();
             
             gistAliases = ResolveGistAliases(gistAliases, links);

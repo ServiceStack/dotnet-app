@@ -120,10 +120,13 @@ namespace Web
         }
 
         public static bool? DebugMode { get; set; }
-        static string[] DebugArgs = { "/d", "-d", "/debug", "-debug" , "--debug" };
-        static string[] ReleaseArgs = { "/r", "-r", "/release", "-release", "--release" };
+        static string[] DebugArgs = CreateArgs("debug", withFlag:'d');
+        static string[] ReleaseArgs = CreateArgs("release", withFlag:'c');
         
-        static string[] TokenArgs = { "/token", "-token", "--token" };
+        static string[] TokenArgs = CreateArgs("token");
+        
+        static string[] PathArgs = CreateArgs("path");
+        public static string PathArg { get; set; }
 
         public static string RunScript { get; set; }
         public static bool WatchScript { get; set; }
@@ -988,6 +991,13 @@ namespace Web
                 return true;
             }
 
+            if (PathArgs.Contains(arg))
+            {
+                PathArg = args[i + 1];
+                i++;
+                return true;
+            }
+
             return false;
         }
 
@@ -1411,7 +1421,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         var filePath = GetDtoTypesFilePath(target, dtosExt, fileName);
 
                         var typesUrl = target.IndexOf($"/types/{lang}", StringComparison.Ordinal) == -1
-                            ? target.CombineWith($"/types/{lang}")
+                            ? string.IsNullOrEmpty(PathArg) 
+                                ? target.CombineWith($"/types/{lang}")
+                                : target.CombineWith(PathArg)
                             : target;
 
                         SaveReference(tool, lang, typesUrl, filePath);
@@ -1980,6 +1992,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             var options = new Dictionary<string,string>();
             var baseUrl = "";
+            var usePath = "";
 
             existingRefSrc = existingRefSrc.Substring(startPos);
             var lines = existingRefSrc.Replace("\r","").Split('\n');
@@ -1999,6 +2012,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (line.StartsWith("BaseUrl: ")) 
                 {
                     baseUrl = line.Substring("BaseUrl: ".Length);
+                } 
+                else if (line.StartsWith("UsePath: ")) 
+                {
+                    usePath = line.Substring("UsePath: ".Length);
                 } 
                 else if (!string.IsNullOrEmpty(baseUrl)) 
                 {
@@ -2023,7 +2040,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 qs += $"{key}={options[key].UrlEncode()}";
             }
 
-            var typesUrl = baseUrl.CombineWith($"/types/{lang}") + qs;
+            var updateUrl = string.IsNullOrEmpty(usePath)
+                ? baseUrl.CombineWith($"/types/{lang}")
+                : baseUrl.CombineWith(usePath);
+
+            var typesUrl = updateUrl + qs;
             SaveReference(tool, lang, typesUrl, existingRefPath);
         }
 
