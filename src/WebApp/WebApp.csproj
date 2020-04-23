@@ -75,6 +75,7 @@
     <PackageReference Include="ServiceStack.Aws" Version="5.*" />
     <PackageReference Include="ServiceStack.Azure" Version="5.*" />
     <PackageReference Include="ServiceStack.Api.OpenApi" Version="5.*" />
+    <PackageReference Include="ServiceStack.Desktop" Version="5.*" />
 
     <PackageReference Include="ServiceStack.CefGlue" Version="5.*" />
     <PackageReference Include="WinApi" Version="4.*" />

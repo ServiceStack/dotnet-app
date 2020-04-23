@@ -200,10 +200,10 @@ namespace ServiceStack.CefGlue
         const int LOGPIXELSY = 90;
 
         [DllImport("user32.dll")]
-        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
         [DllImport("user32.dll")]
-        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
         
         [DllImport("user32.dll", SetLastError=true)]
         static extern int CloseWindow (IntPtr hWnd);        

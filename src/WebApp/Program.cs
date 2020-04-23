@@ -10,23 +10,36 @@ using Microsoft.Win32;
 using ServiceStack;
 using ServiceStack.CefGlue;
 using ServiceStack.Text;
+using Xilium.CefGlue;
 
 namespace Web
 {
     public class Program
     {
-        private static readonly bool AppDebug = Environment.GetEnvironmentVariable("APP_DEBUG") == "1";
+        private static readonly bool AppDebug = Environment.GetEnvironmentVariable("APP_DEBUG") == "1" && false;
+        public static bool FromScheme;
         public static async Task<int> Main(string[] cmdArgs)
         {
             try
             {
+                Startup.AppVersion = $"Chromium: {CefRuntime.ChromeVersion}";
+                
                 var firstArg = cmdArgs.FirstOrDefault();
                 if (firstArg?.StartsWith("app:") == true || firstArg?.StartsWith("sharp:") == true || firstArg?.StartsWith("xapp:") == true)
                 {
+                    FromScheme = true;
                     var cmds = firstArg.ConvertUrlSchemeToCommands();
                     if (AppDebug)
                         MessageBox(0, cmdArgs.Join("|") + " => " + cmds.ToArray().Join("|"), "app args", 0);
                     cmdArgs = cmds.ToArray();
+                    
+                    if (!AppDebug)
+                    {
+                        Console.Title = "Sharp Apps Launcher - " + (cmds.FirstOrDefault() ?? Guid.NewGuid().ToString().Substring(0,5));
+                        var hWnd = CefPlatformWindows.FindWindow(null, Console.Title);
+                        if (hWnd != IntPtr.Zero)
+                            CefPlatformWindows.ShowWindow(hWnd, 0);
+                    }
                 }
                 else
                 {
@@ -130,7 +143,7 @@ namespace Web
                     if (cefSettings is Dictionary<string, object> objDictionary)
                         objDictionary.PopulateInstance(config.CefSettings);
                 }
-
+                
                 return CefPlatformWindows.Start(config);
             }
             catch (Exception ex)

@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -31,6 +30,7 @@ using ServiceStack.Redis;
 using ServiceStack.OrmLite;
 using ServiceStack.Configuration;
 using ServiceStack.Azure.Storage;
+using ServiceStack.Desktop;
 using ServiceStack.Html;
 using ServiceStack.Script;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
@@ -1559,6 +1559,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     $"ServiceStack: {Env.VersionString}".Print();
                     $"Framework: {RuntimeInformation.FrameworkDescription}".Print();
                     $"OS: {Environment.OSVersion}".Print();
+                    AppVersion?.Print();
                 }
                 else if (new[] { "/clean", "/clear" }.Contains(cmd))
                 {
@@ -2398,6 +2399,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             { 
                 appHost.Config.DebugMode = GetDebugMode();
                 appHost.Config.ForbiddenPaths.Add("/plugins");
+                appHost.Config.EmbeddedResourceBaseTypes.Add(typeof(DesktopAssets));
     
                 var feature = appHost.GetPlugin<SharpPagesFeature>();
                 if (feature != null)

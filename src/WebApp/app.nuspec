@@ -108,6 +108,7 @@
         <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.CefGlue.dll" target="tools\netcoreapp3.1\any\ServiceStack.CefGlue.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Client.dll" target="tools\netcoreapp3.1\any\ServiceStack.Client.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Common.dll" target="tools\netcoreapp3.1\any\ServiceStack.Common.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Desktop.dll" target="tools\netcoreapp3.1\any\ServiceStack.Desktop.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Interfaces.dll" target="tools\netcoreapp3.1\any\ServiceStack.Interfaces.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.MySql.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.MySql.dll" />
@@ -183,7 +184,6 @@
         <file src="$cefdir$\libGLESv2.dll" target="tools\netcoreapp3.1\any\libGLESv2.dll" />
         <file src="$cefdir$\libcef.dll" target="tools\netcoreapp3.1\any\libcef.dll" />
         <file src="$cefdir$\libcef.lib" target="tools\netcoreapp3.1\any\libcef.lib" />
-        <file src="$cefdir$\natives_blob.bin" target="tools\netcoreapp3.1\any\natives_blob.bin" />
         <file src="$cefdir$\snapshot_blob.bin" target="tools\netcoreapp3.1\any\snapshot_blob.bin" />
         <file src="$cefdir$\v8_context_snapshot.bin" target="tools\netcoreapp3.1\any\v8_context_snapshot.bin" />
         <file src="$cefdir$\locales\am.pak" target="tools\netcoreapp3.1\any\locales\am.pak" />
