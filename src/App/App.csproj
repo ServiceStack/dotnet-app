@@ -25,6 +25,7 @@
     <LangVersion>latest</LangVersion>
     <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>-->
     <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
+    <RootNamespace>WebApp</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
