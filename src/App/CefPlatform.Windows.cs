@@ -7,10 +7,31 @@ using Xilium.CefGlue;
 using WinApi.Windows;
 using ServiceStack.CefGlue.Win64;
 using ServiceStack.Text;
+using Web;
 using WinApi.User32;
+using Xilium.CefGlue.Wrapper;
 
 namespace ServiceStack.CefGlue
 {
+    public class WebCefMessageRouterHandler : CefMessageRouterBrowserSide.Handler
+    {
+        private CefPlatformWindows app;
+        public WebCefMessageRouterHandler(CefPlatformWindows app)
+        {
+            this.app = app;
+        }
+
+        public override bool OnQuery(CefBrowser browser, CefFrame frame, long queryId, string request, bool persistent, CefMessageRouterBrowserSide.Callback callback)
+        {
+            return base.OnQuery(browser, frame, queryId, request, persistent, callback);
+        }
+
+        public override void OnQueryCanceled(CefBrowser browser, CefFrame frame, long queryId)
+        {
+            base.OnQueryCanceled(browser, frame, queryId);
+        }
+    }
+    
     public sealed class CefPlatformWindows : CefPlatform
     {
         private static CefPlatformWindows provider;
@@ -65,11 +86,28 @@ namespace ServiceStack.CefGlue
                 config.WindowTitle,
                 constructionParams: new FrameWindowConstructionParams()))
             {
+                
+                foreach (var scheme in config.Schemes)
+                {
+                    CefRuntime.RegisterSchemeHandlerFactory(scheme.Scheme, scheme.Domain, new CefProxySchemeHandlerFactory(scheme));
+                    if (scheme.AllowCors && scheme.Domain != null)
+                    {
+                        CefRuntime.AddCrossOriginWhitelistEntry(config.StartUrl, scheme.TargetScheme ?? scheme.Scheme, scheme.Domain, true);
+                    }
+                }
+
+                foreach (var schemeFactory in config.SchemeFactories)
+                {
+                    CefRuntime.RegisterSchemeHandlerFactory(schemeFactory.Scheme, schemeFactory.Domain, schemeFactory.Factory);
+                    if (schemeFactory.AddCrossOriginWhitelistEntry)
+                        CefRuntime.AddCrossOriginWhitelistEntry(config.StartUrl, schemeFactory.Scheme, schemeFactory.Domain, true);
+                }
+                
                 if (config.Verbose)
                 {
-                    Console.WriteLine($"GetScreenResolution: {res.Width}x{res.Height}, scale:{scaleFactor}, {(int) (scaleFactor * res.Width)}x{(int) (scaleFactor * res.Width)}");
+                    Console.WriteLine(@$"GetScreenResolution: {res.Width}x{res.Height}, scale:{scaleFactor}, {(int) (scaleFactor * res.Width)}x{(int) (scaleFactor * res.Width)}");
                     var rect = Instance.GetClientRectangle(window.Handle);
-                    Console.WriteLine($"GetClientRectangle:  [{rect.Top},{rect.Left}] [{rect.Bottom},{rect.Right}], scale: [{(int)(rect.Bottom * scaleFactor)},{(int)(rect.Right * scaleFactor)}]");
+                    Console.WriteLine(@$"GetClientRectangle:  [{rect.Top},{rect.Left}] [{rect.Bottom},{rect.Right}], scale: [{(int)(rect.Bottom * scaleFactor)},{(int)(rect.Right * scaleFactor)}]");
                 }
                 
                 if (config.CenterToScreen)

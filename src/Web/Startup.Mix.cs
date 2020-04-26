@@ -22,7 +22,7 @@ namespace Web
         public static string GistLinksId { get; set; } = "9b32b03f207a191099137429051ebde8";
 
         public static bool Verbose { get; set; }
-        static string[] VerboseArgs = CreateArgs("verbose", withFlag:'v');
+        public static string[] VerboseArgs = CreateArgs("verbose", withFlag:'v');
 
         public static bool Silent { get; set; }
         static string[] QuietArgs = CreateArgs("quiet", withFlag:'q');

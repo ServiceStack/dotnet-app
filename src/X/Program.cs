@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using ServiceStack;
+using ServiceStack.Desktop;
 
 namespace Web
 {
@@ -10,6 +11,9 @@ namespace Web
     {
         public static async Task Main(string[] cmdArgs)
         {
+            DesktopConfig.Instance.Tool = "x";
+            DesktopConfig.Instance.ToolVersion = Startup.GetVersion();
+            
             try
             {
                 var firstArg = cmdArgs.FirstOrDefault();

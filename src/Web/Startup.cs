@@ -6,6 +6,7 @@ using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -19,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Funq;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NUglify;
 using ServiceStack;
@@ -32,8 +34,8 @@ using ServiceStack.Configuration;
 using ServiceStack.Azure.Storage;
 using ServiceStack.Desktop;
 using ServiceStack.Html;
+using ServiceStack.Logging;
 using ServiceStack.Script;
-using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 namespace Web
 {
@@ -53,7 +55,11 @@ namespace Web
 
         public IWebHostBuilder Builder { get; set; }
         public IAppSettings AppSettings { get; set; }
-        public IWebHost Build() => Builder.Build();
+        public IWebHost Build()
+        {
+            AppLoader.Init(AppDir);
+            return Builder.Build();
+        }
 
         public string GetDebugString() => new Dictionary<string, object>
         {
@@ -101,7 +107,7 @@ namespace Web
         public bool Ok { get; set; }
     }
 
-    public partial class Startup
+    public partial class Startup : ModularStartup
     {
         public static WebAppEvents Events { get; set; }
 
@@ -120,8 +126,8 @@ namespace Web
         }
 
         public static bool? DebugMode { get; set; }
-        static string[] DebugArgs = CreateArgs("debug", withFlag:'d');
-        static string[] ReleaseArgs = CreateArgs("release", withFlag:'c');
+        public static string[] DebugArgs = CreateArgs("debug", withFlag:'d');
+        public static string[] ReleaseArgs = CreateArgs("release", withFlag:'c');
         
         static string[] TokenArgs = CreateArgs("token");
         
@@ -136,7 +142,7 @@ namespace Web
 
         public static bool Open { get; set; }
         
-        public static string ToolFavIcon = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "favicon.ico");
+        public static string ToolFavIcon = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "favicon.ico");
 
         public static GistVirtualFiles GistVfs;
         public static Task<Gist> GistVfsTask;
@@ -253,7 +259,7 @@ namespace Web
                             if (File.Exists(gistFile))
                             {
                                 if (Verbose) $"Loading GistVirtualFiles from: {gistFile}".Print();
-                                var gistJson = File.ReadAllText(gistFile);
+                                var gistJson = await File.ReadAllTextAsync(gistFile);
                                 var gist = gistJson.FromJson<Gist>();
                                 GistVfs = new GistVirtualFiles(gist);
                                 GistVfsTask = GistVfs.GetGistAsync(); // fire to load asynchronously
@@ -386,7 +392,7 @@ namespace Web
                     {
                         InstallRepo(gistLink.Url.EndsWith(".zip") 
                                 ? gistLink.Url 
-                                : GitHubUtils.Gateway.GetSourceZipUrl(gistLink.User, gistLink.Repo), 
+                                : await GitHubUtils.Gateway.GetSourceZipUrlAsync(gistLink.User, gistLink.Repo), 
                             target);
                     }
 
@@ -582,7 +588,7 @@ namespace Web
             }
 
             var appSettingsContent = File.Exists(appSettingsPath)
-                ? File.ReadAllText(appSettingsPath)
+                ? await File.ReadAllTextAsync(appSettingsPath)
                 : null;
 
             if (GistVfsTask != null)
@@ -604,7 +610,7 @@ namespace Web
                 {
                     appSettingsPath = Path.Combine(appDir, "app.settings");
                     appSettingsContent = File.Exists(appSettingsPath)
-                        ? File.ReadAllText(appSettingsPath)
+                        ? await File.ReadAllTextAsync(appSettingsPath)
                         : $"debug false{Environment.NewLine}name {gist.Description ?? "Gist App"}{Environment.NewLine}";
                 }
             }
@@ -627,7 +633,7 @@ namespace Web
             if (appSettingsContent == null && RunScript == null)
             {
                 appSettingsContent = usingWebSettings 
-                    ? File.ReadAllText(appSettingsPath)
+                    ? await File.ReadAllTextAsync(appSettingsPath)
                     : "debug false";
             }
             
@@ -637,7 +643,7 @@ namespace Web
             if (RunScript != null)
             {
                 var context = new ScriptContext().Init();
-                var page = OneTimePage(context, File.ReadAllText(RunScript));
+                var page = OneTimePage(context, await File.ReadAllTextAsync(RunScript));
                 if (page.Args.Count > 0)
                     appSettings = new DictionarySettings(page.Args.ToStringDictionary());
             }
@@ -647,8 +653,10 @@ namespace Web
                 new EnvironmentVariableSettings());
 
             var bind = "bind".GetAppSetting("localhost");
-            var port = "port".GetAppSetting(defaultValue: "5000");
-            var useUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? $"http://{bind}:{port}/";
+            var ssl = "ssl".GetAppSetting(defaultValue: true);
+            var port = "port".GetAppSetting(defaultValue: ssl ? "5001" : "5000");
+            var scheme = ssl ? "https" : "http";
+            var useUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? $"{scheme}://{bind}:{port}/";
             ctx.UseUrls = useUrls;
             ctx.StartUrl = useUrls.Replace("://*", "://localhost");
             ctx.DebugMode = GetDebugMode();
@@ -708,7 +716,7 @@ namespace Web
                 string description = null;
                 string appName = null;
                 var sb = new StringBuilder();
-                foreach (var line in File.ReadAllLines("app.settings"))
+                foreach (var line in await File.ReadAllLinesAsync("app.settings"))
                 {
                     sb.AppendLine(line);
                     if (line.StartsWith("description") || (line.StartsWith("name ") && string.IsNullOrEmpty(description)))
@@ -748,7 +756,7 @@ namespace Web
                         : gist.Html_Url;
 
                     sb.AppendLine("publish " + htmlUrl);
-                    File.WriteAllText("app.settings", sb.ToString());
+                    await File.WriteAllTextAsync("app.settings", sb.ToString());
                     
                     if (appName != null && gist.Url != null)
                     {
@@ -837,7 +845,7 @@ namespace Web
                         ex = ex.UnwrapIfSingleException();
                         if (ex is StopFilterExecutionException)
                         {
-                            $"{ErrorPrefix} {ex.InnerException.Message}".Print();
+                            $"{ErrorPrefix} {ex.InnerException?.Message}".Print();
                             return;
                         }
 
@@ -861,6 +869,7 @@ namespace Web
                 
                 RegisterStat(tool, RunScript, WatchScript ? "watch" : "run");
                 var (contentRoot, useWebRoot) = GetDirectoryRoots(ctx);
+                AppLoader.Init(contentRoot);
                 var builder = new WebHostBuilder()
                     .UseFakeServer()
                     .UseSetting(WebHostDefaults.SuppressStatusMessagesKey, "True")
@@ -875,7 +884,7 @@ namespace Web
                             config.SetMinimumLevel(LogLevel.None);
                         }
                     })
-                    .UseStartup<Startup>();
+                    .UseModularStartup<Startup>();
 
                 using (var webHost = builder.Build())
                 {
@@ -1163,7 +1172,7 @@ namespace Web
             }
         }
 
-        private static bool GetDebugMode() => DebugMode ?? "debug".GetAppSetting(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Production");
+        public static bool GetDebugMode() => DebugMode ?? "debug".GetAppSetting(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Production");
 
         public static void CreateShortcut(string filePath, string targetPath, string arguments, string workingDirectory, string iconPath, WebAppContext ctx)
         {
@@ -1173,9 +1182,12 @@ namespace Web
             }
             else
             {
-                filePath = Path.Combine(Path.GetDirectoryName(filePath), new DefaultScripts().generateSlug(Path.GetFileName(filePath)));
+                filePath = Path.Combine(Path.GetDirectoryName(filePath)!, new DefaultScripts().generateSlug(Path.GetFileName(filePath)));
                 var cmd = filePath + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".bat" : ".sh");
 
+                if (ctx == null) 
+                    return;
+                
                 var openBrowserCmd = string.IsNullOrEmpty(ctx?.StartUrl) || targetPath.EndsWith(".exe") ? "" : 
                     (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                         ? $"start {ctx.StartUrl}"
@@ -1238,7 +1250,7 @@ namespace Web
             var builder = WebHost.CreateDefaultBuilder(ctx.Arguments)
                 .UseContentRoot(contentRoot)
                 .UseWebRoot(useWebRoot)
-                .UseStartup<Startup>()
+                .UseModularStartup<Startup>()
                 .ConfigureLogging(config =>
                 {
                     if (!GetDebugMode() && !Verbose &&
@@ -1607,7 +1619,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     RegisterStat(tool, fileName, "get");
                     // checkUpdatesAndQuit = beginCheckUpdates();
 
-                    var bytes = url.GetBytesFromUrl(requestFilter: req => {
+                    var bytes = await url.GetBytesFromUrlAsync(requestFilter: req => {
                         req.UserAgent = GitHubUtils.UserAgent;
                     }, responseFilter: res => {
                         var disposition = res.Headers[HttpHeaders.ContentDisposition];
@@ -1634,7 +1646,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             ? Path.Combine(OutDir, fileName)
                             : OutDir;
                     }
-                    File.WriteAllBytes(Path.GetFullPath(fileName), bytes);
+                    await File.WriteAllBytesAsync(Path.GetFullPath(fileName), bytes);
                     return new Instruction { Command = "get", Handled = true };
                 }
             }
@@ -1684,7 +1696,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         repo = repo.RightPart('/');
                     }
                 
-                    downloadUrl = GitHubUtils.Gateway.GetSourceZipUrl(fullRepo.Item1, fullRepo.Item2);
+                    downloadUrl = await GitHubUtils.Gateway.GetSourceZipUrlAsync(fullRepo.Item1, fullRepo.Item2);
                     $"Installing {repo}...".Print();
                 }
                 else
@@ -1701,7 +1713,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
                 var installDir = Path.GetFullPath(repo);
 
-                var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent?.FullName, projectName));
+                var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent!.FullName, projectName));
                 DeleteDirectory(projectDir.FullName);
                 MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
 
@@ -1922,11 +1934,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {
 #if !NETCORE3
                 var handler = new Http2CustomHandler();
-                using (var client = new HttpClient(handler))
-                {
-                    var res = TaskExt.RunSync(async () => await client.GetAsync(typesUrl));
-                    dtosSrc = res.Content.ReadAsStringAsync().Result;
-                }
+                using var client = new HttpClient(handler);
+                var res = TaskExt.RunSync(async () => await client.GetAsync(typesUrl));
+                dtosSrc = res.Content.ReadAsStringAsync().Result;
 #else
                 AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
                 var req = new HttpRequestMessage(HttpMethod.Get, typesUrl) {
@@ -1956,7 +1966,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         var rawUrl = BaseProtoBufNetRawUrl.CombineWith(protoFileName);
                         var protoContents = rawUrl.GetStringFromUrl();
 
-                        var dirPath = Path.Combine(Path.GetDirectoryName(filePath), "protobuf-net");
+                        var dirPath = Path.Combine(Path.GetDirectoryName(filePath)!, "protobuf-net");
                         if (!Directory.Exists(dirPath))
                             Directory.CreateDirectory(dirPath);
 
@@ -2168,155 +2178,37 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             "".Print();
         }
 
-        IHostingEnvironment env;
-        public Startup(IHostingEnvironment env) => this.env = env;
-
-        IPlugin[] plugins;
-        IPlugin[] Plugins 
+        IConfiguration configuration;
+        public Startup(IConfiguration configuration)
+            : base(configuration, AppLoader.Assemblies)
         {
-            get
-            {
-                if (plugins != null)
-                    return plugins;
-
-                var features = "features".GetAppSetting();
-                if (features != null)
-                {
-                    var featureTypes = features.Split(',').Map(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
-
-                    featureTypes.Remove(nameof(SharpPagesFeature)); //already added
-                    var featureIndex = featureTypes.ToArray();
-                    var registerPlugins = new IPlugin[featureTypes.Count];
-
-                    foreach (var type in appHost.ScanAllTypes())
-                    {
-                        if (featureTypes.Count == 0)
-                            break;
-
-                        if (featureTypes.Contains(type.Name))
-                        {
-                            registerPlugins[Array.IndexOf(featureIndex, type.Name)] = type.CreatePlugin();
-                            featureTypes.Remove(type.Name);
-                        }
-                    }
-
-                    //Register any wildcard plugins at end
-                    const string AllRemainingPlugins = "plugins/*";
-                    if (featureTypes.Count == 1 && featureTypes[0] == AllRemainingPlugins)
-                    {
-                        var remainingPlugins = new List<IPlugin>();
-                        foreach (var type in appHost.ServiceAssemblies.SelectMany(x => x.GetTypes()))
-                        {
-                            if (type.HasInterface(typeof(IPlugin)) && registerPlugins.All(x => x?.GetType() != type))
-                            {
-                                var plugin = type.CreatePlugin();
-                                remainingPlugins.Add(plugin);
-                            }
-                        }
-                        $"Registering wildcard plugins: {remainingPlugins.Map(x => x.GetType().Name).Join(", ")}".Print(); 
-                        featureTypes.Remove(AllRemainingPlugins);
-                        if (remainingPlugins.Count > 0)
-                        {
-                            var mergedPlugins = new List<IPlugin>(registerPlugins.Where(x => x != null));
-                            mergedPlugins.AddRange(remainingPlugins);
-                            registerPlugins = mergedPlugins.ToArray();
-                        }
-                    }
-
-                    if (featureTypes.Count > 0)
-                    {
-                        var plural = featureTypes.Count > 1 ? "s" : "";
-                        throw new NotSupportedException($"Unable to locate plugin{plural}: " + string.Join(", ", featureTypes));
-                    }
-
-                    return plugins = registerPlugins;
-                }
-
-                return null;
-            }
+            this.configuration = configuration;
         }
 
-        AppHostBase appHost;
-        AppHostBase AppHost
+        public new void ConfigureServices(IServiceCollection services) 
         {
-            get
-            {
-                if (appHost != null)
-                    return appHost;
-
-                WebTemplateUtils.VirtualFiles = new FileSystemVirtualFiles(env.ContentRootPath);
-
-                var assemblies = new List<Assembly>();
-                var filesConfig = "files.config".GetAppSetting();               
-                var vfs = "files".GetAppSetting().GetVirtualFiles(config:filesConfig);
-                var pluginsDir = (vfs ?? WebTemplateUtils.VirtualFiles).GetDirectory("plugins")
-                    ?? GistVfs?.GetDirectory("plugins");
-                if (pluginsDir != null)
-                {
-                    var plugins = pluginsDir.GetFiles();
-                    foreach (var plugin in plugins)
-                    {
-                        if (plugin.Extension != "dll" && plugin.Extension != "exe")
-                            continue;
-
-                        var dllBytes = plugin.ReadAllBytes();
-                        $"Attempting to load plugin '{plugin.VirtualPath}', size: {dllBytes.Length} bytes".Print();
-                        var asm = Assembly.Load(dllBytes);
-                        assemblies.Add(asm);
-
-                        if (appHost == null)
-                        {
-                            foreach (var type in asm.GetTypes())
-                            {
-                                if (typeof(AppHostBase).IsAssignableFrom(type))
-                                {
-                                    $"Using AppHost from Plugin '{plugin.VirtualPath}'".Print();
-                                    appHost = type.CreateInstance<AppHostBase>();
-                                    appHost.AppSettings = WebTemplateUtils.AppSettings;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (appHost == null)
-                    appHost = new AppHost();
-
-                WebTemplateUtils.AppHost = appHost;
-
-                if (assemblies.Count > 0)
-                    assemblies.Each(x => appHost.ServiceAssemblies.AddIfNotExists(x));
-
-                if (vfs != null)
-                    appHost.AddVirtualFileSources.Add(vfs);
-
-                if (vfs is IVirtualFiles writableFs)
-                    appHost.VirtualFiles = writableFs;
-                    
-                return appHost;
-            }
-        }
-
-        public void ConfigureServices(IServiceCollection services) 
-        {
-            var appHost = AppHost;
-            var plugins = Plugins;
+            var appHost = AppLoader.AppHost;
+            var plugins = AppLoader.Plugins;
             plugins?.Each(x => services.AddSingleton(x.GetType(), x));
 
             services.AddSingleton<ServiceStackHost>(appHost);
 
-            plugins?.OfType<IStartup>().Each(x => x.ConfigureServices(services));
-            plugins?.OfType<IConfigureServices>().Each(x => x.Configure(services));
+            // plugins?.OfType<IStartup>().Each(x => x.ConfigureServices(services));
+            // plugins?.OfType<IConfigureServices>().Each(x => x.Configure(services));
 
             appHost.Configure(services);
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+#if NETCOREAPP2_1
+        public void Configure(IApplicationBuilder app, Microsoft.AspNetCore.Hosting.IHostingEnvironment env)
+#else
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+#endif
         {
-            plugins?.OfType<IStartup>().Each(x => x.Configure(app));
-            plugins?.OfType<IConfigureApp>().Each(x => x.Configure(app));
+            // plugins?.OfType<IStartup>().Each(x => x.Configure(app));
+            // plugins?.OfType<IConfigureApp>().Each(x => x.Configure(app));
 
+            var appHost = AppLoader.AppHost;
             appHost.BeforeConfigure.Add(ConfigureAppHost);
 
             if (GistVfs != null)
@@ -2332,14 +2224,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         });
                     }
                     var svgDir = GistVfs.GetDirectory("/svg");
-                    if (svgDir != null) Svg.Load(svgDir);
+                    if (svgDir != null) 
+                        Svg.Load(svgDir);
                 });
             }
             else
             {
                 appHost.AfterInitCallbacks.Add(item: _ => {
                     var svgDir = appHost.RootDirectory.GetDirectory("/svg"); 
-                    if (svgDir != null) Svg.Load(svgDir);
+                    if (svgDir != null) 
+                        Svg.Load(svgDir);
                 });
             }
             
@@ -2490,7 +2384,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
     
                 appHost.Plugins.Add(feature);
     
-                IPlugin[] registerPlugins = Plugins;
+                IPlugin[] registerPlugins = AppLoader.Plugins;
                 if (registerPlugins != null)
                 {
                     foreach (var plugin in registerPlugins)
@@ -2522,6 +2416,154 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
             }
         }
+    }
+    
+    public static class AppLoader
+    {
+        private static string ContentRootPath;
+        public static Assembly[] Assemblies => AppHost.ServiceAssemblies.ToArray();
+        
+        static IPlugin[] plugins;
+        public static IPlugin[] Plugins => plugins ?? throw new Exception("Plugins not Loaded yet");
+
+        static AppHostBase appHost;
+        public static AppHostBase AppHost => appHost ?? throw new Exception("AppHost not loaded yet");
+            
+        public static void Init(string contentRootPath)
+        {
+            if (Startup.GetDebugMode() && Startup.Verbose)
+                LogManager.LogFactory = new ConsoleLogFactory(debugEnabled: true);
+            
+            ContentRootPath = contentRootPath;
+            InitAppHost();
+
+            if (Startup.Verbose)
+                ($"StartupAssemblies: " + AppHost.ServiceAssemblies.Map(x => x.GetType().FullName).Join(", ")).Print();
+            
+            InitPlugins();
+        }
+
+        static void InitPlugins()
+        {
+            if (plugins != null)
+                throw new Exception("Plugins already initialized");
+            
+            var features = "features".GetAppSetting();
+            if (features != null)
+            {
+                var featureTypes = features.Split(',').Map(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+
+                featureTypes.Remove(nameof(SharpPagesFeature)); //already added
+                var featureIndex = featureTypes.ToArray();
+                var registerPlugins = new IPlugin[featureTypes.Count];
+
+                foreach (var type in appHost.ScanAllTypes())
+                {
+                    if (featureTypes.Count == 0)
+                        break;
+
+                    if (featureTypes.Contains(type.Name))
+                    {
+                        registerPlugins[Array.IndexOf(featureIndex, type.Name)] = type.CreatePlugin();
+                        featureTypes.Remove(type.Name);
+                    }
+                }
+
+                //Register any wildcard plugins at end
+                const string AllRemainingPlugins = "plugins/*";
+                if (featureTypes.Count == 1 && featureTypes[0] == AllRemainingPlugins)
+                {
+                    var remainingPlugins = new List<IPlugin>();
+                    foreach (var type in appHost.ServiceAssemblies.SelectMany(x => x.GetTypes()))
+                    {
+                        if (type.HasInterface(typeof(IPlugin)) && registerPlugins.All(x => x?.GetType() != type))
+                        {
+                            var plugin = type.CreatePlugin();
+                            remainingPlugins.Add(plugin);
+                        }
+                    }
+                    $"Registering wildcard plugins: {remainingPlugins.Map(x => x.GetType().Name).Join(", ")}".Print(); 
+                    featureTypes.Remove(AllRemainingPlugins);
+                    if (remainingPlugins.Count > 0)
+                    {
+                        var mergedPlugins = new List<IPlugin>(registerPlugins.Where(x => x != null));
+                        mergedPlugins.AddRange(remainingPlugins);
+                        registerPlugins = mergedPlugins.ToArray();
+                    }
+                }
+
+                if (featureTypes.Count > 0)
+                {
+                    var plural = featureTypes.Count > 1 ? "s" : "";
+                    throw new NotSupportedException($"Unable to locate plugin{plural}: " + string.Join(", ", featureTypes));
+                }
+
+                plugins = registerPlugins;
+            }
+            plugins = new IPlugin[0];
+        }
+
+        static void InitAppHost()
+        {
+            if (appHost != null)
+                throw new Exception("AppHost already initialized");
+            
+            RegisterKey();
+            WebTemplateUtils.VirtualFiles = new FileSystemVirtualFiles(ContentRootPath);
+
+            var assemblies = new List<Assembly>();
+            var filesConfig = "files.config".GetAppSetting();               
+            var vfs = "files".GetAppSetting().GetVirtualFiles(config:filesConfig);
+            var pluginsDir = (vfs ?? WebTemplateUtils.VirtualFiles).GetDirectory("plugins")
+                ?? Startup.GistVfs?.GetDirectory("plugins");
+            if (pluginsDir != null)
+            {
+                var pluginDllFiles = pluginsDir.GetFiles();
+                foreach (var plugin in pluginDllFiles)
+                {
+                    if (plugin.Extension != "dll" && plugin.Extension != "exe")
+                        continue;
+
+                    var dllBytes = plugin.ReadAllBytes();
+                    $"Attempting to load plugin '{plugin.VirtualPath}', size: {dllBytes.Length} bytes".Print();
+                    var asm = Assembly.Load(dllBytes);
+                    assemblies.Add(asm);
+
+                    if (appHost == null)
+                    {
+                        foreach (var type in asm.GetTypes())
+                        {
+                            if (typeof(AppHostBase).IsAssignableFrom(type))
+                            {
+                                $"Using AppHost from Plugin '{plugin.VirtualPath}'".Print();
+                                appHost = type.CreateInstance<AppHostBase>();
+                                appHost.AppSettings = WebTemplateUtils.AppSettings;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (appHost == null)
+                appHost = new AppHost();
+
+            WebTemplateUtils.AppHost = appHost;
+
+            if (assemblies.Count > 0)
+            {
+                assemblies.Each(x => appHost.ServiceAssemblies.AddIfNotExists(x));
+            }
+  
+            if (vfs != null)
+                appHost.AddVirtualFileSources.Add(vfs);
+
+            if (vfs is IVirtualFiles writableFs)
+                appHost.VirtualFiles = writableFs;
+        }
+
+        public static void RegisterKey() => Licensing.RegisterLicense(
+            "1001-e1JlZjoxMDAxLE5hbWU6VGVzdCBCdXNpbmVzcyxUeXBlOkJ1c2luZXNzLEhhc2g6UHVNTVRPclhvT2ZIbjQ5MG5LZE1mUTd5RUMzQnBucTFEbTE3TDczVEF4QUNMT1FhNXJMOWkzVjFGL2ZkVTE3Q2pDNENqTkQyUktRWmhvUVBhYTBiekJGUUZ3ZE5aZHFDYm9hL3lydGlwUHI5K1JsaTBYbzNsUC85cjVJNHE5QVhldDN6QkE4aTlvdldrdTgyTk1relY2eis2dFFqTThYN2lmc0JveHgycFdjPSxFeHBpcnk6MjAxMy0wMS0wMX0=");
     }
 
     public class FakeServer : IServer {

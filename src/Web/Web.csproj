@@ -17,6 +17,7 @@
     <PackageProjectUrl>https://github.com/ServiceStack/dotnet-app</PackageProjectUrl>
     <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
     <LangVersion>preview</LangVersion>
+    <DefineConstants>$(DefineConstants);NETCOREAPP2_1</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
