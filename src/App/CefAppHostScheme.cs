@@ -202,9 +202,10 @@ namespace WebApp
             if (Startup.Verbose) 
                 Console.WriteLine(e);
             responseStatus = 500;
-            responseStatusText = e.GetType().Name + ": " + e.Message;
+            responseStatusText = e.GetType().Name;
             responseContentType = MimeTypes.PlainText;
             responseMemoryBytes = MemoryProvider.Instance.ToUtf8(e.ToString());
+            contentLength = responseMemoryBytes.Length;
             callback.Continue();
         }
 
