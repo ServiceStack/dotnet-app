@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ServiceStack;
 using ServiceStack.Script;
 using ServiceStack.Text;
+using Web;
 using Xilium.CefGlue;
 
 namespace WebApp
@@ -115,43 +116,70 @@ namespace WebApp
                         setOutput(new PageResult(appHost.ScriptContext.SharpScriptPage(script)));
                         
                     else if (method.EqualsIgnoreCase(nameof(ScriptCodeUtils.EvaluateCode)))
-                        setResult(appHost.ScriptContext.EvaluateCode(script));
+                        setResult(appHost.ScriptContext.EvaluateCode(ScriptCodeUtils.EnsureReturn(script)));
                     else if (method.EqualsIgnoreCase(nameof(ScriptCodeUtils.RenderCode)))
                         setOutput(new PageResult(appHost.ScriptContext.CodeSharpPage(script)));
                         
                     else if (method.EqualsIgnoreCase(nameof(ScriptLispUtils.EvaluateLisp)))
-                        setResult(appHost.ScriptContext.EvaluateLisp(script));
+                        setResult(appHost.ScriptContext.EvaluateLisp(ScriptLispUtils.EnsureReturn(script)));
                     else if (method.EqualsIgnoreCase(nameof(ScriptLispUtils.RenderLisp)))
                         setOutput(new PageResult(appHost.ScriptContext.LispSharpPage(script)));
 
                     if (responseContentType != null)
                         return true;
 
+                    async Task setResultAsync(Task<object> valueTask, string resultType=" result")
+                    {
+                        try
+                        {
+                            responseContentType = MimeTypes.Json;
+                            ms = MemoryStreamFactory.GetStream();
+                            JsonSerializer.SerializeToStream(await valueTask, ms);
+                            responseMemoryBytes = ms.GetBufferAsMemory();
+                            contentLength = responseMemoryBytes.Length;
+                        
+                            responseStatus = 200;
+                            responseStatusText = method + resultType;
+                            callback.Continue();
+                        }
+                        catch (Exception e)
+                        {
+                            HandleException(callback, e);
+                        }
+                    }
+                    
                     async Task setOutputAsync(PageResult result)
                     {
-                        responseContentType = MimeTypes.PlainText;
-                        ms = MemoryStreamFactory.GetStream();
-                        await result.RenderToStreamAsync(ms);
-                        responseMemoryBytes = ms.GetBufferAsMemory();
-                        contentLength = responseMemoryBytes.Length;
+                        try
+                        {
+                            responseContentType = MimeTypes.PlainText;
+                            ms = MemoryStreamFactory.GetStream();
+                            await result.RenderToStreamAsync(ms);
+                            responseMemoryBytes = ms.GetBufferAsMemory();
+                            contentLength = responseMemoryBytes.Length;
 
-                        responseStatus = 200;
-                        responseStatusText = method + " async result";
-                        callback.Continue();
+                            responseStatus = 200;
+                            responseStatusText = method + " async result";
+                            callback.Continue();
+                        }
+                        catch (Exception e)
+                        {
+                            HandleException(callback, e);
+                        }
                     }
 
                     if (method.EqualsIgnoreCase(nameof(ScriptTemplateUtils.EvaluateScriptAsync)))
-                        Task.Run(async () => setResult(await appHost.ScriptContext.EvaluateAsync(script), " async result"));
+                        Task.Run(async () => await setResultAsync(appHost.ScriptContext.EvaluateAsync(script), " async result"));
                     else if (method.EqualsIgnoreCase(nameof(ScriptTemplateUtils.RenderScriptAsync)))
                         Task.Run(async () => await setOutputAsync(new PageResult(appHost.ScriptContext.SharpScriptPage(script))));
 
                     else if (method.EqualsIgnoreCase(nameof(ScriptCodeUtils.EvaluateCodeAsync)))
-                        Task.Run(async () => setResult(await appHost.ScriptContext.EvaluateCodeAsync(script), " async result"));
+                        Task.Run(async () => await setResultAsync(appHost.ScriptContext.EvaluateCodeAsync(ScriptCodeUtils.EnsureReturn(script)), " async result"));
                     else if (method.EqualsIgnoreCase(nameof(ScriptCodeUtils.RenderCodeAsync)))
                         Task.Run(async () => await setOutputAsync(new PageResult(appHost.ScriptContext.CodeSharpPage(script))));
 
                     else if (method.EqualsIgnoreCase(nameof(ScriptLispUtils.EvaluateLispAsync)))
-                        Task.Run(async () => setResult(await appHost.ScriptContext.EvaluateLispAsync(script), " async result"));
+                        Task.Run(async () => await setResultAsync(appHost.ScriptContext.EvaluateLispAsync(ScriptLispUtils.EnsureReturn(script)), " async result"));
                     else if (method.EqualsIgnoreCase(nameof(ScriptLispUtils.RenderLispAsync)))
                         setOutput(new PageResult(appHost.ScriptContext.LispSharpPage(script)));
                     else throw new NotSupportedException($"Unsupported script API '{method}', supported: " +
@@ -164,15 +192,20 @@ namespace WebApp
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                responseStatus = 500;
-                responseStatusText = e.GetType().Name;
-                responseContentType = MimeTypes.PlainText;
-                responseMemoryBytes = MemoryProvider.Instance.ToUtf8(e.ToString());
-                
-                callback.Continue();
+                HandleException(callback, e);
                 return true;
             }
+        }
+
+        private void HandleException(CefCallback callback, Exception e)
+        {
+            if (Startup.Verbose) 
+                Console.WriteLine(e);
+            responseStatus = 500;
+            responseStatusText = e.GetType().Name + ": " + e.Message;
+            responseContentType = MimeTypes.PlainText;
+            responseMemoryBytes = MemoryProvider.Instance.ToUtf8(e.ToString());
+            callback.Continue();
         }
 
         protected override void GetResponseHeaders(CefResponse response, out long responseLength, out string redirectUrl)
