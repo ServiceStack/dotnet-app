@@ -180,11 +180,11 @@ namespace Web
                         SchemeOptions = CefSchemeOptions.Secure | CefSchemeOptions.CorsEnabled | CefSchemeOptions.CspBypassing | CefSchemeOptions.FetchEnabled,
                         ResolveUrl = url => {
                             var hostAndPath = url.RightPart("://").RightPart('/'); //https://cors/^...
-                            var host = hostAndPath.LeftPart('/');
-                            var port = host.IndexOf(':') >= 0 ? host.RightPart(':') : null;
-                            var scheme = port == "80" ? "http" : "https";
-                            var useUrl = scheme + "://" + host.LeftPart(':') + "/" + hostAndPath.RightPart('/');
-                            return useUrl;
+                            var targetHost = hostAndPath.LeftPart('/');
+                            var targetPort = targetHost.IndexOf(':') >= 0 ? targetHost.RightPart(':') : null;
+                            var targetScheme = targetPort == "80" ? "http" : "https";
+                            var targetUrl = targetScheme + "://" + targetHost.LeftPart(':') + "/" + hostAndPath.RightPart('/');
+                            return targetUrl;
                         },
                     };
                     allowCors(corsScheme, config.StartUrl);
