@@ -18,6 +18,8 @@
     </metadata>
     <files>
         <file src="obj\DotnetToolSettings.xml" target="tools\netcoreapp3.1\any\DotnetToolSettings.xml" />
+        <file src="bin\Release\netcoreapp3.1\publish\global.json" target="tools\netcoreapp3.1\any\global.json" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimeconfig.template.json" target="tools\netcoreapp3.1\any\runtimeconfig.template.json" />
         <file src="bin\Release\netcoreapp3.1\publish\favicon.ico" target="tools\netcoreapp3.1\any\favicon.ico" />
         <file src="bin\Release\netcoreapp3.1\publish\app.dll" target="tools\netcoreapp3.1\any\app.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\app.deps.json" target="tools\netcoreapp3.1\any\app.deps.json" />
@@ -29,95 +31,31 @@
         <file src="bin\Release\netcoreapp3.1\publish\AWSSDK.SQS.dll" target="tools\netcoreapp3.1\any\AWSSDK.SQS.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\BouncyCastle.Crypto.dll" target="tools\netcoreapp3.1\any\BouncyCastle.Crypto.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Google.Protobuf.dll" target="tools\netcoreapp3.1\any\Google.Protobuf.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\K4os.Compression.LZ4.dll" target="tools\netcoreapp3.1\any\K4os.Compression.LZ4.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\K4os.Compression.LZ4.Streams.dll" target="tools\netcoreapp3.1\any\K4os.Compression.LZ4.Streams.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\K4os.Hash.xxHash.dll" target="tools\netcoreapp3.1\any\K4os.Hash.xxHash.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Markdig.dll" target="tools\netcoreapp3.1\any\Markdig.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Authentication.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Authentication.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Authentication.Core.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Authentication.Core.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Connections.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Connections.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Cryptography.Internal.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Cryptography.Internal.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Diagnostics.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Diagnostics.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Diagnostics.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Diagnostics.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.HostFiltering.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.HostFiltering.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Hosting.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Hosting.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Hosting.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Hosting.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Hosting.Server.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Hosting.Server.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Http.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Http.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Http.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Http.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Http.Extensions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Http.Extensions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Http.Features.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Http.Features.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.HttpOverrides.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.HttpOverrides.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Routing.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Routing.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Routing.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Routing.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Server.IIS.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Server.IIS.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Server.IISIntegration.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Server.IISIntegration.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Server.Kestrel.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Server.Kestrel.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Server.Kestrel.Core.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Server.Kestrel.Core.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Server.Kestrel.Https.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Server.Kestrel.Https.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.AspNetCore.WebUtilities.dll" target="tools\netcoreapp3.1\any\Microsoft.AspNetCore.WebUtilities.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Azure.Amqp.dll" target="tools\netcoreapp3.1\any\Microsoft.Azure.Amqp.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Azure.Management.ServiceBus.dll" target="tools\netcoreapp3.1\any\Microsoft.Azure.Management.ServiceBus.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Azure.ServiceBus.dll" target="tools\netcoreapp3.1\any\Microsoft.Azure.ServiceBus.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Azure.Services.AppAuthentication.dll" target="tools\netcoreapp3.1\any\Microsoft.Azure.Services.AppAuthentication.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Data.Sqlite.dll" target="tools\netcoreapp3.1\any\Microsoft.Data.Sqlite.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Configuration.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Configuration.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Configuration.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Configuration.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Configuration.Binder.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Configuration.Binder.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Configuration.CommandLine.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Configuration.CommandLine.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Configuration.EnvironmentVariables.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Configuration.EnvironmentVariables.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Configuration.FileExtensions.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Configuration.FileExtensions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Configuration.Json.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Configuration.Json.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Configuration.UserSecrets.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Configuration.UserSecrets.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.DependencyInjection.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.DependencyInjection.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.DependencyInjection.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.FileProviders.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.FileProviders.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.FileProviders.Physical.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.FileProviders.Physical.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.FileSystemGlobbing.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.FileSystemGlobbing.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Hosting.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Hosting.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Logging.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Logging.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Logging.Abstractions.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Logging.Abstractions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Logging.Configuration.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Logging.Configuration.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Logging.Console.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Logging.Console.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Logging.Debug.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Logging.Debug.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Logging.EventSource.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Logging.EventSource.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.ObjectPool.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.ObjectPool.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Options.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Options.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Options.ConfigurationExtensions.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Options.ConfigurationExtensions.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Extensions.Primitives.dll" target="tools\netcoreapp3.1\any\Microsoft.Extensions.Primitives.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" target="tools\netcoreapp3.1\any\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" target="tools\netcoreapp3.1\any\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.IdentityModel.JsonWebTokens.dll" target="tools\netcoreapp3.1\any\Microsoft.IdentityModel.JsonWebTokens.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.IdentityModel.Logging.dll" target="tools\netcoreapp3.1\any\Microsoft.IdentityModel.Logging.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.IdentityModel.Tokens.dll" target="tools\netcoreapp3.1\any\Microsoft.IdentityModel.Tokens.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Net.Http.Headers.dll" target="tools\netcoreapp3.1\any\Microsoft.Net.Http.Headers.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Rest.ClientRuntime.dll" target="tools\netcoreapp3.1\any\Microsoft.Rest.ClientRuntime.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Rest.ClientRuntime.Azure.dll" target="tools\netcoreapp3.1\any\Microsoft.Rest.ClientRuntime.Azure.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Win32.SystemEvents.dll" target="tools\netcoreapp3.1\any\Microsoft.Win32.SystemEvents.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\MySql.Data.dll" target="tools\netcoreapp3.1\any\MySql.Data.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\Ubiety.Dns.Core.dll" target="tools\netcoreapp3.1\any\Ubiety.Dns.Core.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\Zstandard.Net.dll" target="tools\netcoreapp3.1\any\Zstandard.Net.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\NetCoreEx.BinaryExtensions.dll" target="tools\netcoreapp3.1\any\NetCoreEx.BinaryExtensions.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\NetCoreEx.Geometry.dll" target="tools\netcoreapp3.1\any\NetCoreEx.Geometry.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Newtonsoft.Json.dll" target="tools\netcoreapp3.1\any\Newtonsoft.Json.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Npgsql.dll" target="tools\netcoreapp3.1\any\Npgsql.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\NUglify.dll" target="tools\netcoreapp3.1\any\NUglify.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.dll" target="tools\netcoreapp3.1\any\ServiceStack.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Api.OpenApi.dll" target="tools\netcoreapp3.1\any\ServiceStack.Api.OpenApi.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Aws.dll" target="tools\netcoreapp3.1\any\ServiceStack.Aws.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Azure.dll" target="tools\netcoreapp3.1\any\ServiceStack.Azure.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.CefGlue.dll" target="tools\netcoreapp3.1\any\ServiceStack.CefGlue.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Client.dll" target="tools\netcoreapp3.1\any\ServiceStack.Client.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Common.dll" target="tools\netcoreapp3.1\any\ServiceStack.Common.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Desktop.dll" target="tools\netcoreapp3.1\any\ServiceStack.Desktop.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Interfaces.dll" target="tools\netcoreapp3.1\any\ServiceStack.Interfaces.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.MySql.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.MySql.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.PostgreSQL.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.PostgreSQL.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.Sqlite.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.Sqlite.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.SqlServer.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.SqlServer.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Redis.dll" target="tools\netcoreapp3.1\any\ServiceStack.Redis.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Server.dll" target="tools\netcoreapp3.1\any\ServiceStack.Server.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Text.dll" target="tools\netcoreapp3.1\any\ServiceStack.Text.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\SQLitePCLRaw.batteries_v2.dll" target="tools\netcoreapp3.1\any\SQLitePCLRaw.batteries_v2.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\SQLitePCLRaw.nativelibrary.dll" target="tools\netcoreapp3.1\any\SQLitePCLRaw.nativelibrary.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\SQLitePCLRaw.core.dll" target="tools\netcoreapp3.1\any\SQLitePCLRaw.core.dll" />
@@ -129,20 +67,34 @@
         <file src="bin\Release\netcoreapp3.1\publish\System.Data.SQLite.dll" target="tools\netcoreapp3.1\any\System.Data.SQLite.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Drawing.Common.dll" target="tools\netcoreapp3.1\any\System.Drawing.Common.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.IdentityModel.Tokens.Jwt.dll" target="tools\netcoreapp3.1\any\System.IdentityModel.Tokens.Jwt.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\System.IO.Pipelines.dll" target="tools\netcoreapp3.1\any\System.IO.Pipelines.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Net.Http.WinHttpHandler.dll" target="tools\netcoreapp3.1\any\System.Net.Http.WinHttpHandler.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\System.Resources.Extensions.dll" target="tools\netcoreapp3.1\any\System.Resources.Extensions.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\System.Private.ServiceModel.dll" target="tools\netcoreapp3.1\any\System.Private.ServiceModel.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\System.Security.Cryptography.Pkcs.dll" target="tools\netcoreapp3.1\any\System.Security.Cryptography.Pkcs.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Security.Cryptography.ProtectedData.dll" target="tools\netcoreapp3.1\any\System.Security.Cryptography.ProtectedData.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\System.Security.Permissions.dll" target="tools\netcoreapp3.1\any\System.Security.Permissions.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.ServiceModel.Primitives.dll" target="tools\netcoreapp3.1\any\System.ServiceModel.Primitives.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.ServiceModel.dll" target="tools\netcoreapp3.1\any\System.ServiceModel.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Xml.XPath.XmlDocument.dll" target="tools\netcoreapp3.1\any\System.Xml.XPath.XmlDocument.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\WinApi.dll" target="tools\netcoreapp3.1\any\WinApi.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.WindowsAzure.Storage.dll" target="tools\netcoreapp3.1\any\Microsoft.WindowsAzure.Storage.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-x64\nativeassets\netcoreapp2.2\aspnetcorev2_inprocess.dll" target="tools\netcoreapp3.1\any\runtimes\win-x64\nativeassets\netcoreapp2.2\aspnetcorev2_inprocess.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-x86\nativeassets\netcoreapp2.2\aspnetcorev2_inprocess.dll" target="tools\netcoreapp3.1\any\runtimes\win-x86\nativeassets\netcoreapp2.2\aspnetcorev2_inprocess.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netcoreapp2.0\Microsoft.Win32.SystemEvents.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netcoreapp2.0\System.Drawing.Common.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netcoreapp2.0\System.Drawing.Common.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Api.OpenApi.dll" target="tools\netcoreapp3.1\any\ServiceStack.Api.OpenApi.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Aws.dll" target="tools\netcoreapp3.1\any\ServiceStack.Aws.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Azure.dll" target="tools\netcoreapp3.1\any\ServiceStack.Azure.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.CefGlue.dll" target="tools\netcoreapp3.1\any\ServiceStack.CefGlue.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Client.dll" target="tools\netcoreapp3.1\any\ServiceStack.Client.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Common.dll" target="tools\netcoreapp3.1\any\ServiceStack.Common.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Desktop.dll" target="tools\netcoreapp3.1\any\ServiceStack.Desktop.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.dll" target="tools\netcoreapp3.1\any\ServiceStack.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Interfaces.dll" target="tools\netcoreapp3.1\any\ServiceStack.Interfaces.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.MySql.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.MySql.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.PostgreSQL.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.PostgreSQL.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.Sqlite.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.Sqlite.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.OrmLite.SqlServer.dll" target="tools\netcoreapp3.1\any\ServiceStack.OrmLite.SqlServer.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Redis.dll" target="tools\netcoreapp3.1\any\ServiceStack.Redis.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Server.dll" target="tools\netcoreapp3.1\any\ServiceStack.Server.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Text.dll" target="tools\netcoreapp3.1\any\ServiceStack.Text.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netcoreapp3.0\Microsoft.Win32.SystemEvents.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netcoreapp3.0\Microsoft.Win32.SystemEvents.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-arm64\native\sni.dll" target="tools\netcoreapp3.1\any\runtimes\win-arm64\native\sni.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-arm64\native\e_sqlite3.dll" target="tools\netcoreapp3.1\any\runtimes\win-arm64\native\e_sqlite3.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-x64\native\sni.dll" target="tools\netcoreapp3.1\any\runtimes\win-x64\native\sni.dll" />
@@ -160,15 +112,18 @@
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-arm\native\e_sqlite3.dll" target="tools\netcoreapp3.1\any\runtimes\win-arm\native\e_sqlite3.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\netcoreapp3.1\any\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netcoreapp2.1\System.Security.Cryptography.Pkcs.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netcoreapp2.1\System.Security.Cryptography.Pkcs.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\linux-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp3.1\any\runtimes\linux-x64\native\netstandard2.0\SQLite.Interop.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimes\linux-x64\native\netstandard2.1\SQLite.Interop.dll" target="tools\netcoreapp3.1\any\runtimes\linux-x64\native\netstandard2.1\SQLite.Interop.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\osx-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp3.1\any\runtimes\osx-x64\native\netstandard2.0\SQLite.Interop.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimes\osx-x64\native\netstandard2.1\SQLite.Interop.dll" target="tools\netcoreapp3.1\any\runtimes\osx-x64\native\netstandard2.1\SQLite.Interop.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp3.1\any\runtimes\win-x64\native\netstandard2.0\SQLite.Interop.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-x64\native\netstandard2.1\SQLite.Interop.dll" target="tools\netcoreapp3.1\any\runtimes\win-x64\native\netstandard2.1\SQLite.Interop.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-x86\native\netstandard2.0\SQLite.Interop.dll" target="tools\netcoreapp3.1\any\runtimes\win-x86\native\netstandard2.0\SQLite.Interop.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\runtimes\unix\lib\netcoreapp2.0\System.Drawing.Common.dll" target="tools\netcoreapp3.1\any\runtimes\unix\lib\netcoreapp2.0\System.Drawing.Common.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win-x86\native\netstandard2.1\SQLite.Interop.dll" target="tools\netcoreapp3.1\any\runtimes\win-x86\native\netstandard2.1\SQLite.Interop.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll" target="tools\netcoreapp3.1\any\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netstandard2.0\System.Net.Http.WinHttpHandler.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netstandard2.0\System.Net.Http.WinHttpHandler.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netstandard2.0\System.Private.ServiceModel.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netstandard2.0\System.Private.ServiceModel.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" target="tools\netcoreapp3.1\any\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" />
-        <file src="bin\Release\netcoreapp3.1\publish\runtimes\unix\lib\netstandard2.0\System.Private.ServiceModel.dll" target="tools\netcoreapp3.1\any\runtimes\unix\lib\netstandard2.0\System.Private.ServiceModel.dll" />
 
         <file src="$cefdir$\cef.pak" target="tools\netcoreapp3.1\any\cef.pak" />
         <file src="$cefdir$\cef_100_percent.pak" target="tools\netcoreapp3.1\any\cef_100_percent.pak" />
