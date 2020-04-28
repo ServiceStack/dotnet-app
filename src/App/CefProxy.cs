@@ -48,7 +48,10 @@ namespace Web
         {
             try
             {
-                var url = (config.TargetScheme ?? "https") + "://" + request.Url.RightPart("://");
+                var url = config.ResolveUrl != null
+                    ? config.ResolveUrl(request.Url)
+                    : (config.TargetScheme ?? "https") + "://" + request.Url.RightPart("://");
+                
                 var webReq = (HttpWebRequest) WebRequest.Create(url);
                 webReq.Method = request.Method;
 

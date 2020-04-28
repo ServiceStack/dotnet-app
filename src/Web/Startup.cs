@@ -6,7 +6,6 @@ using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -85,8 +84,6 @@ namespace Web
         public Action<string> OpenBrowser { get; set; }
         public Action<WebAppContext> HandleUnknownCommand { get; set; }
         public Action<WebAppContext> RunNetCoreProcess { get; set; }
-        
-        public Func<DialogOptions,DialogResult> SelectFolder { get; set; }
     }
     
     public class DialogOptions
@@ -111,6 +108,7 @@ namespace Web
     {
         public static WebAppEvents Events { get; set; }
 
+        public static Func<IAppHost, AppHostInstructions> GetAppHostInstructions { get; set; }
         public static string GitHubSource { get; set; } = "sharp-apps Sharp Apps";
         public static string GitHubSourceTemplates { get; set; } = "NetCoreTemplates .NET Core C# Templates;NetFrameworkTemplates .NET Framework C# Templates;NetFrameworkCoreTemplates ASP.NET Core Framework Templates";
 
@@ -136,7 +134,10 @@ namespace Web
 
         public static string RunScript { get; set; }
         public static bool WatchScript { get; set; }
-        
+
+        public static bool GistNew { get; set; }
+        public static bool GistUpdate { get; set; }
+
         public static Dictionary<string, object> RunScriptArgs = new Dictionary<string, object>();
         public static List<string> RunScriptArgV = new List<string>();
 
@@ -184,10 +185,12 @@ namespace Web
             string runProcess = null;
             var runSharpApp = false;
             var runLispRepl = false;
+            
             var appSettingPaths = new[]
             {
                 "app.settings", "../app/app.settings", "app/app.settings",
             };
+            
             for (var i = 0; i < args.Length; i++)
             {
                 var arg = args[i];
@@ -216,6 +219,16 @@ namespace Web
                 if (arg == "lisp")
                 {
                     runLispRepl = runSharpApp = true;
+                    continue;
+                }
+                if (arg == "gist-new")
+                {
+                    GistNew = true;
+                    continue;
+                }
+                if (arg == "gist-update")
+                {
+                    GistUpdate = true;
                     continue;
                 }
                 if (arg == "publish")
@@ -461,35 +474,6 @@ namespace Web
                     "   --out <dir>                     Save generated gRPC language sources to <dir>".Print();
                     return null;
                 }
-                
-//                if (arg == "openfolder")
-//                {
-//                    if (Events.SelectFolder != null)
-//                    {
-//                        var result = Events.SelectFolder(new DialogOptions {
-//                            Title = "Select a Folder",
-//                            InitialDir = "c:\\src",
-//                            IsFolderPicker = true,
-//                            Filter = "Folder only\0$$$.$$$\0\0",
-//                            //DefaultExt = "txt",
-//                            //Filter = "Log files\0*.log\0Batch files\0*.bat\0"
-//                        });
-//                        if (result.Ok)
-//                        {
-//                            result.FolderPath.Print();
-//                            result.FileTitle.Print();
-//                        }
-//                        else
-//                        {
-//                            $"No folder selected.".Print();
-//                        }
-//                    }
-//                    else
-//                    {
-//                        $"Events.OpenFolder == null".Print();
-//                    }
-//                    return null;
-//                }
                 dotnetArgs.Add(arg);
             }
 
@@ -507,6 +491,10 @@ namespace Web
                     $"Run Process: {runProcess}".Print();
                 if (createShortcut)
                     $"Create Shortcut {createShortcutFor}".Print();
+                if (GistNew)
+                    $"Command: gist-new".Print();
+                if (GistUpdate)
+                    $"Command: gist-update".Print();
                 if (publish)
                     $"Command: publish".Print();
                 if (publishExe)
@@ -701,16 +689,12 @@ namespace Web
                 if (!File.Exists("app.settings"))
                     throw new Exception($"No app.settings exists");
 
-                if (string.IsNullOrEmpty(GitHubToken))
-                {
-                    var CR = Environment.NewLine;
-                    throw new Exception($"GitHub Access Token required to publish App to Gist.{CR}" +
-                                        $"Specify Token with --token <token> or GITHUB_GIST_TOKEN Environment Variable.{CR}" + 
-                                        $"Generate Access Token at: https://github.com/settings/tokens");
-                }
+                AssertGitHubToken();
                 
                 var files = new Dictionary<string, object>();
-                Environment.CurrentDirectory.CopyAllToDictionary(files, excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray());
+                Environment.CurrentDirectory.CopyAllToDictionary(files, 
+                    excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray(),
+                    excludeExtensions:WebTemplateUtils.ExcludeFileExtensions.ToArray());
                 
                 string publishUrl = null;
                 string description = null;
@@ -947,6 +931,17 @@ namespace Web
             }
 
             return CreateWebAppContext(ctx);
+        }
+
+        private static void AssertGitHubToken()
+        {
+            if (string.IsNullOrEmpty(GitHubToken))
+            {
+                var CR = Environment.NewLine;
+                throw new Exception($"GitHub Access Token required to publish App to Gist.{CR}" +
+                                    $"Specify Token with --token <token> or GITHUB_GIST_TOKEN Environment Variable.{CR}" +
+                                    $"Generate Access Token at: https://github.com/settings/tokens");
+            }
         }
 
         private static bool ProcessFlags(string[] args, string arg, ref int i)
@@ -1191,7 +1186,7 @@ namespace Web
                 var openBrowserCmd = string.IsNullOrEmpty(ctx?.StartUrl) || targetPath.EndsWith(".exe") ? "" : 
                     (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                         ? $"start {ctx.StartUrl}"
-                        : RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                        : RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
                             ? $"open {ctx.StartUrl}"
                             : $"xdg-open {ctx.StartUrl}") + Environment.NewLine;
 
@@ -1447,7 +1442,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
                 return new Instruction { Handled = true };
             }
-
+            
             if (arg.StartsWith("proto-"))
             {
                 var lang = arg.RightPart('-');
@@ -1501,6 +1496,61 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else throw new Exception($"Could not find valid *.services.proto from '{target}'");
 
                 return new Instruction { Handled = true };
+            }
+
+            if (GistNew)
+            {
+                AssertGitHubToken();
+
+                var dirArg = args.Length == 1 ? args[0] : null;
+                if (dirArg == null || !Directory.Exists(dirArg))
+                    throw new Exception($"Usage: {tool} gist-new <dir>");
+                
+                var dirInfo = new DirectoryInfo(dirArg);
+                var files = new Dictionary<string, object>();
+                dirInfo.FullName.CopyAllToDictionary(files, 
+                    excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray(),
+                    excludeExtensions:WebTemplateUtils.ExcludeFileExtensions.ToArray());
+
+                if (files.Count == 0)
+                    throw new Exception("Directory contained no files to upload");
+
+                var gateway = new GitHubGateway(GitHubToken);
+
+                var gist = gateway.CreateGithubGist(
+                    dirInfo.Name + " files", 
+                    isPublic: true, 
+                    files: files);
+
+                var plural = files.Count == 1 ? "s" : "";
+                $"{files.Count} file{plural} uploaded to: {gist.Url}".Print();
+
+                return new Instruction { Handled = true };
+            }
+            else if (GistUpdate)
+            {
+                AssertGitHubToken();
+
+                var gistId = args.Length == 2 ? args[0] : null;
+                var dirArg = gistId != null ? args[1] : null;
+                if (dirArg == null || !Directory.Exists(dirArg))
+                    throw new Exception($"Usage: {tool} gist-update <gist-id> <dir>");
+
+                var gateway = new GitHubGateway(GitHubToken);
+
+                var dirInfo = new DirectoryInfo(dirArg);
+                var files = new Dictionary<string, object>();
+                dirInfo.FullName.CopyAllToDictionary(files, 
+                    excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray(),
+                    excludeExtensions:WebTemplateUtils.ExcludeFileExtensions.ToArray());
+                
+                if (files.Count == 0)
+                    throw new Exception("Directory contained no files to upload");
+
+                gateway.WriteGistFiles(gistId, files);
+
+                var plural = files.Count == 1 ? "s" : "";
+                $"Updated {files.Count}{plural} at: https://gist.github.com/{gistId}".Print();
             }
             
             if (args.Length == 1)
@@ -2214,8 +2264,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (GistVfs != null)
             {
                 appHost.InsertVirtualFileSources.Add(GistVfs);
-                appHost.AfterInitCallbacks.Add(item: _ => {
+            }
 
+            appHost.AfterInitCallbacks.Add(item: _ => {
+                
+                if (GistVfs != null)
+                {
                     GistVfsLoadTask?.GetResult();
                     if (Open)
                     {
@@ -2226,16 +2280,31 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     var svgDir = GistVfs.GetDirectory("/svg");
                     if (svgDir != null) 
                         Svg.Load(svgDir);
-                });
-            }
-            else
-            {
-                appHost.AfterInitCallbacks.Add(item: _ => {
+                }
+                else
+                {
                     var svgDir = appHost.RootDirectory.GetDirectory("/svg"); 
                     if (svgDir != null) 
                         Svg.Load(svgDir);
-                });
-            }
+                }
+
+                var appHostInstructions = GetAppHostInstructions?.Invoke(appHost);
+                var feature = appHost.AssertPlugin<SharpPagesFeature>();
+                var importParams =  appHostInstructions?.ImportParams ?? new List<string>(); //force explicit declaration of import params
+                if ("importParams".TryGetAppSetting(out var configParams))
+                    importParams.AddRange(configParams.Trim('[', ']').Split(','));
+
+                if (importParams.Count > 0)
+                {
+                    foreach (var entry in RunScriptArgs.Safe())
+                    {
+                        if (importParams.Contains(entry.Key))
+                        {
+                            feature.Args[entry.Key] = entry.Value;
+                        }
+                    }
+                }
+            });
             
             app.UseServiceStack(appHost);
         }
@@ -2307,8 +2376,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
 
                 feature.Args["ARGV"] = RunScriptArgV;
-                RunScriptArgs.Each(entry => feature.Args[entry.Key] = entry.Value);
-
+                
                 // Use ~/.servicestack/cache for all downloaded scripts
                 feature.CacheFiles = new FileSystemVirtualFiles(GetCacheDir());
                 feature.ScriptLanguages.Add(ScriptLisp.Language);
@@ -2381,6 +2449,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         ? JS.eval(value)
                         : value;
                 }
+                
+                ConfigureScript?.Invoke(feature);
     
                 appHost.Plugins.Add(feature);
     
@@ -2400,6 +2470,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 throw;
             }
         }
+        
+        public static Action<SharpPagesFeature> ConfigureScript { get; set; }
 
         public static void RetryExec(Action fn, int retryTimes=5)
         {
@@ -2926,7 +2998,14 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public static List<string> ExcludeFoldersNamed = new List<string>
         {
             ".git",
-            "publish"
+            "bin",
+            "obj",
+            "publish",
+            "GPUCache",
+        };
+        
+        public static List<string> ExcludeFileExtensions = new List<string> {
+            ".log"
         };
 
         public static void CopyAllTo(this string src, string dst, string[] excludePaths=null)
@@ -2977,7 +3056,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
         }
 
-        public static void CopyAllToDictionary(this string src, Dictionary<string, object> to, string[] excludePaths = null)
+        public static void CopyAllToDictionary(this string src, Dictionary<string, object> to, 
+            string[] excludePaths = null,
+            string[] excludeExtensions = null)
         {
             var d = Path.DirectorySeparatorChar;
             string VirtualPath(string filePath) => filePath.Substring(src.Length + 1);
@@ -2988,6 +3069,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     continue;
 
                 if (ExcludeFoldersNamed.Any(x => newPath.Contains($"{d}{x}{d}", StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                
+                if (excludeExtensions?.Length > 0 && excludeExtensions.Any(x => newPath.EndsWith(x)))
                     continue;
 
                 try
@@ -3018,7 +3102,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         {
             var hasQs = firstArg.IndexOf('?') >= 0;
             var qs = hasQs ? firstArg.RightPart('?') : null;
-            var cmds = new List<string> {"open", firstArg.RightPart(':').Trim('/').LeftPart('?')};
+            var cmds = new List<string> { "open", firstArg.RightPart(':').LeftPart('?').Trim('/') };
             if (!string.IsNullOrEmpty(qs))
             {
                 var nvc = PclExportClient.Instance.ParseQueryString(qs);
@@ -3031,8 +3115,65 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             return cmds;
         }
+
+        public static PostDataElement ParsePostDataElement(this ReadOnlySpan<char> dataElement)
+        {
+            dataElement = dataElement.TrimStart();
+            var boundary = dataElement.LeftPart("\r\n");
+            var rest = dataElement.RightPart("\r\n");
+            var to = new PostDataElement();
+
+            var startIndex = 0;
+            while (rest.TryReadLine(out var line, ref startIndex))
+            {
+                if (line.StartsWithIgnoreCase("Content-Disposition:"))
+                {
+                    to.Disposition = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    var disposition = line.AdvancePastChar(':');
+                    while (!disposition.IsEmpty)
+                    {
+                        var segment = disposition.LeftPart(';');
+                        if (to.Type == null)
+                        {
+                            to.Type = segment.Trim().ToString();
+                        }
+                        else
+                        {
+                            var key = segment.LeftPart('=');
+                            var value = segment.AdvancePastChar('=');
+                            value.ParseJsToken(out var token);
+                            value = token is JsLiteral literal ? literal.Value as string : null;
+                            to.Disposition[key.Trim().ToString()] = value.ToString();
+                        }
+
+                        disposition = disposition.AdvancePastChar(';');
+                    }
+                }
+            }
+
+            var bodyStartPos = dataElement.IndexOf("\r\n\r\n");
+            if (bodyStartPos == -1)
+                throw new ArgumentException("Invalid Body Start", nameof(dataElement));
+
+            var body = dataElement.Advance(bodyStartPos + 4);
+            var bodyEndPos = body.IndexOf(boundary);
+            if (bodyEndPos == -1)
+                throw new ArgumentException("Invalid Body End", nameof(dataElement));
+
+            to.Body = body.Slice(0, bodyEndPos - 2).ToString(); // /r/n
+
+            return to;
+        }
     }
-    
+
+    public class PostDataElement
+    {
+        public string Type { get; set; }
+        public string Body { get; set; }
+        public Dictionary<string,string> Disposition { get; set; }
+        public string Name => Disposition != null && Disposition.TryGetValue(nameof(Name), out var s) ? s : null;
+    }
+
     [Route("/sharp-apps/registry", "POST")]
     public class RegisterSharpApp : IReturn<RegisterSharpAppResponse>
     {

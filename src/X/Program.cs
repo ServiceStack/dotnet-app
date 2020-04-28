@@ -11,6 +11,9 @@ namespace Web
     {
         public static async Task Main(string[] cmdArgs)
         {
+            Startup.GetAppHostInstructions = _ => new AppHostInstructions {
+                ImportParams = DesktopConfig.Instance.ImportParams,
+            };
             DesktopConfig.Instance.Tool = "x";
             DesktopConfig.Instance.ToolVersion = Startup.GetVersion();
             

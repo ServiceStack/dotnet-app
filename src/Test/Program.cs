@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +8,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using NUnit.Framework;
 using ServiceStack;
+using ServiceStack.Desktop;
 using ServiceStack.IO;
+using ServiceStack.Script;
+using ServiceStack.Text;
 using Web;
 
 namespace Run
@@ -594,6 +598,49 @@ namespace Run
                 Console.WriteLine(e);
                 throw;
             }
+        }
+
+        [Test]
+        public async Task Can_run_studio_connect()
+        {
+            Directory.SetCurrentDirectory(@"C:\Source\wip\");
+            try 
+            {
+                Startup.GetAppHostInstructions = _ => new AppHostInstructions {
+                    ImportParams = DesktopConfig.Instance.ImportParams,
+                };
+                var host = (await Startup.CreateWebHost("x",
+                    new[] {"open", "studio", "-connect", "https://localhost:5001"}))?.Build();
+                host?.Run();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        [Test]
+        public void ParsePostData()
+        {
+            var formDataElement = @"
+------WebKitFormBoundaryZTA4w2lDeTVKtFy0
+Content-Disposition: form-data; name=""EvaluateCode""
+
+1 + 1
+------WebKitFormBoundaryZTA4w2lDeTVKtFy0--
+";
+            var el = formDataElement.AsSpan().ParsePostDataElement();
+            Assert.That(el.Type, Is.EqualTo("form-data"));
+            Assert.That(el.Name, Is.EqualTo("EvaluateCode"));
+            Assert.That(el.Body, Is.EqualTo("1 + 1"));
+        }
+
+        [Test]
+        public async Task Can_create_new_gist_from_dir()
+        {
+            //"web new aurelia-spa testproject --verbose"
+            await Startup.CreateWebHost("x", new[]{ "gist-new", @"C:\src\dotnet-app\src\Test\protos", "-token", Environment.GetEnvironmentVariable("GISTLYN_TOKEN") });
         }
 
     }

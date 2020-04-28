@@ -79,8 +79,10 @@ namespace WebApp
                                 _ => throw new NotSupportedException($"{firstEl.ElementType}")
                             };
 
-                            method = pathInfo.RightPart('/').LeftPart(pathInfo);
-                            script = MemoryProvider.Instance.FromUtf8(requestBytes).ToString();
+                            var webKitBoundary = MemoryProvider.Instance.FromUtf8(requestBytes);
+                            var postData = webKitBoundary.Span.ParsePostDataElement();
+                            method = postData.Name;
+                            script = postData.Body;
                         }
                     }
 

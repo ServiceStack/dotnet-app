@@ -19,6 +19,7 @@ namespace Web
     public partial class Startup
     {
         public static string AppVersion { get; set; }
+        
         public static string GistLinksId { get; set; } = "9b32b03f207a191099137429051ebde8";
 
         public static bool Verbose { get; set; }
@@ -1223,7 +1224,12 @@ namespace Web
                 
             webClient.DownloadFile(downloadUrl, fileName);
         }
+   }
 
+    public class AppHostInstructions
+    {
+        public List<string> ImportParams { get; set; }
     }
-    
+
+
 }
