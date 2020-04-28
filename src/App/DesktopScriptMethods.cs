@@ -27,6 +27,8 @@ namespace WebApp
             Instance ??= this;
         }
         
+        private static IntPtr WindowHandle => CefPlatformWindows.Provider.Window.Handle;
+
         public Dictionary<string,string> desktopInfo() => new Dictionary<string, string> {
             ["tool"] = DesktopConfig.Instance.Tool,
             ["toolVersion"] = DesktopConfig.Instance.ToolVersion,
@@ -42,13 +44,13 @@ namespace WebApp
         public bool sendToForeground(string windowName)
         {
             var handle = windowName == "browser"
-                ? CefPlatformWindows.Provider.Window.Handle
+                ? WindowHandle
                 : IntPtr.Zero;
             if (handle != IntPtr.Zero)
                 return SetForegroundWindow(handle);
             return false;
         }
-        
+
         public static Process OpenBrowser(string url)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -64,21 +66,44 @@ namespace WebApp
             ? path
             : Environment.ExpandEnvironmentVariables(path);
 
-        public DialogResult openFolder(Dictionary<string, object> options)
+        public DialogResult openFile(Dictionary<string, object> options)
         {
-            var dlgArgs = new OpenFileName {
-                hwndOwner = Process.GetCurrentProcess().MainWindowHandle,
+            var isFolderPicker = options.TryGetValue("isFolderPicker", out var oIsFolderPicker) && oIsFolderPicker is bool b && b;
 
-                Flags = options.TryGetValue("flags", out var oFlags) ? Convert.ToInt32(oFlags) : default,
-                lpstrTitle = options.TryGetValue("title", out var oTitle) ? oTitle as string : "Select a Folder",
-                lpstrFilter = options.TryGetValue("filter", out var oFilter) ? oFilter as string : "Folder only\0$$$.$$$\0\0",
-                lpstrInitialDir = options.TryGetValue("initialDir", out var oInitialDir) 
-                    ? expandEnvVars(oInitialDir as string)
-                    : Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                lpstrDefExt = options.TryGetValue("defaultExt", out var oDefaultExt) ? oDefaultExt as string : null,
-            };
+            string normalizeFilter(string filter) => !string.IsNullOrEmpty(filter)
+                ? filter.IndexOf('\0') >= 0
+                    ? filter
+                    : filter.Replace("|","\0") + "\0\0"
+                : isFolderPicker
+                    ? "Folder only\0$$$.$$$\0\0"
+                    : "All Files\0*.*\0\0"; 
+            
+            var dlgArgs = new OpenFileName();
+            dlgArgs.lStructSize = Marshal.SizeOf(dlgArgs);
+            dlgArgs.lpstrFile = new string(new char[256]);
+            dlgArgs.nMaxFile = dlgArgs.lpstrFile.Length;
+            dlgArgs.lpstrFileTitle = new string(new char[46]);
+            dlgArgs.nMaxFileTitle = dlgArgs.lpstrFileTitle.Length;
 
-            if (options.TryGetValue("isFolderPicker", out var oIsFolderPicker) && oIsFolderPicker is bool b && b)
+            dlgArgs.hwndOwner = WindowHandle;
+
+            dlgArgs.Flags = options.TryGetValue("flags", out var oFlags) ? Convert.ToInt32(oFlags) : 0x00080000;
+            dlgArgs.lpstrTitle = options.TryGetValue("title", out var oTitle) ? oTitle as string 
+                : isFolderPicker
+                    ? "Select a Folder"
+                    : "Open File Dialog...";
+            dlgArgs.lpstrFilter = normalizeFilter(options.TryGetValue("filter", out var oFilter) ? oFilter as string : null);
+            if (options.TryGetValue("filterIndex", out var oFilterIndex))
+                dlgArgs.nFilterIndex = Convert.ToInt32(oFilterIndex);
+            dlgArgs.lpstrInitialDir = options.TryGetValue("initialDir", out var oInitialDir)
+                ? expandEnvVars(oInitialDir as string)
+                : Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            if (options.TryGetValue("templateName", out var oTemplateName))
+                dlgArgs.lpTemplateName = oTemplateName as string;
+            if (options.TryGetValue("defaultExt", out var oDefaultExt))
+                dlgArgs.lpstrDefExt = oDefaultExt as string;
+
+            if (isFolderPicker)
             {
                 //HACK http://unafaltadecomprension.blogspot.com/2013/04/browsing-for-files-and-folders-c.html
                 dlgArgs.Flags |= (int) (FileOpenOptions.NoValidate | FileOpenOptions.PathMustExist);
@@ -87,10 +112,12 @@ namespace WebApp
 
             if (GetOpenFileName(dlgArgs))
             {
-                //var fileName = Marshal.PtrToStringAuto(dlgArgs.lpstrFile);
-                var fileName = dlgArgs.lpstrFile.Replace("Folder Selection", "");
+                var file = isFolderPicker
+                    ? dlgArgs.lpstrFile.Replace("Folder Selection", "")
+                    : dlgArgs.lpstrFile;
                 var ret = new DialogResult {
-                    FolderPath = fileName,
+                    File = file,
+                    FileTitle = dlgArgs.lpstrFileTitle,
                     Ok = true,
                 };
                 return ret;
@@ -99,12 +126,17 @@ namespace WebApp
             return new DialogResult();
         }
 
-        public string clip() => GetClipboardAsString();
+        public string clipboard() => GetClipboardAsString();
 
-        public IgnoreResult setClip(string data)
+        public IgnoreResult setClipboard(string data)
         {
             SetStringInClipboard(data);
             return IgnoreResult.Value;
+        }
+
+        public int messageBox(string text, string caption, uint type)
+        {
+            return MessageBox(0, text, caption, type);
         }
         
         //Message Box
@@ -273,10 +305,13 @@ namespace WebApp
         
         static void SetStringInClipboard(string text)
         {
-            EmptyClipboard();
+            TryOpenClipboard();
+            
             IntPtr hGlobal = default;
             try
             {
+                EmptyClipboard();
+
                 var bytes = (text.Length + 1) * 2;
                 hGlobal = Marshal.AllocHGlobal(bytes);
 
