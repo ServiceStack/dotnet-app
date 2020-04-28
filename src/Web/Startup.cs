@@ -98,7 +98,7 @@ namespace Web
 
     public class DialogResult
     {
-        public string FolderPath { get; set; }
+        public string File { get; set; }
         public string FileTitle { get; set; }
         
         public bool Ok { get; set; }
@@ -1284,6 +1284,7 @@ Usage:
   
   {tool} new                     List available Project Templates
   {tool} new <template> <name>   Create New Project From Template
+  {tool} download <repo>         Download latest GitHub Repo Release
 
   {tool} <lang>                  Update all ServiceStack References in directory (recursive)
   {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
@@ -1701,7 +1702,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
             }
             
-            if (arg == "new" && (args.Length == 2 || args.Length == 3))
+            if ((arg == "new" && (args.Length == 2 || args.Length == 3)) || (arg == "download" && args.Length == 2))
             {
                 var repo = args[1];
                 var parts = repo.Split('+');
@@ -1724,10 +1725,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     }
                 }
                 
-                var projectName = args.Length > 2 ? args[2] : args[1].SafeVarRef();
+                var projectName = arg == "download"
+                    ? args[1].LastRightPart('/')
+                    : args.Length > 2 ? args[2] : args[1].SafeVarRef();
                 AssertValidProjectName(projectName, tool);
 
-                RegisterStat(tool, repo, "new");
+                RegisterStat(tool, repo, arg);
 
                 var orgs = GitHubSourceTemplates.Split(';').Select(x => x.LeftPart(' ')).ToArray();
                 string downloadUrl = repo.IndexOf("://", StringComparison.OrdinalIgnoreCase) >= 0
@@ -1845,8 +1848,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         WriteGistFile(gistLink.Url, gistAlias, to:gistLink.To, projectName:projectName, getUserApproval:null);
                     }
                 }
+                if (arg != "download")
+                    $"{projectName} {repo} project created.".Print();
+                else
+                    $"{repo} project downloaded.".Print();
                 
-                $"{projectName} {repo} project created.".Print();
                 "".Print();
                 return new Instruction { Handled = true };
             }

@@ -601,6 +601,21 @@ namespace Run
         }
 
         [Test]
+        public async Task Can_download_repo()
+        {
+            Directory.SetCurrentDirectory(@"C:\Source\wip\");
+            try 
+            {
+                await Startup.CreateWebHost("x", new[]{ "download", "NetCoreApps/NorthwindCrud" });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        [Test]
         public async Task Can_run_studio_connect()
         {
             Directory.SetCurrentDirectory(@"C:\Source\wip\");
