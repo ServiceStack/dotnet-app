@@ -674,5 +674,19 @@ Content-Disposition: form-data; name=""EvaluateCode""
             var host = (await Startup.CreateWebHost("x", new string[0]))?.Build();
             host?.Run();
         }
+
+        [Test]
+        public async Task Can_Replace_Tokens()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            await Startup.CreateWebHost("x", new[] {
+                "mix", "autodto", 
+                "-replace", "DIALECT=postgresql", 
+                "-replace", "CONNECTION_STRING=\"" + Environment.GetEnvironmentVariable("TECHSTACKS_DB") + "\""  
+            });
+
+        }
+
+
     }
 }

@@ -1021,13 +1021,21 @@ namespace Web
                     
                     if (literal[0] != '=')
                         throw new Exception(InvalidUsage);
+
+                    literal = literal.Substring(1);
+                    var isEnvVar = literal.FirstCharEquals('$');
+                    if (isEnvVar)
+                        literal = literal.Substring(1);
                     
-                    literal = literal.Substring(1).AsSpan().ParseJsToken(out token).ToString();
+                    literal = literal.AsSpan().ParseJsToken(out token).ToString();
                     var with = token is JsIdentifier withId 
                         ? withId.Name
                         : token is JsLiteral withLiteral 
                             ? (string)withLiteral .Value
                             : throw new Exception(InvalidUsage);
+
+                    if (isEnvVar)
+                        with = "$" + with;
 
                     ReplaceTokens.Add(KeyValuePair.Create(term, with));
 
