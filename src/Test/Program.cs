@@ -652,6 +652,15 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public void Parse_scheme()
+        {
+            var firstArg = "app://studio?connect=https://localhost:5001&debug";
+            var cmds = firstArg.ConvertUrlSchemeToCommands();
+            cmds.Join(",").Print();
+            Assert.That(cmds, Is.EquivalentTo(new[]{ "open", "studio", "-connect", "https://localhost:5001", "-debug" }));
+        }
+
+        [Test]
         public async Task Can_create_new_gist_from_dir()
         {
             //"web new aurelia-spa testproject --verbose"

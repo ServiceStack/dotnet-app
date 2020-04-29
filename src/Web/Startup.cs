@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Funq;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NUglify;
@@ -3111,11 +3112,13 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             var cmds = new List<string> { "open", firstArg.RightPart(':').LeftPart('?').Trim('/') };
             if (!string.IsNullOrEmpty(qs))
             {
-                var nvc = PclExportClient.Instance.ParseQueryString(qs);
-                for (var i = 0; i < nvc.Count; i++)
+                var kvps = QueryHelpers.ParseQuery(qs);
+                foreach (var entry in kvps)
                 {
-                    cmds.Add("-" + nvc.GetKey(i));
-                    cmds.Add(nvc.Get(i));
+                    var values = entry.Value.ToArray().Join(",");
+                    cmds.Add("-" + entry.Key);
+                    if (!string.IsNullOrEmpty(values))
+                        cmds.Add(values);
                 }
             }
 

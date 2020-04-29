@@ -38,6 +38,10 @@ namespace Web
                 {
                     FromScheme = true;
                     var cmds = firstArg.ConvertUrlSchemeToCommands();
+                    
+                    if (cmds.Any(x => Startup.DebugArgs.Contains(x) && !cmdArgs.Any(x => Startup.VerboseArgs.Contains(x))))
+                        cmds.Add("-verbose");
+                    
                     cmdArgs = cmds.ToArray();
                     if (AppDebug)
                         DesktopScriptMethods.MessageBox(0, cmdArgs.Join(","), "cmdArgs", 0);
@@ -49,7 +53,7 @@ namespace Web
                     CreateRegistryEntryFor("xapp", "x.exe");
                 }
 
-                AppDebug = AppDebug || cmdArgs.Any(x => Startup.VerboseArgs.Contains(x));
+                AppDebug = AppDebug || cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
 
                 if (FromScheme && !AppDebug)
                 {
@@ -100,7 +104,7 @@ namespace Web
                 host.Build().StartAsync(cts.Token);
 #pragma warning restore 4014
 
-                var config = new CefConfig(host.DebugMode) {
+                var config = new CefConfig(host.DebugMode || AppDebug) {
                     Args = args,
                     StartUrl = host.StartUrl,
                     Icon = host.FavIcon,

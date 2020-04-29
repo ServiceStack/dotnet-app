@@ -132,6 +132,11 @@ namespace ServiceStack.CefGlue
                 window.Browser.BrowserCreated += (sender, args) => {
                     window.SetSize(config.Width, config.Height); //trigger refresh to sync browser frame with window
 
+                    if (config.CenterToScreen)
+                    {
+                        window.CenterToScreen();
+                    }
+
                     var cef = (CefGlueBrowser) sender;
                     if (cef.Config.Kiosk)
                     {
