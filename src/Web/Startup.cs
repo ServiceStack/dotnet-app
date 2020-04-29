@@ -2579,7 +2579,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 plugins = registerPlugins;
             }
-            plugins = new IPlugin[0];
+            else
+            {
+                plugins = new IPlugin[0];
+            }
         }
 
         static void InitAppHost()

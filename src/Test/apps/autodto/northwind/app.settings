@@ -2,7 +2,7 @@ debug true
 name Auto DTO
 features AutoQueryFeature, OpenApiFeature, PostmanFeature, CorsFeature
 AutoQueryFeature { MaxLimit: 100 }
-AutoQueryFeature.GenerateCrudServices { AutoRegister: true }
+AutoQueryFeature.GenerateCrudServices { }
 
 # Configure below. Supported dialects: sqlite, mysql, postgresql, sqlserver
 db sqlite
