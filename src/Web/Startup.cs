@@ -2372,7 +2372,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 appHost.Config.EmbeddedResourceBaseTypes.Add(typeof(DesktopAssets));
     
                 var feature = appHost.GetPlugin<SharpPagesFeature>();
-                if (feature != null)
+                if (feature != null && Verbose)
                     "Using existing SharpPagesFeature from appHost".Print();
     
                 if (feature == null)
@@ -2561,7 +2561,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             remainingPlugins.Add(plugin);
                         }
                     }
-                    $"Registering wildcard plugins: {remainingPlugins.Map(x => x.GetType().Name).Join(", ")}".Print(); 
+                    if (Startup.Verbose) $"Registering wildcard plugins: {remainingPlugins.Map(x => x.GetType().Name).Join(", ")}".Print(); 
                     featureTypes.Remove(AllRemainingPlugins);
                     if (remainingPlugins.Count > 0)
                     {
@@ -2604,7 +2604,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         continue;
 
                     var dllBytes = plugin.ReadAllBytes();
-                    $"Attempting to load plugin '{plugin.VirtualPath}', size: {dllBytes.Length} bytes".Print();
+                    if (Startup.Verbose) $"Attempting to load plugin '{plugin.VirtualPath}', size: {dllBytes.Length} bytes".Print();
                     var asm = Assembly.Load(dllBytes);
                     assemblies.Add(asm);
 
@@ -2614,7 +2614,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         {
                             if (typeof(AppHostBase).IsAssignableFrom(type))
                             {
-                                $"Using AppHost from Plugin '{plugin.VirtualPath}'".Print();
+                                if (Startup.Verbose) $"Using AppHost from Plugin '{plugin.VirtualPath}'".Print();
                                 appHost = type.CreateInstance<AppHostBase>();
                                 appHost.AppSettings = WebTemplateUtils.AppSettings;
                                 break;
@@ -2959,7 +2959,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     throw new NotSupportedException($"Unable to locate AuthProvider{plural}: " + string.Join(", ", authProviderTypes));
                 }
 
-                $"Creating AuthFeature".Print();
+                if (Startup.Verbose) $"Creating AuthFeature".Print();
                 if (authProviders.Count == 0)
                     throw new NotSupportedException($"List of 'AuthFeature.AuthProviders' required for feature 'AuthFeature', e.g: AuthFeature.AuthProviders TwitterAuthProvider, FacebookAuthProvider");
 
@@ -2967,7 +2967,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
             else
             {
-                $"Creating plugin '{type.Name}'".Print();
+                if (Startup.Verbose) $"Creating plugin '{type.Name}'".Print();
                 plugin = type.CreateInstance<IPlugin>();
             }
 
@@ -2976,7 +2976,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var value = JS.eval(pluginConfig);
                 if (value is Dictionary<string, object> objDictionary)
                 {
-                    $"Populating '{type.Name}' with: {pluginConfig}".Print();
+                    if (Startup.Verbose) $"Populating '{type.Name}' with: {pluginConfig}".Print();
                     objDictionary.PopulateInstance(plugin);
                 }
                 else throw new NotSupportedException($"'{pluginConfig}' is not an Object Dictionary");
@@ -3005,7 +3005,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (ctorWithAppSettings == null && ctorDefault == null)
                 throw new NotSupportedException($"No IAppSettings or default Constructor found for Type '{type.Name}'");
 
-            $"Creating Auth Provider '{type.Name}'".Print();
+            if (Startup.Verbose) $"Creating Auth Provider '{type.Name}'".Print();
             var authProvider = ctorWithAppSettings != null
                 ? (IAuthProvider)ctorWithAppSettings.Invoke(new object[]{ WebTemplateUtils.AppSettings })
                 : (IAuthProvider)ctorDefault.Invoke(new object[]{ WebTemplateUtils.AppSettings });
