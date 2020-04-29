@@ -2754,6 +2754,17 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         }
 
         public static string GetAppSetting(this string name) => ResolveValue(GetSetting(name));
+        public static Dictionary<string,object> GetObjectDictionaryAppSetting(this string name)
+        {
+            var configStr = ResolveValue(GetSetting(name));
+            if (configStr == null) 
+                return null;
+            
+            var value = JS.eval(configStr);
+            if (value is Dictionary<string, object> objDictionary)
+                return objDictionary;
+            throw new NotSupportedException($"'{name}' is not an Object Dictionary");
+        }
 
         public static bool TryGetAppSetting(this string name, out string value) 
         {
@@ -2969,6 +2980,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     objDictionary.PopulateInstance(plugin);
                 }
                 else throw new NotSupportedException($"'{pluginConfig}' is not an Object Dictionary");
+            }
+
+            if (plugin is AutoQueryFeature autoQuery)
+            {
+                var objDictionary = "AutoQueryFeature.GenerateCrudServices".GetObjectDictionaryAppSetting();
+                if (objDictionary != null)
+                {
+                    autoQuery.GenerateCrudServices = new GenerateCrudServices();
+                    objDictionary.PopulateInstance(autoQuery.GenerateCrudServices);
+                }
             }
 
             return plugin;

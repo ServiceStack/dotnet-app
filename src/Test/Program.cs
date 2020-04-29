@@ -667,5 +667,12 @@ Content-Disposition: form-data; name=""EvaluateCode""
             await Startup.CreateWebHost("x", new[]{ "gist-new", @"C:\src\dotnet-app\src\Test\protos", "-token", Environment.GetEnvironmentVariable("GISTLYN_TOKEN") });
         }
 
+        [Test]
+        public async Task Can_run_autodto_northwind_example()
+        {
+            RetryExec(() => Directory.SetCurrentDirectory("apps\\autodto\\northwind"));
+            var host = (await Startup.CreateWebHost("x", new string[0]))?.Build();
+            host?.Run();
+        }
     }
 }

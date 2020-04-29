@@ -1,0 +1,9 @@
+debug true
+name Auto DTO
+features AutoQueryFeature, OpenApiFeature, PostmanFeature, CorsFeature
+AutoQueryFeature { MaxLimit: 100 }
+AutoQueryFeature.GenerateCrudServices { AutoRegister: true }
+
+# Configure below. Supported dialects: sqlite, mysql, postgresql, sqlserver
+db sqlite
+db.connection northwind.sqlite
