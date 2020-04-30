@@ -18,8 +18,6 @@ namespace Web
 {
     public class Program
     {
-        private static bool AppDebug = Environment.GetEnvironmentVariable("APP_DEBUG") == "1";
-        public static bool FromScheme;
         public static async Task<int> Main(string[] cmdArgs)
         {
             try
@@ -28,23 +26,25 @@ namespace Web
                 Startup.GetAppHostInstructions = _ => new AppHostInstructions {
                     ImportParams = DesktopConfig.Instance.ImportParams,
                 };
-                DesktopConfig.Instance.Tool = "app";
-                DesktopConfig.Instance.ToolVersion = Startup.GetVersion();
-                DesktopConfig.Instance.ChromeVersion = CefRuntime.ChromeVersion;
-                Startup.ConfigureScript = feature => feature.ScriptMethods.Add(new DesktopScriptMethods(AppLoader.AppHost));
+                DesktopState.AppDebug = Environment.GetEnvironmentVariable("APP_DEBUG") == "1";
+                DesktopState.OriginalCommandArgs = cmdArgs;
+                DesktopState.Tool = "app";
+                DesktopState.ToolVersion = Startup.GetVersion();
+                DesktopState.ChromeVersion = CefRuntime.ChromeVersion;
+                Startup.ConfigureScript = feature => feature.ScriptMethods.Add(new DesktopScripts(AppLoader.AppHost));
                 
                 var firstArg = cmdArgs.FirstOrDefault();
                 if (firstArg?.StartsWith("app:") == true || firstArg?.StartsWith("sharp:") == true || firstArg?.StartsWith("xapp:") == true)
                 {
-                    FromScheme = true;
+                    DesktopState.FromScheme = true;
                     var cmds = firstArg.ConvertUrlSchemeToCommands();
                     
                     if (cmds.Any(x => Startup.DebugArgs.Contains(x) && !cmdArgs.Any(x => Startup.VerboseArgs.Contains(x))))
                         cmds.Add("-verbose");
                     
                     cmdArgs = cmds.ToArray();
-                    if (AppDebug)
-                        DesktopScriptMethods.MessageBox(0, cmdArgs.Join(","), "cmdArgs", 0);
+                    if (DesktopState.AppDebug)
+                        DesktopScripts.MessageBox(0, cmdArgs.Join(","), "cmdArgs", 0);
                 }
                 else
                 {
@@ -53,22 +53,22 @@ namespace Web
                     CreateRegistryEntryFor("xapp", "x.exe");
                 }
 
-                AppDebug = AppDebug || cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
+                DesktopState.AppDebug = DesktopState.AppDebug || cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
 
-                if (FromScheme && !AppDebug)
+                var args = DesktopState.CommandArgs = cmdArgs;
+
+                if (DesktopState.FromScheme && !DesktopState.AppDebug)
                 {
-                    Console.Title = "Sharp Apps Launcher - " + (cmdArgs.FirstOrDefault() ?? Guid.NewGuid().ToString().Substring(0,5));
-                    var hWnd = CefPlatformWindows.FindWindow(null, Console.Title);
+                    var hWnd = CefPlatformWindows.GetConsoleHandle();
                     if (hWnd != IntPtr.Zero)
                         CefPlatformWindows.ShowWindow(hWnd, 0);
                 }
-                
-                var args = cmdArgs;
                 
                 var cts = new CancellationTokenSource();
                 Process process = null;
                 CefPlatformWindows.OnExit = () => {
                     if (Startup.Verbose) $"OnExit".Print();
+                    DesktopConfig.Instance.OnExit?.Invoke();
                     cts?.Cancel();
                     process?.Close();
                 };
@@ -77,7 +77,8 @@ namespace Web
                     CreateShortcut = Shortcut.Create,
                     HandleUnknownCommand = ctx => Startup.PrintUsage("app"),
                     OpenBrowser = url => CefPlatformWindows.Start(new CefConfig {
-                        StartUrl = url, Width = 1040, DevTools = false, Icon = Startup.ToolFavIcon, HideConsoleWindow = !AppDebug,
+                        StartUrl = url, Width = 1040, DevTools = false, Icon = Startup.ToolFavIcon, 
+                        HideConsoleWindow = !DesktopState.AppDebug,
                     }),
                     RunNetCoreProcess = ctx => {
                         var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.LeftPart(';') ??
@@ -93,7 +94,8 @@ namespace Web
                         }
 
                         process = Startup.PipeProcess(fileName, arguments, fn: () =>
-                            CefPlatformWindows.Start(new CefConfig { StartUrl = url, Icon = ctx.FavIcon, HideConsoleWindow = !AppDebug }));
+                            CefPlatformWindows.Start(new CefConfig { StartUrl = url, Icon = ctx.FavIcon, 
+                                HideConsoleWindow = !DesktopState.AppDebug }));
                     },
                 });
                 
@@ -104,7 +106,7 @@ namespace Web
                 host.Build().StartAsync(cts.Token);
 #pragma warning restore 4014
 
-                var config = new CefConfig(host.DebugMode || AppDebug) {
+                var config = new CefConfig(host.DebugMode || DesktopState.AppDebug) {
                     Args = args,
                     StartUrl = host.StartUrl,
                     Icon = host.FavIcon,
@@ -199,7 +201,7 @@ namespace Web
                 config.SchemeFactories.Add(
                     new SchemeFactory("host", new CefAppHostSchemeHandlerFactory(AppLoader.AppHost)));
 
-                if (AppDebug)
+                if (DesktopState.AppDebug)
                 {
                     config.HideConsoleWindow = false;
                     config.Verbose = true;
@@ -209,8 +211,10 @@ namespace Web
             }
             catch (Exception ex)
             {
-                if (AppDebug)
-                   DesktopScriptMethods.MessageBox(0, ex.Message, "Exception", 0);
+                DesktopConfig.Instance.OnError?.Invoke(ex);
+                
+                if (DesktopState.AppDebug)
+                   DesktopScripts.MessageBox(0, ex.Message, "Exception", 0);
                     
                 ex.HandleProgramExceptions();
                 return -1;

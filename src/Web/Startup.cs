@@ -2067,7 +2067,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             foreach (var l in lines) 
             {
                 var line = l;
-                if (line.StartsWith("*/"))
+                if (line.StartsWith("*/") || line.StartsWith("*)"))
                     break;
                 if (lang == "vbnet")
                 {

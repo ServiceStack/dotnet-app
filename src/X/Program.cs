@@ -14,8 +14,8 @@ namespace Web
             Startup.GetAppHostInstructions = _ => new AppHostInstructions {
                 ImportParams = DesktopConfig.Instance.ImportParams,
             };
-            DesktopConfig.Instance.Tool = "x";
-            DesktopConfig.Instance.ToolVersion = Startup.GetVersion();
+            DesktopState.Tool = "x";
+            DesktopState.ToolVersion = Startup.GetVersion();
             
             try
             {

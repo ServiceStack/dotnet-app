@@ -684,9 +684,16 @@ Content-Disposition: form-data; name=""EvaluateCode""
                 "-replace", "DIALECT=postgresql", 
                 "-replace", "CONNECTION_STRING=\"" + Environment.GetEnvironmentVariable("TECHSTACKS_DB") + "\""  
             });
-
         }
 
+        [Test]
+        public async Task Can_Update_FSharp()
+        {
+            RetryExec(() => Directory.SetCurrentDirectory("C:\\Source\\projects\\autodto"));
+            await Startup.CreateWebHost("x", new[] {
+                "fs", 
+            });
+        }
 
     }
 }
