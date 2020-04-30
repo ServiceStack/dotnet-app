@@ -5,53 +5,142 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using NetCoreEx.Geometry;
 using ServiceStack;
 using ServiceStack.CefGlue;
+using ServiceStack.CefGlue.Win64;
 using ServiceStack.Desktop;
 using ServiceStack.Script;
 using ServiceStack.Text.Pools;
 using Web;
+using WinApi.User32;
+using Xilium.CefGlue;
+// ReSharper disable InconsistentNaming
 
 namespace WebApp
 {
-    public class DesktopScriptMethods : ScriptMethods
+    public class DesktopScripts : ScriptMethods
     {
-        public static DesktopScriptMethods Instance { get; private set; } 
+        public static DesktopScripts Instance { get; private set; } 
         public static int ClipboardPollMs { get; set; } = 200;
         
         private IAppHost appHost;
-        public DesktopScriptMethods(IAppHost appHost)
+        public DesktopScripts(IAppHost appHost)
         {
             this.appHost = appHost;
             Instance ??= this;
         }
         
+        private static CefPlatformWindows WindowHost => CefPlatformWindows.Provider;
+
+        private static CefGlueHost Window => CefPlatformWindows.Provider.Window;
         private static IntPtr WindowHandle => CefPlatformWindows.Provider.Window.Handle;
 
         public Dictionary<string,string> desktopInfo() => new Dictionary<string, string> {
-            ["tool"] = DesktopConfig.Instance.Tool,
-            ["toolVersion"] = DesktopConfig.Instance.ToolVersion,
-            ["chromeVersion"] = DesktopConfig.Instance.ChromeVersion,
+            ["tool"] = DesktopState.Tool,
+            ["toolVersion"] = DesktopState.ToolVersion,
+            ["chromeVersion"] = DesktopState.ChromeVersion,
         };
 
-        public IgnoreResult openUrl(string url)
+        public bool openUrl(string url)
         {
-            OpenBrowser(url);
-            return IgnoreResult.Value;
+            new Uri(url);
+            Open(url);
+            return true;
         }
 
-        public bool sendToForeground(string windowName)
+        public bool open(string cmd)
         {
-            var handle = windowName == "browser"
-                ? WindowHandle
-                : IntPtr.Zero;
-            if (handle != IntPtr.Zero)
-                return SetForegroundWindow(handle);
+            Open(cmd);
+            return true;
+        }
+
+        bool DoWindow(Action<CefGlueHost> fn)
+        {
+            if (Window != null)
+            {
+                fn(Window);
+                return true;
+            }
             return false;
         }
 
-        public static Process OpenBrowser(string url)
+        bool DoWindow(Func<CefGlueHost,bool> fn) => Window != null && fn(Window);
+        T DoWindow<T>(Func<CefGlueHost,T> fn) => Window != null ? fn(Window) : default;
+
+        bool DoWindowHost(Action<CefPlatformWindows> fn)
+        {
+            if (WindowHost != null)
+            {
+                fn(WindowHost);
+                return true;
+            }
+            return false;
+        }
+
+        bool DoWindowHandle(Action<IntPtr> fn)
+        {
+            if (WindowHandle != IntPtr.Zero)
+            {
+                fn(WindowHandle);
+                return true;
+            }
+            return false;
+        }
+
+        public Dictionary<string, object> deviceScreenResolution() =>
+            toObject(WindowHost.GetScreenResolution());
+
+        public bool windowSendToForeground() =>
+            DoWindowHandle(w => SetForegroundWindow(w));
+        public bool windowCenterToScreen() => 
+            DoWindow(w => w.CenterToScreen());
+        public bool windowCenterToScreen(bool useWorkArea) => 
+            DoWindow(w => w.CenterToScreen(useWorkArea));
+        public bool windowSetFullScreen() => 
+            DoWindowHost(w => w.SetWinFullScreen());
+        public bool windowSetFocus() => 
+            DoWindow(w => w.SetFocus());
+        public bool windowShowScrollBar(bool show) => 
+            DoWindowHost(w => w.ShowScrollBar(show));
+        public bool windowSetPosition(int x, int y, int width, int height) =>
+            DoWindow(w => w.SetPosition(x,y,width,height));
+        public bool windowSetPosition(int x, int y) =>
+            DoWindow(w => w.SetPosition(x,y));
+        public bool windowSetSize(int width, int height) =>
+            DoWindow(w => w.SetSize(width, height));
+        public bool windowRedrawFrame() => DoWindow(w => w.RedrawFrame());
+        public bool windowIsVisible() => DoWindow(w => w.IsVisible());
+        public bool windowIsEnabled() => DoWindow(w => w.IsEnabled());
+        public bool windowShow() => DoWindow(w => w.Show());
+        public bool windowHide() => DoWindow(w => w.Hide());
+        public string windowText() => DoWindow(w => w.GetText());
+        public bool windowSetText(string text) => DoWindow(w => w.SetText(text));
+        public bool windowSetState(int state) => 
+            DoWindow(w => w.SetState((ShowWindowCommands)state));
+        
+        public Dictionary<string, object> windowSize() => toObject(Window.GetWindowSize());
+        public Dictionary<string, object> windowClientSize() => toObject(Window.GetClientSize());
+        public Dictionary<string, object> windowClientRect() => toObject(Window.GetClientRect());
+
+        static Dictionary<string, object> toObject(Size size) => new Dictionary<string, object> {
+            ["width"] = size.Width,
+            ["height"] = size.Height,
+        };
+
+        static Dictionary<string, object> toObject(CefSize size) => new Dictionary<string, object> {
+            ["width"] = size.Width,
+            ["height"] = size.Height,
+        };
+
+        static Dictionary<string, object> toObject(Rectangle rect) => new Dictionary<string, object> {
+            ["top"] = rect.Top,
+            ["left"] = rect.Left,
+            ["bottom"] = rect.Bottom,
+            ["right"] = rect.Right,
+        };
+
+        public static Process Open(string url)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return Process.Start(new ProcessStartInfo("cmd", $"/c start {url}"));

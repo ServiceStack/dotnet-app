@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Xilium.CefGlue;
 using WinApi.Windows;
 using ServiceStack.CefGlue.Win64;
+using ServiceStack.Desktop;
 using ServiceStack.Text;
 using Web;
 using WinApi.User32;
@@ -86,6 +87,7 @@ namespace ServiceStack.CefGlue
                 config.WindowTitle,
                 constructionParams: new FrameWindowConstructionParams()))
             {
+                DesktopState.BrowserHandle = window.Handle;
                 
                 foreach (var scheme in config.Schemes)
                 {
@@ -173,27 +175,32 @@ namespace ServiceStack.CefGlue
             return (float)PhysicalScreenHeight / (float)LogicalScreenHeight;
         }
 
+        public static IntPtr GetConsoleHandle()
+        {
+            if (DesktopState.ConsoleHandle != IntPtr.Zero)
+                return DesktopState.ConsoleHandle;
+
+            Console.Title = "App Launcher - " + (DesktopState.CommandArgs?.FirstOrDefault() 
+                ?? Guid.NewGuid().ToString().Substring(0,5));
+
+            return DesktopState.ConsoleHandle = FindWindow(null, Console.Title);
+        }
+
         public void ShowConsoleWindow()
         {
             if (this.config?.HideConsoleWindow != true)
                 return;
-            
-            Console.Title = typeof(CefPlatformWindows).Namespace + " " + Guid.NewGuid().ToString().Substring(0,5);
-            var hWnd = FindWindow(null, Console.Title);
+
+            var hWnd = GetConsoleHandle();
             if (hWnd != IntPtr.Zero)
-            {
                 ShowWindow(hWnd, 1);
-            }
         }
 
         public override void HideConsoleWindow()
         {
-            Console.Title = typeof(CefPlatformWindows).Namespace + " " + Guid.NewGuid().ToString().Substring(0,5);
-            var hWnd = FindWindow(null, Console.Title);
+            var hWnd = GetConsoleHandle();
             if (hWnd != IntPtr.Zero)
-            {
                 ShowWindow(hWnd, 0);
-            }
         }
 
         public override void ResizeWindow(IntPtr handle, int width, int height)
@@ -207,6 +214,8 @@ namespace ServiceStack.CefGlue
             }
         }
 
+        public void SetWinFullScreen() => SetWinFullScreen(window.Handle);
+
         public override void SetWinFullScreen(IntPtr handle)
         {
             if (handle != IntPtr.Zero)
@@ -219,6 +228,8 @@ namespace ServiceStack.CefGlue
                     SetWindowPosFlags.ShowWindow);
             }
         }
+
+        public void ShowScrollBar(bool show) => ShowScrollBar(window.Handle, show);
 
         public override void ShowScrollBar(IntPtr handle, bool show)
         {
