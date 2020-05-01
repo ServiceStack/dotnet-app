@@ -2274,7 +2274,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
 
             appHost.AfterInitCallbacks.Add(item: _ => {
-                
+
+                if (DebugMode != null)
+                    appHost.Config.DebugMode = appHost.ScriptContext.DebugMode = DebugMode.Value;
+
                 if (GistVfs != null)
                 {
                     GistVfsLoadTask?.GetResult();

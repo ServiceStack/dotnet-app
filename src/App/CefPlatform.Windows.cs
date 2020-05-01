@@ -61,16 +61,6 @@ namespace ServiceStack.CefGlue
             {
                 config.Width = (int) (scaleFactor * res.Width);
                 config.Height = (int) (scaleFactor * res.Height);
-
-                var meta = config.Meta ?? new Dictionary<string, string>();
-                var no = (meta.TryGetValue("no", out var _no) ? _no.Split(',') : new string[0]).ToHashSet();
-                if (config.Verbose) $"no: {no.ToArray().Join(",")}".Print(); 
-                
-                if (scaleFactor == 1.0d && !no.Contains("scroll-adjust"))
-                {
-                    var verticalScrollWidth = GetSystemMetrics(SystemMetric.SM_CXVSCROLL);
-                    config.Width += verticalScrollWidth;
-                }
             }
             else
             {
@@ -112,23 +102,26 @@ namespace ServiceStack.CefGlue
                     Console.WriteLine(@$"GetClientRectangle:  [{rect.Top},{rect.Left}] [{rect.Bottom},{rect.Right}], scale: [{(int)(rect.Bottom * scaleFactor)},{(int)(rect.Right * scaleFactor)}]");
                 }
                 
-                if (config.CenterToScreen)
+                if (config.Kiosk)
                 {
-                    window.CenterToScreen();
+                    EnterKioskMode();
                 }
-                else if (config.X != null || config.Y != null)
+                else
                 {
-                    window.SetPosition(config.X.GetValueOrDefault(), config.Y.GetValueOrDefault());
-                }
-                window.SetSize(config.Width, config.Height-1);
-                if (config.Kiosk || config.FullScreen)
-                {
-                    if (config.Kiosk)
+                    if (config.CenterToScreen)
                     {
-                        window.SetStyle(WindowStyles.WS_MAXIMIZE);
-                        ShowScrollBar(window.Handle, SB_BOTH, false);
+                        window.CenterToScreen();
                     }
-                    Instance.SetWinFullScreen(window.Handle);
+                    else if (config.X != null || config.Y != null)
+                    {
+                        window.SetPosition(config.X.GetValueOrDefault(), config.Y.GetValueOrDefault());
+                    }
+                
+                    window.SetSize(config.Width, config.Height-1); //force redraw in BrowserCreated
+                    if (config.FullScreen)
+                    {
+                        Instance.SetWindowFullScreen(window.Handle);
+                    }
                 }
 
                 window.Browser.BrowserCreated += (sender, args) => {
@@ -151,15 +144,25 @@ namespace ServiceStack.CefGlue
                 return new EventLoop().Run(window);
             }
         }
+
+        private CefSize? screenResolution;
+        public CefSize ScreenResolution => screenResolution ??= GetScreenResolution();
         
         public override CefSize GetScreenResolution()
         {
             IntPtr hdc = GetDC(IntPtr.Zero);
-            var scalingFactor = GetScalingFactor(hdc);
-            return new CefSize(
-                (int)(GetSystemMetrics(SystemMetric.SM_CXSCREEN) * scalingFactor),
-                (int)(GetSystemMetrics(SystemMetric.SM_CYSCREEN) * scalingFactor)
-            );
+            try
+            {
+                var scalingFactor = GetScalingFactor(hdc);
+                return new CefSize(
+                    (int)(GetSystemMetrics(SystemMetric.SM_CXSCREEN) * scalingFactor),
+                    (int)(GetSystemMetrics(SystemMetric.SM_CYSCREEN) * scalingFactor)
+                );
+            }
+            finally
+            {
+                ReleaseDC(IntPtr.Zero, hdc);
+            }
         }
         
         public override Rectangle GetClientRectangle(IntPtr handle)
@@ -214,17 +217,48 @@ namespace ServiceStack.CefGlue
             }
         }
 
-        public void SetWinFullScreen() => SetWinFullScreen(window.Handle);
+        public bool GetPrimaryMonitorInfo(out MonitorInfo monitorInfo)
+        {
+            var mi = new MonitorInfo();
+            mi.Size = (uint) Marshal.SizeOf(mi);
+            var ret = GetMonitorInfo(MonitorFromWindow(window.Handle, MONITOR_DEFAULTTOPRIMARY), ref mi);
+            monitorInfo = mi;
+            return ret;
+        }
+        
+        private void EnterKioskMode()
+        {
+            //https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353
+            var dwStyle = GetWindowLong(window.Handle, (int) WindowLongFlags.GWL_STYLE);
+            if (GetPrimaryMonitorInfo(out var mi))
+            {
+                SetWindowLongPtr64(window.Handle, (int) WindowLongFlags.GWL_STYLE,
+                    new IntPtr((int) dwStyle & (int) ~WindowStyles.WS_OVERLAPPEDWINDOW));
 
-        public override void SetWinFullScreen(IntPtr handle)
+                var mr = mi.MonitorRect;
+                config.Width = mr.Right - mr.Left - 1; //force redraw in BrowserCreated
+                config.Height = mr.Bottom - mr.Top;
+                SetWindowPos(window.Handle, (IntPtr) HwndZOrder.HWND_TOP,
+                    mr.Left, mr.Top,
+                    mr.Right - mr.Left,
+                    mr.Bottom - mr.Top,
+                    SetWindowPosFlags.NoZOrder | SetWindowPosFlags.FrameChanged);
+            }
+        }
+
+        public static int ScreenX => GetSystemMetrics(SystemMetric.SM_CXSCREEN);
+        public static int ScreenY => GetSystemMetrics(SystemMetric.SM_CYSCREEN);
+
+        public void SetWindowFullScreen() => SetWindowFullScreen(window.Handle);
+        
+        public override void SetWindowFullScreen(IntPtr handle)
         {
             if (handle != IntPtr.Zero)
             {
-                // var x = GetSystemMetrics(SystemMetric.SM_CXFULLSCREEN);
-                // var y = GetSystemMetrics(SystemMetric.SM_CYFULLSCREEN);
-                var res = GetScreenResolution();
                 SetWindowPos(handle, IntPtr.Zero,
-                    0, 0, res.Width, res.Height,
+                    0,0,
+                    ScreenResolution.Width,
+                    ScreenResolution.Height,
                     SetWindowPosFlags.ShowWindow);
             }
         }
@@ -239,15 +273,81 @@ namespace ServiceStack.CefGlue
             }
         }
 
+        public struct WINDOWPLACEMENT
+        {
+            public int length;
+            public int flags;
+            public int showCmd;
+            public Point ptMinPosition;
+            public Point ptMaxPosition;
+            public Rectangle rcNormalPosition;
+        }
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetWindowPlacement(IntPtr hWnd, ref WINDOWPLACEMENT lpwndpl);
+        
+        private const int CCHDEVICENAME = 32; // size of a device name string
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private struct MonitorInfoEx
+        {
+            public int Size;
+            public RectStruct Monitor;
+            public RectStruct WorkArea;
+            public uint Flags;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCHDEVICENAME)]
+            public string DeviceName;
+            public void Init()
+            {
+                this.Size = 40 + 2 * CCHDEVICENAME;
+                this.DeviceName = string.Empty;
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RectStruct
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;      
+        }
+        
+        const int MONITOR_DEFAULTTONULL = 0;
+        const int MONITOR_DEFAULTTOPRIMARY = 1;
+        const int MONITOR_DEFAULTTONEAREST = 2;
+        
         [DllImport("user32.dll")]
-        static extern int GetSystemMetrics(SystemMetric smIndex);
+        public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+        
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetWindowPlacement(IntPtr hWnd, [In] ref WINDOWPLACEMENT lpwndpl);
+        
+        [DllImport("user32.dll", SetLastError = false)]
+        public static extern IntPtr GetDesktopWindow();
+    
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        static extern bool GetMonitorInfo(IntPtr hMonitor, ref MonitorInfo lpmi);
+        
+        [DllImport("user32.dll", EntryPoint="GetWindowLong")]
+        public static extern IntPtr GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll", EntryPoint="SetWindowLongPtr")]
+        public static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+        
+        [DllImport("user32.dll")]
+        public static extern int GetSystemMetrics(SystemMetric smIndex);
 
         [DllImport("gdi32.dll")]
-        static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
+        public static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
 
         [DllImport("user32.dll")]
-        static extern IntPtr GetDC(IntPtr hWnd);
+        public static extern IntPtr GetDC(IntPtr hWnd);
 
+        [DllImport("user32.dll")]
+        public static extern bool ReleaseDC(IntPtr hWnd, IntPtr hDC);
+        
         const int VERTRES = 10;
         const int DESKTOPVERTRES = 117;
         const int LOGPIXELSX = 88;
@@ -260,24 +360,27 @@ namespace ServiceStack.CefGlue
         public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
         
         [DllImport("user32.dll", SetLastError=true)]
-        static extern int CloseWindow (IntPtr hWnd);        
+        public static extern int CloseWindow (IntPtr hWnd);        
         
         [DllImport("user32.dll")]
-        static extern bool DestroyWindow(IntPtr hWnd);        
+        public static extern bool DestroyWindow(IntPtr hWnd);        
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, SetWindowPosFlags uFlags);
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, SetWindowPosFlags uFlags);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+        public static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
         
         [DllImport("user32.dll")]
-        static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
+        private static extern IntPtr GetForegroundWindow();
+        
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+        
+        [DllImport("user32.dll")]
+        public static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
         
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -289,7 +392,7 @@ namespace ServiceStack.CefGlue
         public const int SB_BOTH = 3;
         
         [StructLayout(LayoutKind.Sequential)]
-        internal struct RECT
+        public struct RECT
         {
             public int Left;
             public int Top;
@@ -298,7 +401,7 @@ namespace ServiceStack.CefGlue
         }
 
         [Flags]
-        internal enum SetWindowPosFlags : uint
+        public enum SetWindowPosFlags : uint
         {
             AsyncWindowPosition = 0x4000,
             DeferErase = 0x2000,
@@ -317,7 +420,7 @@ namespace ServiceStack.CefGlue
             ShowWindow = 0x0040,
         }
 
-        internal enum SystemMetric
+        public enum SystemMetric
         {
             SM_CXSCREEN = 0,  // 0x00
             SM_CYSCREEN = 1,  // 0x01

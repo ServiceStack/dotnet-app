@@ -90,6 +90,8 @@ namespace WebApp
 
         public Dictionary<string, object> deviceScreenResolution() =>
             toObject(WindowHost.GetScreenResolution());
+        public Dictionary<string, object> primaryMonitorInfo() =>
+            WindowHost.GetPrimaryMonitorInfo(out var mi) ? toObject(mi) : null;
 
         public bool windowSendToForeground() =>
             DoWindowHandle(w => SetForegroundWindow(w));
@@ -98,7 +100,7 @@ namespace WebApp
         public bool windowCenterToScreen(bool useWorkArea) => 
             DoWindow(w => w.CenterToScreen(useWorkArea));
         public bool windowSetFullScreen() => 
-            DoWindowHost(w => w.SetWinFullScreen());
+            DoWindowHost(w => w.SetWindowFullScreen());
         public bool windowSetFocus() => 
             DoWindow(w => w.SetFocus());
         public bool windowShowScrollBar(bool show) => 
@@ -138,6 +140,12 @@ namespace WebApp
             ["left"] = rect.Left,
             ["bottom"] = rect.Bottom,
             ["right"] = rect.Right,
+        };
+
+        static Dictionary<string, object> toObject(MonitorInfo mi) => new Dictionary<string, object> {
+            ["monitor"] = toObject(mi.MonitorRect),
+            ["work"] = toObject(mi.MonitorRect),
+            ["flags"] = (int)mi.Flags,
         };
 
         public static Process Open(string url)
@@ -217,10 +225,10 @@ namespace WebApp
 
         public string clipboard() => GetClipboardAsString();
 
-        public IgnoreResult setClipboard(string data)
+        public bool setClipboard(string data)
         {
             SetStringInClipboard(data);
-            return IgnoreResult.Value;
+            return true;
         }
 
         public int messageBox(string text, string caption, uint type)

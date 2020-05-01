@@ -54,8 +54,13 @@ namespace Web
                 }
 
                 DesktopState.AppDebug = DesktopState.AppDebug || cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
+                if (DesktopState.AppDebug)
+                    Startup.DebugMode = true;
 
                 var args = DesktopState.CommandArgs = cmdArgs;
+                var kiosk = args.Contains("-kiosk");
+                if (kiosk)
+                    args = args.Where(x => x != "-kiosk").ToArray();
 
                 if (DesktopState.FromScheme && !DesktopState.AppDebug)
                 {
@@ -134,6 +139,9 @@ namespace Web
                     if (cefConfig is Dictionary<string, object> objDictionary)
                         objDictionary.PopulateInstance(config);
                 }
+
+                if (kiosk)
+                    config.Kiosk = true;
 
                 if ("CefConfig.CefSettings".TryGetAppSetting(out var cefSettingsString))
                 {

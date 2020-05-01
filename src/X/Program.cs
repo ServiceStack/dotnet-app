@@ -16,6 +16,9 @@ namespace Web
             };
             DesktopState.Tool = "x";
             DesktopState.ToolVersion = Startup.GetVersion();
+            DesktopState.AppDebug = cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
+            if (DesktopState.AppDebug)
+                Startup.DebugMode = true;
             
             try
             {
