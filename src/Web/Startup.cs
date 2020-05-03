@@ -87,24 +87,6 @@ namespace Web
         public Action<WebAppContext> RunNetCoreProcess { get; set; }
     }
     
-    public class DialogOptions
-    {
-        public int? Flags { get; set; }
-        public string Title { get; set; }
-        public string Filter { get; set; }
-        public string InitialDir { get; set; }
-        public string DefaultExt { get; set; }
-        public bool IsFolderPicker { get; set; }
-    }
-
-    public class DialogResult
-    {
-        public string File { get; set; }
-        public string FileTitle { get; set; }
-        
-        public bool Ok { get; set; }
-    }
-
     public partial class Startup : ModularStartup
     {
         public static WebAppEvents Events { get; set; }
@@ -2510,7 +2492,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         static AppHostBase appHost;
         public static AppHostBase AppHost => appHost ?? throw new Exception("AppHost not loaded yet");
-            
+
+        public static AppHostBase TryGetAppHost() => appHost;
+
         public static void Init(string contentRootPath)
         {
             if (Startup.GetDebugMode() && Startup.Verbose)
@@ -2756,7 +2740,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (Startup.RunScriptArgs.TryGetValue(name, out var val))
                 return val.ToString();
             
-            return AppSettings.GetString(name);
+            return AppSettings?.GetString(name);
         }
 
         public static string GetAppSetting(this string name) => ResolveValue(GetSetting(name));

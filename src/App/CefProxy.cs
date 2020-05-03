@@ -12,11 +12,12 @@ namespace Web
 {
     public class CefProxySchemeHandlerFactory : CefSchemeHandlerFactory
     {
+        public Action<HttpWebRequest, CefRequest> RequestFilter { get; set; }
         private readonly ProxyScheme config;
         public CefProxySchemeHandlerFactory(ProxyScheme config) => this.config = config;
         protected override CefResourceHandler Create(CefBrowser browser, CefFrame frame, string schemeName, CefRequest request)
         {
-            return new CefProxyResourceHandler(config);
+            return new CefProxyResourceHandler(config) { RequestFilter = RequestFilter };
         }
     }
 
@@ -42,6 +43,8 @@ namespace Web
             handleRequest = false;
             return false;
         }
+        
+        public Action<HttpWebRequest, CefRequest> RequestFilter { get; set; }
 
         [Obsolete("This method is deprecated. Use Open instead.")]
         protected override bool ProcessRequest(CefRequest request, CefCallback callback)
@@ -82,6 +85,8 @@ namespace Web
                         }
                     }
                 }
+                
+                RequestFilter?.Invoke(webReq, request);
 
                 var postEls = request.PostData?.GetElements();
                 if (postEls?.Length > 0)
@@ -95,6 +100,7 @@ namespace Web
                     };
 
                     using var requestStream = webReq.GetRequestStream();
+                    // var debug = MemoryProvider.Instance.FromUtf8Bytes(requestBytes);
                     requestStream.Write(requestBytes);
                 }
 

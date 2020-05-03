@@ -53,7 +53,7 @@
     <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj" />
     <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack.Client\ServiceStack.Client.Source.csproj" />
     <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack.Common\ServiceStack.Common.Source.csproj" />
-    <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack.Desktop\ServiceStack.Desktop.csproj" />
+    <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack.Desktop\ServiceStack.Desktop.Source.csproj" />
     <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack\ServiceStack.Source.csproj" />
     <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack.Server\ServiceStack.Server.Source.csproj" />
     <ProjectReference Include="..\..\..\..\Source\Servicestack.OrmLite\src\ServiceStack.OrmLite\ServiceStack.OrmLite.Source.csproj" />
