@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
@@ -31,7 +30,8 @@ namespace Web
                 DesktopState.Tool = "app";
                 DesktopState.ToolVersion = Startup.GetVersion();
                 DesktopState.ChromeVersion = CefRuntime.ChromeVersion;
-                Startup.ConfigureScript = feature => feature.ScriptMethods.Add(new DesktopScripts(AppLoader.AppHost));
+                Startup.ConfigureScript = feature => feature.ScriptMethods
+                    .Add(new DesktopScripts(scope => DesktopState.BrowserHandle));
                 
                 var firstArg = cmdArgs.FirstOrDefault();
                 if (firstArg?.StartsWith("app:") == true || firstArg?.StartsWith("sharp:") == true || firstArg?.StartsWith("xapp:") == true)
@@ -44,7 +44,7 @@ namespace Web
                     
                     cmdArgs = cmds.ToArray();
                     if (DesktopState.AppDebug)
-                        DesktopScripts.MessageBox(0, cmdArgs.Join(","), "cmdArgs", 0);
+                        NativeWin.MessageBox(0, cmdArgs.Join(","), "cmdArgs", 0);
                 }
                 else
                 {
@@ -53,7 +53,7 @@ namespace Web
                     CreateRegistryEntryFor("xapp", "x.exe");
                 }
 
-                DesktopState.AppDebug = DesktopState.AppDebug || cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
+                var cefDebug = DesktopState.AppDebug = DesktopState.AppDebug || cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
                 if (DesktopState.AppDebug)
                     Startup.DebugMode = true;
 
@@ -62,11 +62,31 @@ namespace Web
                 if (kiosk)
                     args = args.Where(x => x != "-kiosk").ToArray();
 
+                string startUrl = null;
+                string favIcon = Startup.ToolFavIcon;
+                
+                var startPos = Array.IndexOf(args, "start");
+                if (startPos >= 0)
+                {
+                    if (startPos == args.Length - 1)
+                    {
+                        Console.WriteLine(@"Usage: app start {url}");
+                        return -1;
+                    }
+                    startUrl = args[startPos + 1];
+                    if (startUrl.IndexOf("://", StringComparison.Ordinal) == -1)
+                    {
+                        Console.WriteLine(@$"Not a valid URL: '{startUrl}'");
+                        Console.WriteLine(@"Usage: app start {url}");
+                        return -2;
+                    }
+                }
+
                 if (DesktopState.FromScheme && !DesktopState.AppDebug)
                 {
                     var hWnd = CefPlatformWindows.GetConsoleHandle();
                     if (hWnd != IntPtr.Zero)
-                        CefPlatformWindows.ShowWindow(hWnd, 0);
+                        NativeWin.ShowWindow(hWnd, 0);
                 }
                 
                 var cts = new CancellationTokenSource();
@@ -78,43 +98,49 @@ namespace Web
                     process?.Close();
                 };
 
-                var host = await Startup.CreateWebHost("app", args, new WebAppEvents {
-                    CreateShortcut = Shortcut.Create,
-                    HandleUnknownCommand = ctx => Startup.PrintUsage("app"),
-                    OpenBrowser = url => CefPlatformWindows.Start(new CefConfig {
-                        StartUrl = url, Width = 1040, DevTools = false, Icon = Startup.ToolFavIcon, 
-                        HideConsoleWindow = !DesktopState.AppDebug,
-                    }),
-                    RunNetCoreProcess = ctx => {
-                        var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.LeftPart(';') ??
-                                  "http://localhost:5000";
-                        var target = ctx.RunProcess;
+                if (startUrl == null)
+                {
+                    var host = await Startup.CreateWebHost("app", args, new WebAppEvents {
+                        CreateShortcut = Shortcut.Create,
+                        HandleUnknownCommand = ctx => Startup.PrintUsage("app"),
+                        OpenBrowser = url => CefPlatformWindows.Start(new CefConfig {
+                            StartUrl = url, Width = 1040, DevTools = false, Icon = Startup.ToolFavIcon, 
+                            HideConsoleWindow = !DesktopState.AppDebug,
+                        }),
+                        RunNetCoreProcess = ctx => {
+                            var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.LeftPart(';') ??
+                                      "http://localhost:5000";
+                            var target = ctx.RunProcess;
 
-                        var fileName = ctx.RunProcess;
-                        var arguments = "";
-                        if (target.EndsWith(".dll"))
-                        {
-                            fileName = "dotnet";
-                            arguments = ctx.RunProcess;
-                        }
+                            var fileName = ctx.RunProcess;
+                            var arguments = "";
+                            if (target.EndsWith(".dll"))
+                            {
+                                fileName = "dotnet";
+                                arguments = ctx.RunProcess;
+                            }
 
-                        process = Startup.PipeProcess(fileName, arguments, fn: () =>
-                            CefPlatformWindows.Start(new CefConfig { StartUrl = url, Icon = ctx.FavIcon, 
-                                HideConsoleWindow = !DesktopState.AppDebug }));
-                    },
-                });
+                            process = Startup.PipeProcess(fileName, arguments, fn: () =>
+                                CefPlatformWindows.Start(new CefConfig { StartUrl = url, Icon = ctx.FavIcon, 
+                                    HideConsoleWindow = !DesktopState.AppDebug }));
+                        },
+                    });
                 
-                if (host == null)
-                    return 0;
+                    if (host == null)
+                        return 0;
 
+                    startUrl = host.StartUrl;
+                    favIcon = host.FavIcon;
+                    cefDebug = host.DebugMode || DesktopState.AppDebug;
 #pragma warning disable 4014
-                host.Build().StartAsync(cts.Token);
+                    host.Build().StartAsync(cts.Token);
 #pragma warning restore 4014
-
-                var config = new CefConfig(host.DebugMode || DesktopState.AppDebug) {
+                }
+                
+                var config = new CefConfig(cefDebug) {
                     Args = args,
-                    StartUrl = host.StartUrl,
-                    Icon = host.FavIcon,
+                    StartUrl = startUrl,
+                    Icon = favIcon,
                     CefSettings = {
                         PersistSessionCookies = true,
                     },
@@ -167,7 +193,7 @@ namespace Web
                     objDictionary.PopulateInstance(proxyScheme);
                     if (proxyScheme.AllowCors)
                     {
-                        allowCors(proxyScheme, host.StartUrl);
+                        allowCors(proxyScheme, startUrl);
                     }
                     if (objDictionary.ContainsKey("allowIFrames"))
                     {
@@ -180,34 +206,27 @@ namespace Web
                 {
                     var proxyScheme = proxyConfig.ConvertTo<ProxyScheme>();
                     if (proxyScheme.AllowCors)
-                        allowCors(proxyScheme, host.StartUrl);
+                        allowCors(proxyScheme, startUrl);
                     config.Schemes.Add(proxyScheme);
                 }
 
                 if (config.EnableCorsScheme)
                 {
-                    var corsScheme = new ProxyScheme {
-                        Scheme = "https",
-                        Domain = "cors",
-                        TargetScheme = "https",
-                        AllowCors = true,
-                        SchemeOptions = CefSchemeOptions.Secure | CefSchemeOptions.CorsEnabled | CefSchemeOptions.CspBypassing | CefSchemeOptions.FetchEnabled,
-                        ResolveUrl = url => {
-                            var hostAndPath = url.RightPart("://").RightPart('/'); //https://cors/^...
-                            var targetHost = hostAndPath.LeftPart('/');
-                            var targetPort = targetHost.IndexOf(':') >= 0 ? targetHost.RightPart(':') : null;
-                            var targetScheme = targetPort == "80" ? "http" : "https";
-                            var targetUrl = targetScheme + "://" + targetHost.LeftPart(':') + "/" + hostAndPath.RightPart('/');
-                            return targetUrl;
-                        },
-                    };
+                    var corsScheme = CreateCorsProxy();
                     allowCors(corsScheme, config.StartUrl);
                     config.SchemeFactories.Add(
                         new SchemeFactory("cors", new CefProxySchemeHandlerFactory(corsScheme)));
                 }
-                
-                config.SchemeFactories.Add(
-                    new SchemeFactory("host", new CefAppHostSchemeHandlerFactory(AppLoader.AppHost)));
+
+                var appHost = AppLoader.TryGetAppHost();
+                config.SchemeFactories.Add(appHost != null
+                    ? new SchemeFactory("host", new CefAppHostSchemeHandlerFactory(appHost))
+                    : new SchemeFactory("host", new CefProxySchemeHandlerFactory(CreateCorsProxy("host", startUrl)) {
+                        RequestFilter = (webReq, request) => {
+                            webReq.Headers["X-Window-Handle"] = DesktopState.BrowserHandle.ToString();
+                            webReq.Headers["X-Desktop-Info"] = NativeWin.GetDesktopInfo().ToJsv();
+                        }
+                    }));
 
                 if (DesktopState.AppDebug)
                 {
@@ -222,7 +241,7 @@ namespace Web
                 DesktopConfig.Instance.OnError?.Invoke(ex);
                 
                 if (DesktopState.AppDebug)
-                   DesktopScripts.MessageBox(0, ex.Message, "Exception", 0);
+                   NativeWin.MessageBox(0, ex.Message, "Exception", 0);
                     
                 ex.HandleProgramExceptions();
                 return -1;
@@ -231,6 +250,31 @@ namespace Web
             {
                 CefPlatformWindows.Provider?.ShowConsoleWindow();
             }
+        }
+
+        private static ProxyScheme CreateCorsProxy(string domain="cors", string startUrl=null)
+        {
+            var corsScheme = new ProxyScheme {
+                Scheme = "https",
+                Domain = domain,
+                TargetScheme = "https",
+                AllowCors = true,
+                SchemeOptions = CefSchemeOptions.Secure | CefSchemeOptions.CorsEnabled | CefSchemeOptions.CspBypassing |
+                                CefSchemeOptions.FetchEnabled,
+                ResolveUrl = url => {
+                    var hostAndPath = url.RightPart("://").RightPart('/'); //https://cors/^...
+                    if (startUrl == null)
+                    {
+                        var targetHost = hostAndPath.LeftPart('/');
+                        var targetPort = targetHost.IndexOf(':') >= 0 ? targetHost.RightPart(':') : null;
+                        var targetScheme = targetPort == "80" ? "http" : "https";
+                        var targetUrl = targetScheme + "://" + targetHost.LeftPart(':') + "/" + hostAndPath.RightPart('/');
+                        return targetUrl;
+                    }
+                    return startUrl.CombineWith(hostAndPath); //host
+                },
+            };
+            return corsScheme;
         }
 
         private static void CreateRegistryEntryFor(string rootKey, string exeName = "app.exe")

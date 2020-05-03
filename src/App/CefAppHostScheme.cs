@@ -13,7 +13,8 @@ namespace WebApp
     public class CefAppHostSchemeHandlerFactory : CefSchemeHandlerFactory
     {
         private readonly IAppHost appHost;
-        public CefAppHostSchemeHandlerFactory(IAppHost appHost) => this.appHost = appHost;
+        public CefAppHostSchemeHandlerFactory(IAppHost appHost) => 
+            this.appHost = appHost ?? throw new ArgumentNullException(nameof(appHost));
         protected override CefResourceHandler Create(CefBrowser browser, CefFrame frame, string schemeName, CefRequest request)
         {
             return new CefAppHostSchemeResourceHandler(appHost);
@@ -26,7 +27,7 @@ namespace WebApp
         public CefAppHostSchemeResourceHandler(IAppHost appHost) => this.appHost = appHost;
         
         private long contentLength;
-        private NameValueCollection responseHeaders = new NameValueCollection();
+        private readonly NameValueCollection responseHeaders = new NameValueCollection();
         private ReadOnlyMemory<byte> responseMemoryBytes;
         private int responseStatus;
         private string responseStatusText;
@@ -183,7 +184,7 @@ namespace WebApp
                     else if (method.EqualsIgnoreCase(nameof(ScriptLispUtils.EvaluateLispAsync)))
                         Task.Run(async () => await setResultAsync(appHost.ScriptContext.EvaluateLispAsync(ScriptLispUtils.EnsureReturn(script)), " async result"));
                     else if (method.EqualsIgnoreCase(nameof(ScriptLispUtils.RenderLispAsync)))
-                        setOutput(new PageResult(appHost.ScriptContext.LispSharpPage(script)));
+                        Task.Run(async () => await setOutputAsync(new PageResult(appHost.ScriptContext.LispSharpPage(script))));
                     else throw new NotSupportedException($"Unsupported script API '{method}', supported: " +
                         "EvaluateScript/Async, EvaluateCode/Async, EvaluateLisp/Async");
 
