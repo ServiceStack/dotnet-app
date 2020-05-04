@@ -695,5 +695,11 @@ Content-Disposition: form-data; name=""EvaluateCode""
             });
         }
 
+        [Test]
+        public async Task Can_download_chat_app()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            await Startup.CreateWebHost("x", new[] { "download", "sharp-apps/chat", });
+        }
     }
 }

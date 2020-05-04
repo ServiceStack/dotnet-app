@@ -86,14 +86,6 @@
       <Content Include="script.l" />
       <Content Include="script.sc" />
       <Content Include="script.ss" />
-      <None Remove="apps\autodto\northwind\app.settings" />
-      <Content Include="apps\autodto\northwind\app.settings">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <None Remove="apps\autodto\northwind\northwind.sqlite" />
-      <Content Include="apps\autodto\northwind\northwind.sqlite">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
     </ItemGroup>
     <ItemGroup>
       <Folder Include="wwwroot\assets\svg" />

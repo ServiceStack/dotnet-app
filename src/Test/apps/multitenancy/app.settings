@@ -1,0 +1,8 @@
+debug true
+name Multitenancy test
+
+# Configure below. Supported dialects: sqlite, mysql, postgresql, sqlserver
+db sqlserver
+db.connection $MSSQL_CONNECTION
+
+features ChangeDbFeature

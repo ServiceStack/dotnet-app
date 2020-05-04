@@ -61,6 +61,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceStack.CefGlue", "..\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceStack.Desktop.Source", "..\..\..\Source\ServiceStack\src\ServiceStack.Desktop\ServiceStack.Desktop.Source.csproj", "{AA808872-60A7-49D1-9482-CB19D62B4018}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multitenancy", "example-plugins\Multitenancy\Multitenancy.csproj", "{AF171C43-A365-4B12-94BF-8DB6150E0530}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -382,6 +384,18 @@ Global
 		{AA808872-60A7-49D1-9482-CB19D62B4018}.Release|x64.Build.0 = Release|Any CPU
 		{AA808872-60A7-49D1-9482-CB19D62B4018}.Release|x86.ActiveCfg = Release|Any CPU
 		{AA808872-60A7-49D1-9482-CB19D62B4018}.Release|x86.Build.0 = Release|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Debug|x64.Build.0 = Debug|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Debug|x86.Build.0 = Debug|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|x64.ActiveCfg = Release|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|x64.Build.0 = Release|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|x86.ActiveCfg = Release|Any CPU
+		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -414,5 +428,6 @@ Global
 		{ACDB2C4C-CF32-4E17-893E-5AAAF7A6CF31} = {33BA021F-28C2-43F6-A7E4-628849933C12}
 		{0000F7C4-2A04-4F00-BC63-929AC848FD1E} = {67196256-5B58-487D-BB47-887EB5BF083A}
 		{AA808872-60A7-49D1-9482-CB19D62B4018} = {67196256-5B58-487D-BB47-887EB5BF083A}
+		{AF171C43-A365-4B12-94BF-8DB6150E0530} = {2CED8076-9242-4C3B-89F6-46FB9E1BCB08}
 	EndGlobalSection
 EndGlobal
