@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using ServiceStack;
 using ServiceStack.CefGlue;
+using ServiceStack.Desktop;
 using ServiceStack.Support;
 using ServiceStack.Text;
 using Xilium.CefGlue;
@@ -111,21 +112,30 @@ namespace Web
             }
             catch (WebException webEx)
             {
-                InitResponse((HttpWebResponse) webEx.Response);
+                if (webEx.Response is HttpWebResponse httpRes)
+                    InitResponse(httpRes);
+                else
+                    HandleGenericException(webEx);
+                
                 callback.Continue();
                 return true;
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                responseStatus = 500;
-                responseStatusText = e.GetType().Name;
-                responseContentType = MimeTypes.PlainText;
-                responseMemoryBytes = MemoryProvider.Instance.ToUtf8(e.ToString());
-                
+                HandleGenericException(e);
+
                 callback.Continue();
                 return true;
             }
+        }
+
+        private void HandleGenericException(Exception e)
+        {
+            if (DesktopState.AppDebug) Console.WriteLine(e);
+            responseStatus = 500;
+            responseStatusText = e.GetType().Name;
+            responseContentType = MimeTypes.PlainText;
+            responseMemoryBytes = MemoryProvider.Instance.ToUtf8(e.ToString());
         }
 
         private void InitResponse(HttpWebResponse webRes)

@@ -1684,8 +1684,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     return new Instruction { Command = "get", Handled = true };
                 }
             }
-            
-            if ((arg == "new" && (args.Length == 2 || args.Length == 3)) || (arg == "download" && args.Length == 2))
+
+            var isDownload = arg == "download";
+            if ((arg == "new" && (args.Length == 2 || args.Length == 3)) || (isDownload && args.Length == 2))
             {
                 var repo = args[1];
                 var parts = repo.Split('+');
@@ -1708,7 +1709,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     }
                 }
                 
-                var projectName = arg == "download"
+                var projectName = isDownload
                     ? args[1].LastRightPart('/')
                     : args.Length > 2 ? args[2] : args[1].SafeVarRef();
                 AssertValidProjectName(projectName, tool);
@@ -2390,6 +2391,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     dbFactory.RegisterDialectProvider("sqlserver2017", SqlServer2017Dialect.Provider);
                     dbFactory.RegisterDialectProvider("mysql", MySqlDialect.Provider);
                     dbFactory.RegisterDialectProvider("postgresql", PostgreSqlDialect.Provider);
+                    dbFactory.RegisterDialectProvider("postgres", PostgreSqlDialect.Provider);
+                    dbFactory.RegisterDialectProvider("pgsql", PostgreSqlDialect.Provider);
                 }
     
                 var redisConnString = "redis.connection".GetAppSetting();
