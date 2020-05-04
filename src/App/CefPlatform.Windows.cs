@@ -119,7 +119,7 @@ namespace ServiceStack.CefGlue
                         var cef = (CefGlueBrowser) sender;
                         if (cef.Config.Kiosk)
                         {
-                            NativeWin.ShowScrollBar(cef.BrowserWindowHandle, NativeWin.SB_BOTH, false);
+                            cef.BrowserWindowHandle.ShowScrollBar(NativeWin.SB_BOTH, false);
                         }
                     };
 
@@ -162,14 +162,14 @@ namespace ServiceStack.CefGlue
 
             var hWnd = ConsoleHandle;
             if (hWnd != IntPtr.Zero)
-                NativeWin.ShowWindow(hWnd, 1);
+                hWnd.ShowWindow(1);
         }
 
         public override void HideConsoleWindow()
         {
             var hWnd = ConsoleHandle;
             if (hWnd != IntPtr.Zero)
-                NativeWin.ShowWindow(hWnd, 0);
+                hWnd.ShowWindow(0);
         }
 
         CefSize ToCefSize(System.Drawing.Size size) => new CefSize(size.Width, size.Height);
@@ -178,7 +178,7 @@ namespace ServiceStack.CefGlue
 
         public override System.Drawing.Rectangle GetClientRectangle(IntPtr handle)
         {
-            NativeWin.GetClientRect(handle, out var result);
+            handle.GetClientRect(out var result);
             return System.Drawing.Rectangle.FromLTRB(result.Left, result.Top, result.Right, result.Bottom);
         }
 

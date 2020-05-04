@@ -136,7 +136,8 @@ namespace Web
                     host.Build().StartAsync(cts.Token);
 #pragma warning restore 4014
                 }
-                
+
+                var isMaximized = false;
                 var config = new CefConfig(cefDebug) {
                     Args = args,
                     StartUrl = startUrl,
@@ -156,6 +157,36 @@ namespace Web
                     },
                 };
 
+                config.OnKeyboardPreKeyEvent = (browser, keyEvent, osEvent) => {
+                    if (keyEvent.WindowsKeyCode == KeyCodes.F11)
+                    {
+                        var hWnd = DesktopState.BrowserHandle;
+                        if (hWnd != IntPtr.Zero)
+                        {
+                            const int GWL_STYLE = (int) WindowLongFlags.GWL_STYLE;
+                            if (!isMaximized)
+                            {
+                                hWnd.SetWindowLongPtr64(GWL_STYLE, new IntPtr((long) WindowStyles.WS_POPUP));
+                                hWnd.ShowWindow(ShowWindowCommands.Maximize);
+                            }
+                            else
+                            {
+                                hWnd.SetWindowLongPtr64(GWL_STYLE, new IntPtr((long) WindowStyles.WS_TILEDWINDOW));
+                                if (hWnd.GetNearestMonitorInfo(out var mi))
+                                {
+                                    var mr = mi.WorkArea;
+                                    var num1 = mr.Width / 2;
+                                    var num2 = mr.Height / 2;
+                                    hWnd.SetPosition(num1 - config.Width / 2, num2 - config.Height / 2, config.Width, config.Height);
+                                }
+                                hWnd.ShowWindow(ShowWindowCommands.Normal);
+                            }
+                            isMaximized = !isMaximized;
+                        }
+                    }
+                    return true;
+                };
+                
                 if ("name".TryGetAppSetting(out var name))
                     config.WindowTitle = name;
 
