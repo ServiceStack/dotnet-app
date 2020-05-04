@@ -169,40 +169,6 @@ namespace Web
                 if (kiosk)
                     config.Kiosk = true;
 
-                if (config.EnableToggleFullScreen)
-                {
-                    var isMaximized = config.FullScreen || config.Kiosk;
-                    config.OnKeyboardPreKeyEvent = (browser, keyEvent, osEvent) => {
-                        if (keyEvent.WindowsKeyCode == KeyCodes.F11)
-                        {
-                            var hWnd = DesktopState.BrowserHandle;
-                            if (hWnd != IntPtr.Zero)
-                            {
-                                const int gwlStyle = (int) WindowLongFlags.GWL_STYLE;
-                                if (!isMaximized)
-                                {
-                                    hWnd.SetWindowLongPtr64(gwlStyle, new IntPtr((long) WindowStyles.WS_POPUP));
-                                    hWnd.ShowWindow(ShowWindowCommands.Maximize);
-                                }
-                                else
-                                {
-                                    hWnd.SetWindowLongPtr64(gwlStyle, new IntPtr((long) WindowStyles.WS_TILEDWINDOW));
-                                    if (hWnd.GetNearestMonitorInfo(out var mi))
-                                    {
-                                        var mr = mi.WorkArea;
-                                        var num1 = mr.Width / 2;
-                                        var num2 = mr.Height / 2;
-                                        hWnd.SetPosition(num1 - config.Width / 2, num2 - config.Height / 2, config.Width, config.Height);
-                                    }
-                                    hWnd.ShowWindow(ShowWindowCommands.Normal);
-                                }
-                                isMaximized = !isMaximized;
-                            }
-                        }
-                        return true;
-                    };
-                }
-
                 if ("CefConfig.CefSettings".TryGetAppSetting(out var cefSettingsString))
                 {
                     var cefSettings = JS.eval(cefSettingsString);
