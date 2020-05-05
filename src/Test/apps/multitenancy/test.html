@@ -1,0 +1,9 @@
+{{ requestBodyAsString |> to => strBody }}
+{{ requestBodyAsJson |> to => jsonBody }}
+{{ rawBodyAsString |> to => rawStrBody }}
+{{ rawBodyAsJson |> to => rawJsonBody }}
+
+requestBodyAsString: '{{strBody |> raw}}'
+requestBodyAsJson: '{{jsonBody |> dump |> raw}}'
+rawBodyAsString: '{{rawStrBody |> raw}}'
+rawBodyAsJson: '{{rawJsonBody |> dump |> raw}}'
