@@ -1,20 +1,22 @@
 ```code|quiet
-var sql = `SELECT * FROM ${table.sqlVerifyFragment()}`
-var filters = []
 var ignore = 'db,format,orderby,skip,take'.split(',')
+var sql = `SELECT * FROM ${sqlQuote(table)}`
 
+var filters = []
 #each qs.Keys where !ignore.contains(it.lower())
-    `${it} = @${it}` |> addTo => filters
+`${it} = @${it}` |> addTo => filters
 /each
-#if !isEmpty(filters)
-    sql = `${sql} WHERE ${filters.join(' AND ')}`
+#if !filters.isEmpty()
+sql = `${sql} WHERE ${filters.join(' AND ')}`
 /if
+
 #if qs.orderBy
-    sql = `${sql} ORDER BY ${qs.orderBy.sqlVerifyFragment()}`
+sql = `${sql} ORDER BY ${sqlOrderByFields(qs.orderBy)}`
 /if
 #if qs.skip || qs.take
-    sql = `${sql} ${sqlLimit(qs.skip,qs.take)}`
+sql = `${sql} ${sqlLimit(qs.skip,qs.take)}`
 /if
+
 sql |> dbSelect(queryDictionary.withoutKeys(ignore)) |> return
 ```
 {{sql}}

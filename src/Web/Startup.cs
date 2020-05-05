@@ -1712,7 +1712,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var projectName = isDownload
                     ? args[1].LastRightPart('/')
                     : args.Length > 2 ? args[2] : args[1].SafeVarRef();
-                AssertValidProjectName(projectName, tool);
+                if (!isDownload)
+                    AssertValidProjectName(projectName, tool);
 
                 RegisterStat(tool, repo, arg);
 

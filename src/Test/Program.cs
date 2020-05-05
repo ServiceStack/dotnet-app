@@ -696,10 +696,10 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
-        public async Task Can_download_chat_app()
+        public async Task Can_download_rockwind_aws_app()
         {
             DeleteCreateAndSetDirectory("wip\\TestRepo");
-            await Startup.CreateWebHost("x", new[] { "download", "sharp-apps/chat", });
+            await Startup.CreateWebHost("x", new[] { "download", "sharp-apps/rockwind-aws", });
         }
     }
 }
