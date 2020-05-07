@@ -108,6 +108,7 @@ namespace Run
         }
 
         private static void SetProjectCurrentDirectory() => Directory.SetCurrentDirectory("..\\..\\..\\");
+        private static void SetProjectCurrentDirectory(string path) => Directory.SetCurrentDirectory(Path.Combine("..\\..\\..\\", path));
 
         [Test]
         public async Task Run_web_run_script_html()
@@ -700,6 +701,14 @@ Content-Disposition: form-data; name=""EvaluateCode""
         {
             DeleteCreateAndSetDirectory("wip\\TestRepo");
             await Startup.CreateWebHost("x", new[] { "download", "sharp-apps/rockwind-aws", });
+        }
+
+        [Test]
+        public async Task Can_load_multitenancy()
+        {
+            SetProjectCurrentDirectory("apps\\multitenancy\\");
+            var host = (await Startup.CreateWebHost("x", new string[0]))?.Build();
+            host?.Run();
         }
     }
 }

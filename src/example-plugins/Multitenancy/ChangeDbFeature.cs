@@ -1,5 +1,6 @@
 ﻿using System;
 using ServiceStack;
+using ServiceStack.Script;
 
 namespace Multitenancy
 {
@@ -20,5 +21,10 @@ namespace Multitenancy
                         : null;
             });
         }
+    }
+    
+    public class MyScripts : ScriptMethods
+    {
+        public string hi(string name) => $"Hi {name}";
     }
 }
