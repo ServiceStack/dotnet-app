@@ -1023,19 +1023,21 @@ namespace Web
                         throw new Exception(InvalidUsage);
 
                     literal = literal.Substring(1);
-                    var isEnvVar = literal.FirstCharEquals('$');
-                    if (isEnvVar)
-                        literal = literal.Substring(1);
-                    
-                    literal = literal.AsSpan().ParseJsToken(out token).ToString();
-                    var with = token is JsIdentifier withId 
-                        ? withId.Name
-                        : token is JsLiteral withLiteral 
-                            ? (string)withLiteral .Value
-                            : throw new Exception(InvalidUsage);
 
-                    if (isEnvVar)
-                        with = "$" + with;
+                    string with;
+                    if (literal.FirstCharEquals('\'') || literal.FirstCharEquals('"') || literal.FirstCharEquals('`'))
+                    {
+                        literal = literal.AsSpan().ParseJsToken(out token).ToString();
+                        with = token is JsIdentifier withId 
+                            ? withId.Name
+                            : token is JsLiteral withLiteral 
+                                ? (string)withLiteral .Value
+                                : throw new Exception(InvalidUsage);
+                    }
+                    else
+                    {
+                        with = literal;
+                    }
 
                     ReplaceTokens.Add(KeyValuePair.Create(term, with));
 

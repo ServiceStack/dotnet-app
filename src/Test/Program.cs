@@ -685,6 +685,23 @@ Content-Disposition: form-data; name=""EvaluateCode""
                 "-replace", "DIALECT=postgresql", 
                 "-replace", "CONNECTION_STRING=\"" + Environment.GetEnvironmentVariable("TECHSTACKS_DB") + "\""  
             });
+            
+            await Startup.CreateWebHost("x", new[] {
+                "mix", "autodto", 
+                "-replace", "DIALECT=postgresql", 
+                "-replace", "CONNECTION_STRING=$TECHSTACKS_DB"  
+            });
+        }
+
+        [Test]
+        public async Task Can_Replace_Tokens2()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            await Startup.CreateWebHost("x", new[] {
+                "mix", "sharpdata", 
+                "-replace", "DIALECT=sqlite", 
+                "-replace", "CONNECTION_STRING=\"northwind.sqlite\""  
+            });
         }
 
         [Test]
