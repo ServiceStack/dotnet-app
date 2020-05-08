@@ -2394,6 +2394,42 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     dbFactory.RegisterDialectProvider("postgresql", PostgreSqlDialect.Provider);
                     dbFactory.RegisterDialectProvider("postgres", PostgreSqlDialect.Provider);
                     dbFactory.RegisterDialectProvider("pgsql", PostgreSqlDialect.Provider);
+
+                    var namedConnectionsKeys = WebTemplateUtils.AppSettings.GetAllKeys()
+                        .Where(x => x.StartsWith("db.connections[")).ToList();
+
+                    foreach (var key in namedConnectionsKeys)
+                    {
+                        var connObj = key.GetAppSetting();
+                        if (connObj == null)
+                            break;
+
+                        var name = key.RightPart('[').LeftPart(']');
+                        if (string.IsNullOrEmpty(name))
+                            throw new NotSupportedException($"{key} requires a name for its connection");
+                        
+                        connObj.ParseJsExpression(out var token);
+                        if (!(token is JsObjectExpression expr))
+                            throw new NotSupportedException("Expected object literal {db:string, connection:string} but was: " + token.GetType().Name);
+
+                        var dbProp = expr.Properties.FirstOrDefault(x => x.Key is JsIdentifier id && id.Name == "db")
+                            ?? throw new NotSupportedException(name + " is missing 'db'");
+                        var connectionProp = expr.Properties.FirstOrDefault(x => x.Key is JsIdentifier id && id.Name == "connection")
+                            ?? throw new NotSupportedException(name + " is missing 'connection'");
+
+                        string resolveValue(JsProperty prop) => (prop.Value is JsLiteral l
+                                ? l.Value as string
+                                : prop.Value is JsIdentifier id
+                                    ? id.Name
+                                    : null)
+                            .ResolveValue() ?? throw new NotSupportedException($"'{prop.Key}' is required");
+
+                        var db = resolveValue(dbProp);
+                        var connection = resolveValue(connectionProp);
+
+                        var namedDbFactory = db.GetDbFactory(connectionString: connection, setGlobalDialectProvider:false);
+                        dbFactory.RegisterConnection(name, namedDbFactory);
+                    }
                 }
     
                 var redisConnString = "redis.connection".GetAppSetting();
@@ -2831,7 +2867,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             throw new NotSupportedException($"Unknown VirtualFiles Provider '{provider}'");
         }
 
-        public static OrmLiteConnectionFactory GetDbFactory(this string dbProvider, string connectionString)
+        public static OrmLiteConnectionFactory GetDbFactory(this string dbProvider, string connectionString, bool setGlobalDialectProvider=true)
         {
             if (dbProvider == null || connectionString == null)
                 return null;
@@ -2865,24 +2901,24 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         }
                     }
                     if (Startup.Verbose) $"SQLite connectionString: {connectionString}".Print();
-                    return new OrmLiteConnectionFactory(connectionString, SqliteDialect.Provider).Configure();
+                    return new OrmLiteConnectionFactory(connectionString, SqliteDialect.Provider, setGlobalDialectProvider).Configure();
                 case "mssql":
                 case "sqlserver":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServerDialect.Provider).Configure();
+                    return new OrmLiteConnectionFactory(connectionString, SqlServerDialect.Provider, setGlobalDialectProvider).Configure();
                 case "sqlserver2012":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServer2012Dialect.Provider).Configure();
+                    return new OrmLiteConnectionFactory(connectionString, SqlServer2012Dialect.Provider, setGlobalDialectProvider).Configure();
                 case "sqlserver2014":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServer2014Dialect.Provider).Configure();
+                    return new OrmLiteConnectionFactory(connectionString, SqlServer2014Dialect.Provider, setGlobalDialectProvider).Configure();
                 case "sqlserver2016":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServer2016Dialect.Provider).Configure();
+                    return new OrmLiteConnectionFactory(connectionString, SqlServer2016Dialect.Provider, setGlobalDialectProvider).Configure();
                 case "sqlserver2017":
-                    return new OrmLiteConnectionFactory(connectionString, SqlServer2017Dialect.Provider).Configure();
+                    return new OrmLiteConnectionFactory(connectionString, SqlServer2017Dialect.Provider, setGlobalDialectProvider).Configure();
                 case "mysql":
-                    return new OrmLiteConnectionFactory(connectionString, MySqlDialect.Provider).Configure();
+                    return new OrmLiteConnectionFactory(connectionString, MySqlDialect.Provider, setGlobalDialectProvider).Configure();
                 case "pgsql":
                 case "postgres":
                 case "postgresql":
-                    return new OrmLiteConnectionFactory(connectionString, PostgreSqlDialect.Provider).Configure();
+                    return new OrmLiteConnectionFactory(connectionString, PostgreSqlDialect.Provider, setGlobalDialectProvider).Configure();
             }
 
             throw new NotSupportedException($"Unknown DB Provider '{dbProvider}'");

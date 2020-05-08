@@ -4,5 +4,7 @@ name Multitenancy test
 # Configure below. Supported dialects: sqlite, mysql, postgresql, sqlserver
 db sqlserver
 db.connection $MSSQL_CONNECTION
+db.connections[northwind]  { db:sqlite, connection:'northwind.sqlite' }
+db.connections[techstacks] { db:postgres, connection:$TECHSTACKS_DB }
 
 features ChangeDbFeature

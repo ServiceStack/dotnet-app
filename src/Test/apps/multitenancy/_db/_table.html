@@ -1,3 +1,5 @@
+{{ {namedConnection:db} |> useDb  }}
+
 ```code|quiet
 var ignore = 'db,format,orderby,skip,take'.split(',')
 var sql = `SELECT * FROM ${sqlQuote(table)}`
