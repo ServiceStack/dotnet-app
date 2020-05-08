@@ -1,7 +1,7 @@
 {{ {namedConnection:db} |> useDb  }}
 
 ```code|quiet
-var ignore = 'db,format,orderby,skip,take'.split(',')
+var ignore = ['db','format','orderby','skip','take']
 var sql = `SELECT * FROM ${sqlQuote(table)}`
 
 var filters = []
@@ -21,5 +21,5 @@ var filters = []
 
 sql |> dbSelect(qs.toObjectDictionary().withoutKeys(ignore)) |> return
 ```
-{{sql}}
+{{ ifError |> show(sql) }}
 {{htmlError}}
