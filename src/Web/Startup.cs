@@ -543,7 +543,7 @@ namespace Web
                 }
             }
 
-            if (!runSharpApp && RunScript == null && dotnetArgs.Count == 0 && appSettingsPath == null)
+            if (!runSharpApp && RunScript == null && dotnetArgs.Count == 0 && appSettingsPath == null && createShortcutFor == null)
             {
                 PrintUsage(tool);
                 return null;
