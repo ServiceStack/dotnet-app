@@ -263,6 +263,14 @@ namespace Web
 
             foreach (var gistAlias in gistAliases)
             {
+                var isGistId = gistAlias.Length == 32 && gistAlias.IndexOf('-') < 0;
+                if (isGistId)
+                {
+                    WriteGistFile($"https://gist.github.com/{gistAlias}", gistAlias, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
+                    ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
+                    continue;
+                }
+                
                 if (gistAlias.StartsWith("https://gist.github.com/"))
                 {
                     WriteGistFile(gistAlias, gistAlias, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
@@ -284,7 +292,7 @@ namespace Web
             return true;
         }
 
-        public static void DeleteGists(string tool, string[] gistAliases, string projectName)
+        public static bool DeleteGists(string tool, string[] gistAliases, string projectName)
         {
             projectName ??= new DirectoryInfo(Environment.CurrentDirectory).Name;
             var links = GetGistApplyLinks();
@@ -306,7 +314,7 @@ namespace Web
                     {
                         $"No match found for '{gistAlias}', available gists:".Print();
                         PrintGistLinks(tool, links);
-                        return;
+                        return false;
                     }
 
                     gistId = gistLink.Url;
@@ -367,7 +375,7 @@ namespace Web
             {
                 var gistsList = string.Join(",", gistAliases);
                 $"Did not find any existing files from '{gistsList}' to delete".Print();
-                return;
+                return false;
             }
 
             var getUserApproval = UserInputYesNo;
@@ -419,6 +427,7 @@ namespace Web
             {
                 $"Done.".Print();
             }
+            return true;
         }
 
         private static string ResolveFilePath(string gistFilePath, string basePath, string projectName, string applyTo)
@@ -688,7 +697,7 @@ namespace Web
                 sb.AppendLine("  " + resolvedFile.Key);
             }
 
-            var silentMode = getUserApproval == null;
+            var silentMode = Silent || getUserApproval == null;
             if (!silentMode)
             {
                 if (!ForceApproval)
@@ -892,7 +901,7 @@ namespace Web
             return false;
         }
 
-        public static async Task Mix(string tool, string[] args)
+        public static async Task<bool> Mix(string tool, string[] args)
         {
             InitMix();
 
@@ -961,7 +970,7 @@ namespace Web
                     $"  mix #<tag>".Print();
                     $"  mix #<tag>,<tag>,<tag>".Print();
                     
-                    return;
+                    return false;
                 }
                 if (VerboseArgs.Contains(arg))
                 {
@@ -1076,17 +1085,18 @@ namespace Web
                     if (!deleteMode)
                     {
                         RegisterStat(tool, string.Join("_", dotnetArgs.OrderBy(x => x)), "+" + replaceStatSuffix);
-                        ApplyGists(tool, dotnetArgs.ToArray(), projectName:projectName);
+                        return ApplyGists(tool, dotnetArgs.ToArray(), projectName:projectName);
                     }
                     else
                     {
                         RegisterStat(tool, string.Join("_", dotnetArgs.OrderBy(x => x)), "+" + replaceStatSuffix);
-                        DeleteGists(tool, dotnetArgs.ToArray(), projectName);
+                        return DeleteGists(tool, dotnetArgs.ToArray(), projectName);
                     }
                 }
             }
 
             await CheckForUpdates(tool, checkUpdatesAndQuit);
+            return false;
         }
         
         private static string GetCachedFilePath(string zipUrl)

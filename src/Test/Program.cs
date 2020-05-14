@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -727,5 +728,55 @@ Content-Disposition: form-data; name=""EvaluateCode""
             var host = (await Startup.CreateWebHost("x", new string[0]))?.Build();
             host?.Run();
         }
+
+        [Test]
+        public void Can_view_CSV()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            File.WriteAllText("test.csv","A,B\n1,2\n");
+            var fullPath = Path.GetFullPath("test.csv");
+            // fullPath.Print();
+            var p = new Process {
+                StartInfo = new ProcessStartInfo("excel", fullPath) {
+                    UseShellExecute = true
+                }
+            };
+            p.Start();
+        }
+
+        [Test]
+        public async Task Can_override_user_appsettings()
+        {
+            // await Startup.CreateWebHost("x", new[]{ "open", "sharpdata", "db", "postgres", "db.connection", "$TECHSTACKS_DB" });
+            await Startup.CreateWebHost("x", new[]{ "open", "sharpdata" });
+        }
+
+        [Test]
+        public async Task Can_publish_northwind_sqlite()
+        {
+            Directory.SetCurrentDirectory("C:\\src\\mix");
+            await Startup.CreateWebHost("x", new[]{ "run", "sqlite.ss" });
+        }
+
+        [Test]
+        public async Task Can_mix_and_open_sharpdata_sharpapp()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            //app open sharpdata -mix northwind.sqlite -db sqlite -db.connection northwind.sqlite
+            // await Startup.CreateWebHost("x", new[]{ "open", "sharpdata", "mix", "northwind.sqlite", "-db", "sqlite", "-db.connection", "northwind.sqlite" });
+            await Startup.CreateWebHost("x", new[]{ "open", "sharpdata", "mix", "dc49cbcf6178033500c19b80f2ec8c3a", "-token", Environment.GetEnvironmentVariable("GISTLYN_TOKEN") });
+        }
+
+        [Test]
+        public async Task Can_create_shortcut()
+        {
+            Directory.SetCurrentDirectory("C:\\src\\netcore\\SharpData\\bin\\Release\\netcoreapp3.1\\publish");
+            
+            await Startup.CreateWebHost("app", new[]{ "shortcut", "SharpData.exe" }, new WebAppEvents {
+                CreateShortcut = Shortcut.Create,
+            });
+        }
+
+                       
     }
 }

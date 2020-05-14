@@ -224,6 +224,12 @@ namespace Web
                     publishExe = true;
                     continue;
                 }
+                if (arg == "mix" || arg == "-mix")
+                {
+                    if (!await Mix($"{tool} mix", new[] {args[++i]}))
+                        return null;
+                    continue;
+                }
                 if (arg == "run" || arg == "watch")
                 {
                     if (i + 1 >= args.Length)
@@ -244,7 +250,7 @@ namespace Web
                     if (!(script.EndsWith(".html") || script.EndsWith(".ss") || script.EndsWith(".sc") || script.EndsWith(".l")))
                     {
                         // Run SharpApp
-                        var appsDir = GetAppsPath(script);
+                        string appsDir = GetAppsPath(script);
                         if (Directory.Exists(appsDir))
                         {
                             RetryExec(() => Directory.SetCurrentDirectory(appsDir));
@@ -276,9 +282,17 @@ namespace Web
                     i += 2; //'run' 'script.ss'
                     for (; i < args.Length; i++)
                     {
-                        RunScriptArgV.Add(args[i]);
-
                         var key = args[i];
+                        if (key == "mix" || key == "-mix")
+                        {
+                            ForceApproval = Silent = true;
+                            if (!await Mix($"{tool} mix", new[] {args[++i]}))
+                                return null;
+                            continue;
+                        }
+
+                        RunScriptArgV.Add(key);
+
                         if (!(key.FirstCharEquals('-') || key.FirstCharEquals('/')))
                             continue;
 
@@ -322,9 +336,18 @@ namespace Web
                     i += 2; //'open' 'target'
                     for (; i < args.Length; i++)
                     {
-                        RunScriptArgV.Add(args[i]);
-
                         var key = args[i];
+                        if (key == "mix" || key == "-mix")
+                        {
+                            RetryExec(() => Directory.SetCurrentDirectory(appsDir));
+                            ForceApproval = Silent = true;
+                            if (!await Mix($"{tool} mix", new[] {args[++i]}))
+                                return null;
+                            continue;
+                        }
+                        
+                        RunScriptArgV.Add(key);
+
                         if (!(key.FirstCharEquals('-') || key.FirstCharEquals('/')))
                             continue;
 
@@ -2356,7 +2379,21 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             { 
                 appHost.Config.DebugMode = GetDebugMode();
                 appHost.Config.ForbiddenPaths.Add("/plugins");
-                appHost.Config.EmbeddedResourceBaseTypes.Add(typeof(DesktopAssets));
+
+                var appName = "appName".GetAppSetting();
+                if (appName != null)
+                    DesktopConfig.Instance.AppName ??= appName;
+
+                var desktopFeature = appHost.GetPlugin<DesktopFeature>();
+                if (desktopFeature == null)
+                {
+                    appHost.Config.EmbeddedResourceBaseTypes.Add(typeof(DesktopAssets));
+
+                    appHost.RegisterService<DesktopDownloadUrlService>(DesktopFeature.DesktopDownloadUrlRoutes);
+
+                    if (DesktopConfig.Instance.AppName != null)
+                        appHost.RegisterService<DesktopFileService>(DesktopFeature.DesktopFileRoutes);
+                }
     
                 var feature = appHost.GetPlugin<SharpPagesFeature>();
                 if (feature != null && Verbose)
@@ -2366,7 +2403,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 {
                     feature = (nameof(SharpPagesFeature).GetAppSetting() != null
                         ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
-                        : new SharpPagesFeature { ApiPath = "apiPath".GetAppSetting() ?? "/api" });
+                        : new SharpPagesFeature {
+                            ApiPath = "apiPath".GetAppSetting() ?? "/api",
+                            EnableSpaFallback = true,
+                        });
                 }
 
                 feature.Args["ARGV"] = RunScriptArgV;
@@ -2808,7 +2848,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public static T GetAppSetting<T>(this string name, T defaultValue)
         {
             var value = GetSetting(name);
-            if (value == null) return defaultValue;
+            if (value == null) 
+                return defaultValue;
 
             var resolvedValue = ResolveValue(value);
             return resolvedValue.FromJsv<T>();

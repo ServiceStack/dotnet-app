@@ -139,7 +139,7 @@ namespace Web
 
                 var config = new CefConfig(cefDebug) {
                     Args = args,
-                    StartUrl = startUrl,
+                    StartUrl = DesktopState.StartUrl = startUrl,
                     Icon = favIcon,
                     CefSettings = {
                         PersistSessionCookies = true,
