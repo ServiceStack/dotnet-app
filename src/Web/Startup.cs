@@ -2393,6 +2393,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             { 
                 appHost.Config.DebugMode = GetDebugMode();
                 appHost.Config.ForbiddenPaths.Add("/plugins");
+                appHost.Config.DefaultRedirectPath = "defaultRedirect".GetAppSetting();
 
                 var appName = "appName".GetAppSetting();
                 if (appName != null)
@@ -2415,11 +2416,13 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
     
                 if (feature == null)
                 {
+                    var isWebApp = appHost.RootDirectory.GetFile("index.html") != null ||
+                                   appHost.RootDirectory.GetFile("_layout.html") != null;
                     feature = (nameof(SharpPagesFeature).GetAppSetting() != null
                         ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
                         : new SharpPagesFeature {
                             ApiPath = "apiPath".GetAppSetting() ?? "/api",
-                            EnableSpaFallback = true,
+                            EnableSpaFallback = isWebApp,
                         });
                 }
 
