@@ -777,6 +777,15 @@ Content-Disposition: form-data; name=""EvaluateCode""
             });
         }
 
+        [Test]
+        public async Task Can_open_studio_verbose()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            await Startup.CreateWebHost("app", new[]{ "open", "studio", "-debug" }, new WebAppEvents {
+                CreateShortcut = Shortcut.Create,
+            });
+        }
+
                        
     }
 }
