@@ -285,19 +285,26 @@ namespace Web
                         var key = args[i];
                         if (key == "mix" || key == "-mix")
                         {
+                            if (++i >= args.Length)
+                                throw new Exception($"Usage: {tool} run <name> mix <gist>");
+                            
                             ForceApproval = Silent = true;
-                            if (!await Mix($"{tool} mix", new[] {args[++i]}))
+                            if (!await Mix($"{tool} mix", new[] { args[i] }))
                                 return null;
                             continue;
                         }
+                        
+                        if (ProcessFlags(args, key, ref i))
+                            continue;
 
                         RunScriptArgV.Add(key);
 
                         if (!(key.FirstCharEquals('-') || key.FirstCharEquals('/')))
                             continue;
 
-                        RunScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
-                        RunScriptArgV.Add(args[i++ + 1]);
+                        var hasArgValue = i + 1 < args.Length;
+                        RunScriptArgs[key.Substring(1)] = hasArgValue ? args[i + 1] : null;
+                        if (hasArgValue) RunScriptArgV.Add(args[i++ + 1]);
                     }
                     continue;
                 }
@@ -339,20 +346,27 @@ namespace Web
                         var key = args[i];
                         if (key == "mix" || key == "-mix")
                         {
+                            if (++i >= args.Length)
+                                throw new Exception($"Usage: {tool} open <name> mix <gist>");
+                            
                             RetryExec(() => Directory.SetCurrentDirectory(appsDir));
                             ForceApproval = Silent = true;
-                            if (!await Mix($"{tool} mix", new[] {args[++i]}))
+                            if (!await Mix($"{tool} mix", new[] { args[i] }))
                                 return null;
                             continue;
                         }
+                        
+                        if (ProcessFlags(args, key, ref i))
+                            continue;
                         
                         RunScriptArgV.Add(key);
 
                         if (!(key.FirstCharEquals('-') || key.FirstCharEquals('/')))
                             continue;
 
-                        RunScriptArgs[key.Substring(1)] = (i + 1) < args.Length ? args[i + 1] : null;
-                        RunScriptArgV.Add(args[i++ + 1]);
+                        var hasArgValue = i + 1 < args.Length;
+                        RunScriptArgs[key.Substring(1)] = hasArgValue ? args[i + 1] : null;
+                        if (hasArgValue) RunScriptArgV.Add(args[i++ + 1]);
                     }
                     continue;
                 }
