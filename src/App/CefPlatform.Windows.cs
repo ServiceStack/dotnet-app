@@ -77,14 +77,14 @@ namespace ServiceStack.CefGlue
                                 schemeFactory.Domain, true);
                     }
 
-                    if (config.Verbose)
-                    {
-                        Console.WriteLine(
-                            @$"GetScreenResolution: {res.Width}x{res.Height}, scale:{ScaleFactor}, {(int) (ScaleFactor * res.Width)}x{(int) (ScaleFactor * res.Width)}");
-                        var rect = Instance.GetClientRectangle(window.Handle);
-                        Console.WriteLine(
-                            @$"GetClientRectangle:  [{rect.Top},{rect.Left}] [{rect.Bottom},{rect.Right}], scale: [{(int) (rect.Bottom * ScaleFactor)},{(int) (rect.Right * ScaleFactor)}]");
-                    }
+                    // if (config.Verbose)
+                    // {
+                    //     Console.WriteLine(
+                    //         @$"GetScreenResolution: {res.Width}x{res.Height}, scale:{ScaleFactor}, {(int) (ScaleFactor * res.Width)}x{(int) (ScaleFactor * res.Width)}");
+                    //     var rect = Instance.GetClientRectangle(window.Handle);
+                    //     Console.WriteLine(
+                    //         @$"GetClientRectangle:  [{rect.Top},{rect.Left}] [{rect.Bottom},{rect.Right}], scale: [{(int) (rect.Bottom * ScaleFactor)},{(int) (rect.Right * ScaleFactor)}]");
+                    // }
 
                     if (config.Kiosk)
                     {

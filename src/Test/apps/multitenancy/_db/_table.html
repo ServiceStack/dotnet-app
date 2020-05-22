@@ -8,7 +8,10 @@ var filters = []
 var queryMap = qs.toObjectDictionary().withoutKeys(ignore)
 #each queryMap.Keys.toList()
     var search = queryMap[it.sqlVerifyFragment()].sqlVerifyFragment();
-    #if search.startsWith('=')
+    #if search == '=null' || search == '!=null'
+        `${sqlQuote(it)} ${search=='=null' ? 'IS' : 'IS NOT'} NULL` |> addTo => filters
+        queryMap[it] = null
+    else if search.startsWith('=')
         `${sqlQuote(it)} = @${it}` |> addTo => filters
         queryMap[it] = search.substring(1).coerce()
     else if search.startsWith('<=') || search.startsWith('>=') || search.startsWith('<>') || search.startsWith('!=')
