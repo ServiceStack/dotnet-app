@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ServiceStack;
+using ServiceStack.Configuration;
 using ServiceStack.Script;
 using ServiceStack.Text;
 
@@ -155,7 +156,7 @@ namespace Web
             }
         }
 
-        private static ConcurrentDictionary<string, List<GistLink>> GistLinksCache =
+        private static readonly ConcurrentDictionary<string, List<GistLink>> GistLinksCache =
             new ConcurrentDictionary<string, List<GistLink>>();
 
         private static List<GistLink> GetGistApplyLinks() => GetGistLinks(GistLinksId, "mix.md");
@@ -258,12 +259,13 @@ namespace Web
         {
             projectName ??= new DirectoryInfo(Environment.CurrentDirectory).Name;
             var links = GetGistApplyLinks();
+            var localAliases = GetGistAliases();
             
             gistAliases = ResolveGistAliases(gistAliases, links);
 
             foreach (var gistAlias in gistAliases)
             {
-                var isGistId = gistAlias.Length == 32 && gistAlias.IndexOf('-') < 0;
+                var isGistId = (gistAlias.Length == 20 || gistAlias.Length == 32) && gistAlias.IndexOf('-') < 0;
                 if (isGistId)
                 {
                     WriteGistFile($"https://gist.github.com/{gistAlias}", gistAlias, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
@@ -275,6 +277,13 @@ namespace Web
                 {
                     WriteGistFile(gistAlias, gistAlias, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
                     ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
+                    continue;
+                }
+
+                if (localAliases.Exists(gistAlias))
+                {
+                    var aliasGistId = localAliases.GetRequiredString(gistAlias);
+                    WriteGistFile($"https://gist.github.com/{aliasGistId}", aliasGistId, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
                     continue;
                 }
                 
@@ -296,6 +305,7 @@ namespace Web
         {
             projectName ??= new DirectoryInfo(Environment.CurrentDirectory).Name;
             var links = GetGistApplyLinks();
+            var localAliases = GetGistAliases();
             
             gistAliases = ResolveGistAliases(gistAliases, links);
 
@@ -309,22 +319,31 @@ namespace Web
             {
                 if (!gistAlias.StartsWith("https://gist.github.com"))
                 {
-                    var gistLink = GistLink.Get(links, gistAlias);
-                    if (gistLink == null)
+                    if (localAliases.Exists(gistAlias))
                     {
-                        $"No match found for '{gistAlias}', available gists:".Print();
-                        PrintGistLinks(tool, links);
-                        return false;
+                        gistId = localAliases.GetRequiredString(gistAlias);
+                        gistLinkUrl = $"https://gist.github.com/{gistId}";
+                        to = ".";
                     }
+                    else
+                    {
+                        var gistLink = GistLink.Get(links, gistAlias);
+                        if (gistLink == null)
+                        {
+                            $"No match found for '{gistAlias}', available gists:".Print();
+                            PrintGistLinks(tool, links);
+                            return false;
+                        }
 
-                    gistId = gistLink.Url;
-                    gistLinkUrl = $"https://gist.github.com/{gistId}";
-                    if (gistId.IsUrl())
-                    {
-                        gistLinkUrl = gistId;
-                        gistId = gistLinkUrl.LastRightPart('/');
+                        gistId = gistLink.Url;
+                        gistLinkUrl = $"https://gist.github.com/{gistId}";
+                        if (gistId.IsUrl())
+                        {
+                            gistLinkUrl = gistId;
+                            gistId = gistLinkUrl.LastRightPart('/');
+                        }
+                        to = gistLink.To;
                     }
-                    to = gistLink.To;
                 }
                 else
                 {
@@ -1098,7 +1117,21 @@ namespace Web
             await CheckForUpdates(tool, checkUpdatesAndQuit);
             return false;
         }
-        
+
+        private static string GetGistAliasesFilePath() => 
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".servicestack", "gist.aliases");
+
+        private static DictionarySettings GetGistAliases()
+        {
+            var aliasesPath = GetGistAliasesFilePath();
+            if (!File.Exists(aliasesPath))
+                return new DictionarySettings();
+
+            var aliases = File.ReadAllText(aliasesPath);
+            var aliasSettings = new DictionarySettings(aliases.ParseKeyValueText(delimiter: " "));
+            return aliasSettings;
+        }
+
         private static string GetCachedFilePath(string zipUrl)
         {
             var invalidFileNameChars = new HashSet<char>(Path.GetInvalidFileNameChars()) { ':' };

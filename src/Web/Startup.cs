@@ -332,7 +332,7 @@ namespace Web
                     }
 
                     var gistLinks = !isGitHubUrl ? GetGistAppsLinks() : null;
-                    var gistLink = gistLinks?.FirstOrDefault(x => x.Name == target);
+                    var gistLink = GetGistAliasLink(target) ?? gistLinks?.FirstOrDefault(x => x.Name == target);
 
                     if (!InstallGistApp(tool, target, gistLink, gistLinks, out var appsDir)) 
                         return null;
@@ -400,7 +400,7 @@ namespace Web
                         return null;
                     }
                     
-                    var gistLink = gistLinks.FirstOrDefault(x => x.Name == target);
+                    var gistLink = GetGistAliasLink(target) ?? gistLinks.FirstOrDefault(x => x.Name == target);
                     if (gistLink == null)
                     {
                         $"No match found for '{target}', available Apps:".Print();
@@ -492,6 +492,103 @@ namespace Web
                     "".Print();
                     "Options:".Print();
                     "   --out <dir>                     Save generated gRPC language sources to <dir>".Print();
+                    return null;
+                }
+                if (arg == "alias")
+                {
+                    var settings = GetGistAliases();
+                    if (i + 1 >= args.Length)
+                    {
+                        var keys = settings.GetAllKeys();
+                        if (keys.Count == 0)
+                        {
+                            "No gist aliases have been defined.".Print();
+                            $"Usage: {tool} alias <alias> <gist-id>".Print();
+                        }
+                        else
+                        {
+                            foreach (var key in keys)
+                            {
+                                var gistId = settings.GetNullableString(key);
+                                $"{key} {gistId}".Print();
+                            }
+                        }
+                        return null;
+                    }
+
+                    var target = args[i + 1];
+                    if (i + 2 >= args.Length)
+                    {
+                        settings.GetNullableString(target).Print();
+                    }
+                    else
+                    {
+                        var gistId = args[i + 2];
+                        if (gistId.StartsWith("https://gist.github.com/"))
+                            gistId = gistId.ToGistId();
+                        
+                        if (gistId.Length != 20 && gistId.Length != 32)
+                        {
+                            $"'{args[i + 2]}' is not a valid gist id or URL".Print();
+                            return null;
+                        }
+
+                        var aliasPath = GetGistAliasesFilePath();
+                        if (settings.Exists(target))
+                        {
+                            var newAliases = new StringBuilder();
+                            foreach (var line in await File.ReadAllLinesAsync(aliasPath))
+                            {
+                                newAliases.AppendLine(line.StartsWith(target + " ") ? $"{target} {gistId}" : line);
+                            }
+                            await File.WriteAllTextAsync(aliasPath, newAliases.ToString());
+                        }
+                        else
+                        {
+                            using var fs = File.AppendText(aliasPath);
+                            await fs.WriteLineAsync($"{target} {gistId}");
+                        }
+                    }
+
+                    return null;
+                }
+                if (arg == "unalias")
+                {
+                    if (i + 1 >= args.Length)
+                    {
+                        var settings = GetGistAliases();
+                        var keys = settings.GetAllKeys();
+                        if (keys.Count == 0)
+                        {
+                            "No gist aliases have been defined.".Print();
+                        }
+                        else
+                        {
+                            foreach (var key in keys)
+                            {
+                                var gistId = settings.GetNullableString(key);
+                                $"{key} {gistId}".Print();
+                            }
+                        }
+                        return null;
+                    }
+                    
+                    var removeAliases = new List<string>();
+                    for (var j = i + i; j < args.Length; j++)
+                    {
+                        removeAliases.Add(args[j]);
+                    }
+
+                    var aliasPath = GetGistAliasesFilePath();
+                    var newAliases = new StringBuilder();
+                    foreach (var line in await File.ReadAllLinesAsync(aliasPath))
+                    {
+                        if (removeAliases.Any(x => line.StartsWith(x + " ")))
+                            continue;
+                        newAliases.AppendLine(line);
+                    }
+                    await File.WriteAllTextAsync(aliasPath, newAliases.ToString());
+                    
                     return null;
                 }
                 dotnetArgs.Add(arg);
@@ -953,6 +1050,21 @@ namespace Web
             return CreateWebAppContext(ctx);
         }
 
+        public static GistLink GetGistAliasLink(string alias)
+        {
+            var localAliases = GetGistAliases();
+            if (localAliases.Exists(alias))
+            {
+                var gistId = localAliases.GetRequiredString(alias);
+                return new GistLink {
+                    GistId = gistId,
+                    Url = $"https://gist.github.com/{gistId}",
+                    To = ".",
+                };
+            }
+            return null;
+        }
+
         private static void AssertGitHubToken()
         {
             if (string.IsNullOrEmpty(GitHubToken))
@@ -1333,6 +1445,11 @@ Usage:
   {tool} mix #<tag>              Search available gists
   {tool} mix <gist-url>          Write all Gist text files to current directory
   {tool} gist <gist-id>          Write all Gist text files to current directory
+
+  {tool} alias                   Show all local gist aliases (for usage in mix or app's)
+  {tool} alias <alias>           Print local alias value
+  {tool} alias <alias> <gist-id> Set local alias with Gist Id or Gist URL
+  {tool} unalias <alias>         Remove local alias
 
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
   {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
