@@ -1121,14 +1121,14 @@ namespace Web
         private static string GetGistAliasesFilePath() => 
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".servicestack", "gist.aliases");
 
-        private static DictionarySettings GetGistAliases()
+        private static Dictionary<string, string> GetGistAliases()
         {
             var aliasesPath = GetGistAliasesFilePath();
             if (!File.Exists(aliasesPath))
-                return new DictionarySettings();
+                return new Dictionary<string, string>();
 
             var aliases = File.ReadAllText(aliasesPath);
-            var aliasSettings = new DictionarySettings(aliases.ParseKeyValueText(delimiter: " "));
+            var aliasSettings = aliases.ParseKeyValueText(delimiter: " ");
             return aliasSettings;
         }
 
@@ -1160,6 +1160,13 @@ namespace Web
 
     public static class MixUtils
     {
+        public static bool Exists(this Dictionary<string, string> map, string name) => map.ContainsKey(name);
+
+        public static string GetRequiredString(this Dictionary<string, string> map, string name) =>
+            map.TryGetValue(name, out var value) ? value : throw new Exception($"'{name}' does not exist");
+
+        public static List<string> GetAllKeys(this Dictionary<string, string> map) => map.Keys.ToList();
+        
         public static bool IsUrl(this string gistId) => gistId.IndexOf("://", StringComparison.Ordinal) >= 0;
         
         public static string SplitPascalCase(this string input) 

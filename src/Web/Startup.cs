@@ -509,7 +509,7 @@ namespace Web
                         {
                             foreach (var key in keys)
                             {
-                                var gistId = settings.GetNullableString(key);
+                                var gistId = settings.GetRequiredString(key);
                                 $"{key} {gistId}".Print();
                             }
                         }
@@ -519,7 +519,7 @@ namespace Web
                     var target = args[i + 1];
                     if (i + 2 >= args.Length)
                     {
-                        settings.GetNullableString(target).Print();
+                        settings.GetRequiredString(target).Print();
                     }
                     else
                     {
@@ -566,7 +566,7 @@ namespace Web
                         {
                             foreach (var key in keys)
                             {
-                                var gistId = settings.GetNullableString(key);
+                                var gistId = settings.GetRequiredString(key);
                                 $"{key} {gistId}".Print();
                             }
                         }
