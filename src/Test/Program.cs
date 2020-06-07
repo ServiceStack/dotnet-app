@@ -666,7 +666,18 @@ Content-Disposition: form-data; name=""EvaluateCode""
         public async Task Can_create_new_gist_from_dir()
         {
             //"web new aurelia-spa testproject --verbose"
-            await Startup.CreateWebHost("x", new[]{ "gist-new", @"C:\src\dotnet-app\src\Test\protos", "-token", Environment.GetEnvironmentVariable("GISTLYN_TOKEN") });
+            await Startup.CreateWebHost("x", new[] {
+                "gist-new", @"C:\src\dotnet-app\src\Test\protos", "-token", Environment.GetEnvironmentVariable("GISTLYN_TOKEN")
+            });
+        }
+
+        [Test]
+        public async Task Can_publish_folder_to_create_and_publish_gist()
+        {
+            RetryExec(() => Directory.SetCurrentDirectory(@"C:\src\dotnet-app\src\Test\protos"));
+            await Startup.CreateWebHost("x", new[] {
+                "publish", "-desc", "test .protos", "-token", Environment.GetEnvironmentVariable("GISTLYN_TOKEN")
+            });
         }
 
         [Test]

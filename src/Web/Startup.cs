@@ -109,6 +109,9 @@ namespace Web
         public static bool? DebugMode { get; set; }
         public static string[] DebugArgs = CreateArgs("debug", withFlag:'d');
         public static string[] ReleaseArgs = CreateArgs("release", withFlag:'c');
+        public static string[] DescriptionArgs = CreateArgs("desc");
+        
+        public static string Description { get; set; }
         
         static string[] TokenArgs = CreateArgs("token");
         
@@ -545,7 +548,7 @@ namespace Web
                         }
                         else
                         {
-                            using var fs = File.AppendText(aliasPath);
+                            await using var fs = File.AppendText(aliasPath);
                             await fs.WriteLineAsync($"{target} {gistId}");
                         }
                     }
@@ -593,6 +596,12 @@ namespace Web
                 }
                 dotnetArgs.Add(arg);
             }
+            
+            if (publish)
+            {
+                await PublishToGist(tool);
+                return null;
+            }
 
             var allow = new[] { "-h", "-help", "--help", "-v", "-version", "--version", "-clear", "--clear", "-clean", "--clean" };
             var unknownFlag = dotnetArgs.FirstOrDefault(x => x.StartsWith("-") && !allow.Contains(x)); 
@@ -612,8 +621,6 @@ namespace Web
                     $"Command: gist-new".Print();
                 if (GistUpdate)
                     $"Command: gist-update".Print();
-                if (publish)
-                    $"Command: publish".Print();
                 if (publishExe)
                     $"Command: publish-exe".Print();
                 if (RunScript != null)
@@ -653,7 +660,7 @@ namespace Web
                     break;
                 }
             }
-
+            
             if (!runSharpApp && RunScript == null && dotnetArgs.Count == 0 && appSettingsPath == null && createShortcutFor == null)
             {
                 PrintUsage(tool);
@@ -732,7 +739,7 @@ namespace Web
             }
 
             var usingWebSettings = File.Exists(appSettingsPath);
-            if (Verbose || (usingWebSettings && !createShortcut && (tool == "x") && instruction == null && appSettingsPath != null && !publish))
+            if (Verbose || (usingWebSettings && !createShortcut && (tool == "x") && instruction == null && appSettingsPath != null))
                 $"Using '{appSettingsPath}'".Print();
 
             if (appSettingsContent == null && RunScript == null)
@@ -799,118 +806,7 @@ namespace Web
 
                 return null;
             }
-            if (publish)
-            {
-                RegisterStat(tool, "publish");
-
-                if (!File.Exists("app.settings"))
-                    throw new Exception($"No app.settings exists");
-
-                AssertGitHubToken();
-                
-                var files = new Dictionary<string, object>();
-                Environment.CurrentDirectory.CopyAllToDictionary(files, 
-                    excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray(),
-                    excludeExtensions:WebTemplateUtils.ExcludeFileExtensions.ToArray());
-                
-                string publishUrl = null;
-                string description = null;
-                string appName = null;
-                var sb = new StringBuilder();
-                foreach (var line in await File.ReadAllLinesAsync("app.settings"))
-                {
-                    sb.AppendLine(line);
-                    if (line.StartsWith("description") || (line.StartsWith("name ") && string.IsNullOrEmpty(description)))
-                    {
-                        description = line.RightPart(' ');
-                    }
-                    if (line.StartsWith("appName "))
-                    {
-                        appName = line.RightPart(' ');
-                    }
-                    if (line.StartsWith("publish "))
-                    {
-                        publishUrl = line.RightPart(' ');
-                    }
-                }
-
-                var gateway = new GitHubGateway(GitHubToken);
-
-                "".Print();
-
-                Task<RegisterSharpAppResponse> registerTask = null;
-                var client = new JsonServiceClient("https://servicestack.net");
-
-                var createGist = string.IsNullOrEmpty(publishUrl);
-                if (createGist)
-                {
-                    var gist = gateway.CreateGithubGist(
-                        description ?? new DirectoryInfo(Environment.CommandLine).Name + " Sharp App", isPublic: true, 
-                        files: files);
-                    
-                    $"App published to: {gist.Url}".Print();
-
-                    // Html_Url doesn't include username in URL, which it redirects to. 
-                    // Use URL with username instead so app listing can extract username
-                    var htmlUrl = !string.IsNullOrEmpty(gist.Owner?.Login)
-                        ? $"https://gist.github.com/{gist.Owner.Login}/{gist.Id}"
-                        : gist.Html_Url;
-
-                    sb.AppendLine("publish " + htmlUrl);
-                    await File.WriteAllTextAsync("app.settings", sb.ToString());
-                    
-                    if (appName != null && gist.Url != null)
-                    {
-                        registerTask = client.PostAsync(new RegisterSharpApp {
-                            AppName = appName,
-                            Publish = gist.Url,
-                        });
-                    }
-                }
-                else
-                {
-                    var gistId = publishUrl.LastRightPart('/');
-                    gateway.WriteGistFiles(gistId, files);
-                    $"App updated at: {publishUrl}".Print();
-                    
-                    if (appName != null && publishUrl != null)
-                    {
-                        registerTask = client.PostAsync(new RegisterSharpApp {
-                            AppName = appName,
-                            Publish = publishUrl,
-                        });
-                    }
-                }
-
-                "".Print();
-                if (appName == null)
-                {
-
-                    "Publish App to the public registry by re-publishing with app.settings:".Print();
-                    "".Print();
-                    "appName     <app alias>    # required: alpha-numeric snake-case characters only, 30 chars max".Print();
-                    "description <app summary>  # optional: 20-150 chars".Print();
-                    "tags        <app tags>     # optional: space delimited, alpha-numeric snake-case, 3 tags max".Print();
-                }
-                else if (registerTask != null)
-                {
-                    try
-                    {
-                        registerTask.Wait();
-                    }
-                    catch (WebServiceException ex)
-                    {
-                        $"REGISTRY ERROR: {ex.Message}".Print();
-                        return null;
-                    }
-
-                    "Run published App:".Print();
-                    "".Print();
-                    $"    {tool} open {appName}".Print();
-                }
-                
-                return null;
-            }
+            
             if (RunScript != null || runLispRepl)
             {
                 void ExecScript(SharpPagesFeature feature)
@@ -1050,6 +946,131 @@ namespace Web
             return CreateWebAppContext(ctx);
         }
 
+        private static async Task PublishToGist(string tool)
+        {
+            RegisterStat(tool, "publish");
+
+            AssertGitHubToken();
+
+            var files = new Dictionary<string, object>();
+            Environment.CurrentDirectory.CopyAllToDictionary(files,
+                excludePaths: WebTemplateUtils.ExcludeFoldersNamed.ToArray(),
+                excludeExtensions: WebTemplateUtils.ExcludeFileExtensions.ToArray());
+
+            string publishUrl = null;
+            string appName = null;
+
+            var isSharpApp = File.Exists("app.settings");
+            if (isSharpApp)
+            {
+                foreach (var line in await File.ReadAllLinesAsync("app.settings"))
+                {
+                    if (line.StartsWith("description") || (line.StartsWith("name ") && string.IsNullOrEmpty(Description)))
+                    {
+                        Description = line.RightPart(' ');
+                    }
+
+                    if (line.StartsWith("appName "))
+                    {
+                        appName = line.RightPart(' ');
+                    }
+
+                    if (line.StartsWith("publish "))
+                    {
+                        publishUrl = line.RightPart(' ').Trim();
+                    }
+                }
+            }
+
+            if (File.Exists(".publish"))
+            {
+                foreach (var line in await File.ReadAllLinesAsync(".publish"))
+                {
+                    if (line.StartsWith("gist "))
+                    {
+                        publishUrl = line.RightPart(' ').Trim();
+                    }
+                }
+            }
+
+            var gateway = new GitHubGateway(GitHubToken);
+
+            "".Print();
+
+            Task<RegisterSharpAppResponse> registerTask = null;
+            var client = new JsonServiceClient("https://servicestack.net");
+
+            var createGist = string.IsNullOrEmpty(publishUrl);
+            if (createGist)
+            {
+                var gist = gateway.CreateGithubGist(
+                    Description ?? new DirectoryInfo(Environment.CommandLine).Name + (isSharpApp ? " Sharp App" : " files"),
+                    isPublic: true,
+                    files: files);
+
+                // Html_Url doesn't include username in URL, which it redirects to. 
+                // Use URL with username instead so app listing can extract username
+                var htmlUrl = !string.IsNullOrEmpty(gist.Owner?.Login)
+                    ? $"https://gist.github.com/{gist.Owner.Login}/{gist.Id}"
+                    : gist.Html_Url;
+
+                $"published to: {htmlUrl}".Print();
+
+                await File.WriteAllTextAsync(".publish", $"gist {htmlUrl}");
+
+                if (isSharpApp && appName != null && gist.Url != null)
+                {
+                    registerTask = client.PostAsync(new RegisterSharpApp {
+                        AppName = appName,
+                        Publish = htmlUrl,
+                    });
+                }
+            }
+            else
+            {
+                var gistId = publishUrl.LastRightPart('/');
+                gateway.WriteGistFiles(gistId, files);
+                $"updated: {publishUrl}".Print();
+
+                if (isSharpApp && appName != null)
+                {
+                    registerTask = client.PostAsync(new RegisterSharpApp {
+                        AppName = appName,
+                        Publish = publishUrl,
+                    });
+                }
+            }
+
+            if (isSharpApp)
+            {
+                "".Print();
+                if (appName == null)
+                {
+                    "Publish App to the public registry by re-publishing with app.settings:".Print();
+                    "".Print();
+                    "appName     <app alias>    # required: alpha-numeric snake-case characters only, 30 chars max".Print();
+                    "description <app summary>  # optional: 20-150 chars".Print();
+                    "tags        <app tags>     # optional: space delimited, alpha-numeric snake-case, 3 tags max".Print();
+                }
+                else if (registerTask != null)
+                {
+                    try
+                    {
+                        registerTask.Wait();
+                    }
+                    catch (WebServiceException ex)
+                    {
+                        $"REGISTRY ERROR: {ex.Message}".Print();
+                        
+                    }
+
+                    "Run published App:".Print();
+                    "".Print();
+                    $"    {tool} open {appName}".Print();
+                }
+            }
+        }
+
         public static GistLink GetGistAliasLink(string alias)
         {
             var localAliases = GetGistAliases();
@@ -1078,6 +1099,8 @@ namespace Web
 
         private static bool ProcessFlags(string[] args, string arg, ref int i)
         {
+            string NextArg(ref int iRef) => iRef + 1 < args.Length ? args[++iRef] : null;
+            
             if (VerboseArgs.Contains(arg))
             {
                 Verbose = true;
@@ -1092,7 +1115,7 @@ namespace Web
 
             if (SourceArgs.Contains(arg))
             {
-                GitHubSource = GitHubSourceTemplates = args[++i];
+                GitHubSource = GitHubSourceTemplates = NextArg(ref i);
                 return true;
             }
 
@@ -1104,7 +1127,7 @@ namespace Web
 
             if (TokenArgs.Contains(arg))
             {
-                GitHubToken = args[++i];
+                GitHubToken = NextArg(ref i);
                 return true;
             }
 
@@ -1122,15 +1145,19 @@ namespace Web
 
             if (OutArgs.Contains(arg))
             {
-                OutDir = args[i + 1];
-                i++;
+                OutDir = NextArg(ref i);
                 return true;
             }
 
             if (PathArgs.Contains(arg))
             {
-                PathArg = args[i + 1];
-                i++;
+                PathArg = NextArg(ref i);
+                return true;
+            }
+
+            if (DescriptionArgs.Contains(arg))
+            {
+                Description = NextArg(ref i);
                 return true;
             }
 
@@ -1416,7 +1443,8 @@ Usage:
   
   {tool} new                     List available Project Templates
   {tool} new <template> <name>   Create New Project From Template
-  {tool} download <repo>         Download latest GitHub Repo Release
+  {tool} download <user>/<repo>  Download latest GitHub Repo Release
+  {tool} get <url>               Download remote file                     (-out <file|dir>)
 
   {tool} <lang>                  Update all ServiceStack References in directory (recursive)
   {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
@@ -1472,12 +1500,14 @@ Usage:
   {tool} uninstall               List Installed Sharp Apps
   {tool} uninstall <app>         Uninstall Sharp App
   
-  {tool} publish                 Publish Sharp App to Gist (requires token)
+  {tool} publish                 Publish Current Directory to Gist (requires token)
+  
+  {tool} gist-new <dir>          Create new Gist with Directory Files (requires token)
+  {tool} gist-update <id> <dir>  Update Gist ID with Directory Files  (requires token)
   
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
 {additional}
-  {tool} get <url>               Download remote file                     (-out <file|dir>)
 
   dotnet tool update -g {tool}   Update to latest version
 
@@ -3238,7 +3268,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         };
         
         public static List<string> ExcludeFileExtensions = new List<string> {
-            ".log"
+            ".log",
+            ".publish",
         };
 
         public static void CopyAllTo(this string src, string dst, string[] excludePaths=null)
