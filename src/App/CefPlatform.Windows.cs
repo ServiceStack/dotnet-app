@@ -34,7 +34,7 @@ namespace ServiceStack.CefGlue
             var res = Instance.GetScreenResolution();
             if (config.FullScreen || config.Kiosk)
             {
-                config.Width = (int) (ScaleFactor * res.Width);
+                config.Width = (int) (ScaleFactor * res.Width) -1;
                 config.Height = (int) (ScaleFactor * res.Height);
             }
             else
@@ -86,39 +86,39 @@ namespace ServiceStack.CefGlue
                     //         @$"GetClientRectangle:  [{rect.Top},{rect.Left}] [{rect.Bottom},{rect.Right}], scale: [{(int) (rect.Bottom * ScaleFactor)},{(int) (rect.Right * ScaleFactor)}]");
                     // }
 
-                    if (config.Kiosk)
+                    if (config.CenterToScreen)
                     {
-                        EnterKioskMode();
+                        window.CenterToScreen();
+                    }
+                    else if (config.X != null || config.Y != null)
+                    {
+                        window.SetPosition(config.X.GetValueOrDefault(), config.Y.GetValueOrDefault());
+                    }
+                    if (config.Kiosk || config.FullScreen)
+                    {
+                        Instance.SetWindowFullScreen(window.Handle);
                     }
                     else
                     {
-                        if (config.CenterToScreen)
-                        {
-                            window.CenterToScreen();
-                        }
-                        else if (config.X != null || config.Y != null)
-                        {
-                            window.SetPosition(config.X.GetValueOrDefault(), config.Y.GetValueOrDefault());
-                        }
-
                         window.SetSize(config.Width, config.Height - 1); //force redraw in BrowserCreated
-                        if (config.FullScreen)
-                        {
-                            Instance.SetWindowFullScreen(window.Handle);
-                        }
                     }
 
                     window.Browser.BrowserCreated += (sender, args) => {
-                        window.SetSize(config.Width, config.Height); //trigger refresh to sync browser frame with window
-
-                        if (config.CenterToScreen)
-                        {
-                            window.CenterToScreen();
-                        }
-
                         var cef = (CefGlueBrowser) sender;
-                        if (cef.Config.Kiosk)
+                        if (!cef.Config.Kiosk)
                         {
+                            window.SetSize(config.Width, config.Height); //trigger refresh to sync browser frame with window
+                            if (config.CenterToScreen)
+                                window.CenterToScreen();
+
+                            if (config.FullScreen)
+                            {
+                                window.Handle.ShowWindow(ShowWindowCommands.Maximize);
+                            }
+                        }
+                        else
+                        {
+                            EnterKioskMode();
                             cef.BrowserWindowHandle.ShowScrollBar(NativeWin.SB_BOTH, false);
                         }
                     };
@@ -187,12 +187,6 @@ namespace ServiceStack.CefGlue
         private void EnterKioskMode()
         {
             var mi = window.Handle.SetKioskMode();
-            if (mi != null)
-            {
-                var mr = mi.Value.Monitor;
-                config.Width = mr.Right - mr.Left - 1; //force redraw in BrowserCreated
-                config.Height = mr.Bottom - mr.Top;
-            }
         }
 
         public void SetWindowFullScreen() => SetWindowFullScreen(window.Handle);

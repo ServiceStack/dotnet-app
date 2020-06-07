@@ -548,7 +548,7 @@ namespace Web
                         }
                         else
                         {
-                            await using var fs = File.AppendText(aliasPath);
+                            using var fs = File.AppendText(aliasPath);
                             await fs.WriteLineAsync($"{target} {gistId}");
                         }
                     }
