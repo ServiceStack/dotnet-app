@@ -30,8 +30,8 @@ namespace Web
                 DesktopState.Tool = "app";
                 DesktopState.ToolVersion = Startup.GetVersion();
                 DesktopState.ChromeVersion = CefRuntime.ChromeVersion;
-                Startup.ConfigureScript = feature => feature.ScriptMethods
-                    .Add(new DesktopScripts(scope => DesktopState.BrowserHandle));
+                DesktopConfig.WindowFactory = scope => DesktopState.BrowserHandle;
+                Startup.ConfigureScript = feature => feature.ScriptMethods.Add(new DesktopScripts());
                 
                 var firstArg = cmdArgs.FirstOrDefault();
                 if (firstArg?.StartsWith("app:") == true || firstArg?.StartsWith("sharp:") == true || firstArg?.StartsWith("xapp:") == true)
