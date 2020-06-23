@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
+using PInvoke;
 using ServiceStack;
 using ServiceStack.CefGlue;
 using ServiceStack.Desktop;
@@ -86,7 +87,7 @@ namespace Web
                 {
                     var hWnd = CefPlatformWindows.GetConsoleHandle();
                     if (hWnd != IntPtr.Zero)
-                        hWnd.ShowWindow(0);
+                        User32.ShowWindow(hWnd, User32.WindowShowStyle.SW_HIDE);
                 }
                 
                 var cts = new CancellationTokenSource();

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using PInvoke;
 using Xilium.CefGlue;
 using WinApi.Windows;
 using ServiceStack.CefGlue.Win64;
@@ -113,7 +114,7 @@ namespace ServiceStack.CefGlue
 
                             if (config.FullScreen)
                             {
-                                window.Handle.ShowWindow(ShowWindowCommands.Maximize);
+                                User32.ShowWindow(window.Handle, User32.WindowShowStyle.SW_MAXIMIZE);
                             }
                         }
                         else
@@ -139,7 +140,7 @@ namespace ServiceStack.CefGlue
         public CefSize ScreenResolution => screenResolution ??= GetScreenResolution();
 
         public float? scaleFactor;
-        public float ScaleFactor => scaleFactor ??= NativeWin.GetDC(IntPtr.Zero).GetScalingFactor();
+        public float ScaleFactor => scaleFactor ??= User32.GetDC(IntPtr.Zero).GetScalingFactor();
 
         private IntPtr? consoleHandle;
         public IntPtr ConsoleHandle => consoleHandle ??= GetConsoleHandle();
@@ -152,7 +153,7 @@ namespace ServiceStack.CefGlue
             Console.Title = "App Launcher - " + (DesktopState.CommandArgs?.FirstOrDefault()
                                                  ?? Guid.NewGuid().ToString().Substring(0, 5));
 
-            return DesktopState.ConsoleHandle = NativeWin.FindWindow(null, Console.Title);
+            return DesktopState.ConsoleHandle = User32.FindWindow(null, Console.Title);
         }
 
         public void ShowConsoleWindow()
@@ -162,14 +163,14 @@ namespace ServiceStack.CefGlue
 
             var hWnd = ConsoleHandle;
             if (hWnd != IntPtr.Zero)
-                hWnd.ShowWindow(1);
+                User32.ShowWindow(hWnd, User32.WindowShowStyle.SW_SHOW);
         }
 
         public override void HideConsoleWindow()
         {
             var hWnd = ConsoleHandle;
             if (hWnd != IntPtr.Zero)
-                hWnd.ShowWindow(0);
+                User32.ShowWindow(hWnd, User32.WindowShowStyle.SW_HIDE);
         }
 
         CefSize ToCefSize(System.Drawing.Size size) => new CefSize(size.Width, size.Height);
@@ -179,7 +180,7 @@ namespace ServiceStack.CefGlue
         public override System.Drawing.Rectangle GetClientRectangle(IntPtr handle)
         {
             handle.GetClientRect(out var result);
-            return System.Drawing.Rectangle.FromLTRB(result.Left, result.Top, result.Right, result.Bottom);
+            return System.Drawing.Rectangle.FromLTRB(result.left, result.top, result.right, result.bottom);
         }
 
         public override void ResizeWindow(IntPtr handle, int width, int height) => handle.ResizeWindow(width, height);

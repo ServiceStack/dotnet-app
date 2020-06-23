@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>app</id>
-        <version>0.0.71</version>
+        <version>0.0.72</version>
         <authors>ServiceStack</authors>
         <owners>ServiceStack</owners>
         <requireLicenseAcceptance>true</requireLicenseAcceptance>
@@ -56,6 +56,30 @@
         <file src="bin\Release\netcoreapp3.1\publish\Newtonsoft.Json.dll" target="tools\netcoreapp3.1\any\Newtonsoft.Json.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Npgsql.dll" target="tools\netcoreapp3.1\any\Npgsql.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\NUglify.dll" target="tools\netcoreapp3.1\any\NUglify.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.AdvApi32.dll" target="tools\netcoreapp3.1\any\PInvoke.AdvApi32.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.BCrypt.dll" target="tools\netcoreapp3.1\any\PInvoke.BCrypt.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Crypt32.dll" target="tools\netcoreapp3.1\any\PInvoke.Crypt32.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.DwmApi.dll" target="tools\netcoreapp3.1\any\PInvoke.DwmApi.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Fusion.dll" target="tools\netcoreapp3.1\any\PInvoke.Fusion.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Gdi32.dll" target="tools\netcoreapp3.1\any\PInvoke.Gdi32.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Hid.dll" target="tools\netcoreapp3.1\any\PInvoke.Hid.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Kernel32.dll" target="tools\netcoreapp3.1\any\PInvoke.Kernel32.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Magnification.dll" target="tools\netcoreapp3.1\any\PInvoke.Magnification.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.MSCorEE.dll" target="tools\netcoreapp3.1\any\PInvoke.MSCorEE.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Msi.dll" target="tools\netcoreapp3.1\any\PInvoke.Msi.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.NCrypt.dll" target="tools\netcoreapp3.1\any\PInvoke.NCrypt.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.NetApi32.dll" target="tools\netcoreapp3.1\any\PInvoke.NetApi32.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.NTDll.dll" target="tools\netcoreapp3.1\any\PInvoke.NTDll.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Psapi.dll" target="tools\netcoreapp3.1\any\PInvoke.Psapi.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.SetupApi.dll" target="tools\netcoreapp3.1\any\PInvoke.SetupApi.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.SHCore.dll" target="tools\netcoreapp3.1\any\PInvoke.SHCore.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Shell32.dll" target="tools\netcoreapp3.1\any\PInvoke.Shell32.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.User32.dll" target="tools\netcoreapp3.1\any\PInvoke.User32.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Userenv.dll" target="tools\netcoreapp3.1\any\PInvoke.Userenv.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.UxTheme.dll" target="tools\netcoreapp3.1\any\PInvoke.UxTheme.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Windows.Core.dll" target="tools\netcoreapp3.1\any\PInvoke.Windows.Core.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.Windows.ShellScalingApi.dll" target="tools\netcoreapp3.1\any\PInvoke.Windows.ShellScalingApi.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\PInvoke.WtsApi32.dll" target="tools\netcoreapp3.1\any\PInvoke.WtsApi32.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\SQLitePCLRaw.batteries_v2.dll" target="tools\netcoreapp3.1\any\SQLitePCLRaw.batteries_v2.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\SQLitePCLRaw.nativelibrary.dll" target="tools\netcoreapp3.1\any\SQLitePCLRaw.nativelibrary.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\SQLitePCLRaw.core.dll" target="tools\netcoreapp3.1\any\SQLitePCLRaw.core.dll" />
@@ -74,6 +98,7 @@
         <file src="bin\Release\netcoreapp3.1\publish\System.ServiceModel.Primitives.dll" target="tools\netcoreapp3.1\any\System.ServiceModel.Primitives.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.ServiceModel.dll" target="tools\netcoreapp3.1\any\System.ServiceModel.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Xml.XPath.XmlDocument.dll" target="tools\netcoreapp3.1\any\System.Xml.XPath.XmlDocument.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\Validation.dll" target="tools\netcoreapp3.1\any\Validation.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\WinApi.dll" target="tools\netcoreapp3.1\any\WinApi.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.WindowsAzure.Storage.dll" target="tools\netcoreapp3.1\any\Microsoft.WindowsAzure.Storage.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\ServiceStack.Api.OpenApi.dll" target="tools\netcoreapp3.1\any\ServiceStack.Api.OpenApi.dll" />

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -780,7 +781,7 @@ namespace Web
                     RegisterStat(tool, createShortcutFor, "shortcut");
 
                 var shortcutPath = createShortcutFor == null
-                    ? Path.Combine(appDir, "name".GetAppSetting(defaultValue: "WebApp"))
+                    ? Path.Combine(appDir, "name".GetAppSetting(defaultValue: "Sharp App"))
                     : Path.GetFullPath(createShortcutFor.LastLeftPart('.'));
 
                 var toolPath = ctx.ToolPath;
@@ -1360,7 +1361,7 @@ namespace Web
             var targetPath = toolFilePath.EndsWith(".dll") ? "dotnet" : toolFilePath;
             var arguments = toolFilePath.EndsWith(".dll") ? $"\"{toolFilePath}\"" : "";
             var icon = GetIconPath(appDir);
-            var shortcutPath = Path.Combine(publishDir, "name".GetAppSetting(defaultValue: "WebApp"));
+            var shortcutPath = Path.Combine(publishDir, "name".GetAppSetting(defaultValue: "SharpApp"));
             if (Verbose) $"CreateShortcut: {shortcutPath}, {targetPath}, {arguments}, {appDir}, {icon}".Print();
             CreateShortcut(shortcutPath, targetPath, arguments, appDir, icon, ctx);
         }
@@ -2434,7 +2435,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             // plugins?.OfType<IConfigureApp>().Each(x => x.Configure(app));
 
             var appHost = AppLoader.AppHost;
-            appHost.BeforeConfigure.Add(ConfigureAppHost);
+            appHost.BeforeConfigure.Add(PreConfigureAppHost);
+            appHost.AfterConfigure.Add(PostConfigureAppHost);
 
             if (GistVfs != null)
             {
@@ -2534,7 +2536,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         private static Exception StartupException = null;
 
-        public void ConfigureAppHost(ServiceStackHost appHost)
+        public void PreConfigureAppHost(ServiceStackHost appHost)
         {
             try 
             { 
@@ -2546,17 +2548,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (appName != null)
                     DesktopConfig.Instance.AppName ??= appName;
 
-                var desktopFeature = appHost.GetPlugin<DesktopFeature>();
-                if (desktopFeature == null)
-                {
-                    appHost.Config.EmbeddedResourceBaseTypes.Add(typeof(DesktopAssets));
-
-                    appHost.RegisterService<DesktopDownloadUrlService>(DesktopFeature.DesktopDownloadUrlRoutes);
-
-                    if (DesktopConfig.Instance.AppName != null)
-                        appHost.RegisterService<DesktopFileService>(DesktopFeature.DesktopFileRoutes);
-                }
-    
                 var feature = appHost.GetPlugin<SharpPagesFeature>();
                 if (feature != null && Verbose)
                     "Using existing SharpPagesFeature from appHost".Print();
@@ -2706,6 +2697,20 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 throw;
             }
         }
+
+        public void PostConfigureAppHost(ServiceStackHost appHost)
+        {
+            var desktopFeature = appHost.GetPlugin<DesktopFeature>();
+            if (desktopFeature == null)
+            {
+                appHost.Config.EmbeddedResourceBaseTypes.Add(typeof(DesktopAssets));
+
+                appHost.RegisterService<DesktopDownloadUrlService>(DesktopFeature.DesktopDownloadUrlRoutes);
+
+                if (DesktopConfig.Instance.AppName != null)
+                    appHost.RegisterService<DesktopFileService>(DesktopFeature.DesktopFileRoutes);
+            }
+        }
         
         public static Action<SharpPagesFeature> ConfigureScript { get; set; }
 
@@ -2778,7 +2783,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         featureTypes.Remove(type.Name);
                     }
                 }
-
+                
                 //Register any wildcard plugins at end
                 const string AllRemainingPlugins = "plugins/*";
                 if (featureTypes.Count == 1 && featureTypes[0] == AllRemainingPlugins)
@@ -2837,21 +2842,24 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     if (plugin.Extension != "dll" && plugin.Extension != "exe")
                         continue;
 
-                    var dllBytes = plugin.ReadAllBytes();
-                    if (Startup.Verbose) $"Attempting to load plugin '{plugin.VirtualPath}', size: {dllBytes.Length} bytes".Print();
-                    var asm = Assembly.Load(dllBytes);
-                    assemblies.Add(asm);
+                    if (Startup.Verbose) $"Attempting to load plugin '{plugin.VirtualPath}', size: {plugin.Length} bytes".Print();
 
-                    if (appHost == null)
+                    using (var stream = plugin.OpenRead())
                     {
-                        foreach (var type in asm.GetTypes())
+                        var asm = AssemblyLoadContext.Default.LoadFromStream(stream);
+                        assemblies.Add(asm);
+                        
+                        if (appHost == null)
                         {
-                            if (typeof(AppHostBase).IsAssignableFrom(type))
+                            foreach (var type in asm.GetTypes())
                             {
-                                if (Startup.Verbose) $"Using AppHost from Plugin '{plugin.VirtualPath}'".Print();
-                                appHost = type.CreateInstance<AppHostBase>();
-                                appHost.AppSettings = WebTemplateUtils.AppSettings;
-                                break;
+                                if (typeof(AppHostBase).IsAssignableFrom(type))
+                                {
+                                    if (Startup.Verbose) $"Using AppHost from Plugin '{plugin.VirtualPath}'".Print();
+                                    appHost = type.CreateInstance<AppHostBase>();
+                                    appHost.AppSettings = WebTemplateUtils.AppSettings;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -2892,7 +2900,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
     public class AppHost : AppHostBase
     {
         public AppHost()
-            : base("name".GetAppSetting("ServiceStack Web App"), typeof(AppHost).Assembly) {}
+            : base("name".GetAppSetting("Sharp App"), typeof(AppHost).Assembly) {}
 
         public override void Configure(Container container) {}
         
