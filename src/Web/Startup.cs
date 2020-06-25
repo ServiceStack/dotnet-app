@@ -3354,16 +3354,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 try
                 {
-                    if (newPath.EndsWith(".settings"))
-                    {
-                        var text = File.ReadAllText(newPath);
-                        if (text.Contains("debug true"))
-                        {
-                            text = text.Replace("debug true", "debug false");
-                            to[VirtualPath(newPath)] = text;
-                            continue;
-                        }
-                    }
+                    // if (newPath.EndsWith(".settings"))
+                    // {
+                    //     var text = File.ReadAllText(newPath);
+                    //     if (text.Contains("debug true"))
+                    //     {
+                    //         text = text.Replace("debug true", "debug false");
+                    //         to[VirtualPath(newPath)] = text;
+                    //         continue;
+                    //     }
+                    // }
 
                     to[VirtualPath(newPath)] = MimeTypes.IsBinary(MimeTypes.GetMimeType(newPath))
                         ? (object)File.ReadAllBytes(newPath)
