@@ -766,7 +766,7 @@ namespace Web
                 new EnvironmentVariableSettings());
 
             var bind = "bind".GetAppSetting("localhost");
-            var ssl = "ssl".GetAppSetting(defaultValue: true);
+            var ssl = "ssl".GetAppSetting(defaultValue: false);
             var port = "port".GetAppSetting(defaultValue: ssl ? "5001" : "5000");
             var scheme = ssl ? "https" : "http";
             var useUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? $"{scheme}://{bind}:{port}/";
