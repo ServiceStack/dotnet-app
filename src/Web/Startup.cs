@@ -3374,7 +3374,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         {
             var hasQs = firstArg.IndexOf('?') >= 0;
             var qs = hasQs ? firstArg.RightPart('?') : null;
-            var cmds = new List<string> { "open", firstArg.RightPart(':').LeftPart('?').Trim('/') };
+            var cmd = firstArg.IndexOf("://", StringComparison.Ordinal) >= 0 ? "open" : "run";
+            var cmds = new List<string> { cmd, firstArg.RightPart(':').LeftPart('?').Trim('/') };
             if (!string.IsNullOrEmpty(qs))
             {
                 var kvps = QueryHelpers.ParseQuery(qs);
