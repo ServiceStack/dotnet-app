@@ -2556,12 +2556,30 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 {
                     var isWebApp = appHost.RootDirectory.GetFile("index.html") != null ||
                                    appHost.RootDirectory.GetFile("_layout.html") != null;
-                    feature = (nameof(SharpPagesFeature).GetAppSetting() != null
+                    var customFeature = nameof(SharpPagesFeature).GetAppSetting() != null;
+                    if (Verbose) "Registering new {0}SharpPagesFeature".Print(customFeature ? "customized " : "");
+                    feature = (customFeature
                         ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
                         : new SharpPagesFeature {
                             ApiPath = "apiPath".GetAppSetting() ?? "/api",
                             EnableSpaFallback = isWebApp,
                         });
+                }
+
+                var desktopFeature = appHost.GetPlugin<DesktopFeature>();
+                if (desktopFeature != null && Verbose)
+                    "Using existing DesktopFeature from appHost".Print();
+
+                if (desktopFeature == null)
+                {
+                    appHost.Config.EmbeddedResourceBaseTypes.Add(typeof(DesktopAssets));
+
+                    appHost.RegisterService<DesktopDownloadUrlService>(DesktopFeature.DesktopDownloadUrlRoutes);
+
+                    if (DesktopConfig.Instance.AppName != null)
+                        appHost.RegisterService<DesktopFileService>(DesktopFeature.DesktopFileRoutes);
+
+                    if (Verbose) "Configuring DesktopAssets, DownloadUrlRoutes{0}".Print(DesktopConfig.Instance.AppName != null ? ", FileRoutes" : "");
                 }
 
                 feature.Args["ARGV"] = RunScriptArgV;
@@ -2679,7 +2697,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 
                 ConfigureScript?.Invoke(feature);
     
-                appHost.Plugins.Add(feature);
+                appHost.Plugins.AddIfNotExists(feature);
     
                 IPlugin[] registerPlugins = AppLoader.Plugins;
                 if (registerPlugins != null)
@@ -2698,19 +2716,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
         }
 
-        public void PostConfigureAppHost(ServiceStackHost appHost)
-        {
-            var desktopFeature = appHost.GetPlugin<DesktopFeature>();
-            if (desktopFeature == null)
-            {
-                appHost.Config.EmbeddedResourceBaseTypes.Add(typeof(DesktopAssets));
-
-                appHost.RegisterService<DesktopDownloadUrlService>(DesktopFeature.DesktopDownloadUrlRoutes);
-
-                if (DesktopConfig.Instance.AppName != null)
-                    appHost.RegisterService<DesktopFileService>(DesktopFeature.DesktopFileRoutes);
-            }
-        }
+        public void PostConfigureAppHost(ServiceStackHost appHost) {}
         
         public static Action<SharpPagesFeature> ConfigureScript { get; set; }
 
