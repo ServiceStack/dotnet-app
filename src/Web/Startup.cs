@@ -1032,14 +1032,6 @@ namespace Web
                 var gistId = publishUrl.LastRightPart('/');
                 gateway.WriteGistFiles(gistId, files);
                 $"updated: {publishUrl}".Print();
-
-                if (isSharpApp && appName != null)
-                {
-                    registerTask = client.PostAsync(new RegisterSharpApp {
-                        AppName = appName,
-                        Publish = publishUrl,
-                    });
-                }
             }
 
             if (isSharpApp)
