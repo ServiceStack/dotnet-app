@@ -2835,6 +2835,29 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (pluginsDir != null)
             {
                 var pluginDllFiles = pluginsDir.GetFiles();
+
+                AssemblyLoadContext.Default.Resolving += (context, asmName) => {
+                    var dll = asmName.Name + ".dll";
+                    var exe = asmName.Name + ".exe";
+                    if (Startup.Verbose) $"Resolving Assembly in /plugins: {asmName.Name} / {asmName.FullName}".Print();
+                    var plugin = pluginDllFiles.FirstOrDefault(x =>
+                        x.Name.EqualsIgnoreCase(dll) || x.Name.EqualsIgnoreCase(exe));
+                    if (Startup.Verbose)
+                    {
+                        if (plugin != null)
+                            $"Found matching '{plugin.Name}' in /plugins".Print();
+                        else
+                            $"Could not find '{asmName.Name}' in /plugins".Print();
+                    }
+                    if (plugin != null)
+                    {
+                        using var stream = plugin.OpenRead();
+                        var asm = AssemblyLoadContext.Default.LoadFromStream(stream);
+                        return asm;
+                    }
+                    return null;
+                };
+
                 foreach (var plugin in pluginDllFiles)
                 {
                     if (plugin.Extension != "dll" && plugin.Extension != "exe")
