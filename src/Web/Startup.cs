@@ -2582,13 +2582,19 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 if (!feature.Plugins.Any(x => x is GitHubPlugin))
                     feature.Plugins.Add(new GitHubPlugin());
+
+                var namedConnectionsKeys = WebTemplateUtils.AppSettings.GetAllKeys()
+                    .Where(x => x.StartsWith("db.connections[")).ToList();
     
                 var dbFactory = "db".GetAppSetting().GetDbFactory(connectionString:"db.connection".GetAppSetting());
-                if (dbFactory != null)
+                if (dbFactory != null || namedConnectionsKeys.Count > 0)
                 {
+                    if (dbFactory == null)
+                        dbFactory = new OrmLiteConnectionFactory(":memory:", SqliteDialect.Provider);
+                    
                     appHost.Container.Register<IDbConnectionFactory>(dbFactory);
                     feature.ScriptMethods.Add(new DbScriptsAsync());
-                    
+
                     dbFactory.RegisterDialectProvider("sqlite", SqliteDialect.Provider);
                     dbFactory.RegisterDialectProvider("sqlserver", SqlServerDialect.Provider);
                     dbFactory.RegisterDialectProvider("sqlserver2012", SqlServer2012Dialect.Provider);
@@ -2599,9 +2605,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     dbFactory.RegisterDialectProvider("postgresql", PostgreSqlDialect.Provider);
                     dbFactory.RegisterDialectProvider("postgres", PostgreSqlDialect.Provider);
                     dbFactory.RegisterDialectProvider("pgsql", PostgreSqlDialect.Provider);
-
-                    var namedConnectionsKeys = WebTemplateUtils.AppSettings.GetAllKeys()
-                        .Where(x => x.StartsWith("db.connections[")).ToList();
 
                     foreach (var key in namedConnectionsKeys)
                     {
