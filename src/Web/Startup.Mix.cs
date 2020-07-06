@@ -1258,7 +1258,9 @@ namespace Web
                     {
                         var meta = (Dictionary<string, object>) entry.Value;
                         var contents = (string) meta["content"];
-                        if (string.IsNullOrEmpty(contents) && meta["truncated"] is bool b && b)
+                        var size = (int) meta["size"];
+                        if ((string.IsNullOrEmpty(contents) || contents.Length < size) &&
+                            meta["truncated"] is bool b && b)
                         {
                             contents = Startup.DownloadCachedStringFromUrl((string)meta["raw_url"]);
                         }

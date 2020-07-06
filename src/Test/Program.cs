@@ -733,6 +733,13 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_mix_large_chinook_db()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            await Startup.CreateWebHost("x", new[] { "mix", "chinook.sharpdata", });
+        }
+
+        [Test]
         public async Task Can_load_multitenancy()
         {
             SetProjectCurrentDirectory("apps\\multitenancy\\");
@@ -797,6 +804,5 @@ Content-Disposition: form-data; name=""EvaluateCode""
             });
         }
 
-                       
     }
 }
