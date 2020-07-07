@@ -804,5 +804,13 @@ Content-Disposition: form-data; name=""EvaluateCode""
             });
         }
 
+        [Test]
+        public async Task Can_open_sharpdata_verbose()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            var host = (await Startup.CreateWebHost("app", new[]{ "open", "sharpdata", "-debug" }))?.Build();
+            host?.Run();
+        }
+
     }
 }

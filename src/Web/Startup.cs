@@ -2547,9 +2547,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (feature == null)
                 {
                     var isWebApp = appHost.RootDirectory.GetFile("index.html") != null ||
-                                   appHost.RootDirectory.GetFile("_layout.html") != null;
+                                   appHost.RootDirectory.GetFile("_layout.html") != null ||
+                                   GistVfs?.GetFile("index.html") != null ||
+                                   GistVfs?.GetFile("_layout.html") != null;
                     var customFeature = nameof(SharpPagesFeature).GetAppSetting() != null;
-                    if (Verbose) "Registering new {0}SharpPagesFeature".Print(customFeature ? "customized " : "");
+                    if (Verbose) "Registering new {0}SharpPagesFeature{1}".Print(customFeature ? "customized " : "", isWebApp ? " Web App" : "");
                     feature = (customFeature
                         ? (SharpPagesFeature)typeof(SharpPagesFeature).CreatePlugin()
                         : new SharpPagesFeature {
