@@ -767,7 +767,13 @@ namespace Web
 
             var bind = "bind".GetAppSetting("localhost");
             var ssl = "ssl".GetAppSetting(defaultValue: false);
-            var port = "port".GetAppSetting(defaultValue: ssl ? "5001" : "5000");
+            var port = "port".GetAppSetting(defaultValue: ssl ? "5001-" : "5000-");
+            if (port.IndexOf('-') >= 0)
+            {
+                var startPort = int.TryParse(port.LeftPart('-'), out var val) ? val : 5000;
+                var endPort = int.TryParse(port.RightPart('-'), out val) ? val : 65535;
+                port = HostContext.FindFreeTcpPort(startPort, endPort).ToString();
+            }
             var scheme = ssl ? "https" : "http";
             var useUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? $"{scheme}://{bind}:{port}/";
             ctx.UseUrls = useUrls;
@@ -1005,7 +1011,7 @@ namespace Web
             if (createGist)
             {
                 var gist = gateway.CreateGithubGist(
-                    Description ?? new DirectoryInfo(Environment.CommandLine).Name + (isSharpApp ? " Sharp App" : " files"),
+                    Description ?? new DirectoryInfo(Environment.CurrentDirectory).Name + (isSharpApp ? " Sharp App" : " files"),
                     isPublic: true,
                     files: files);
 
