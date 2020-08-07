@@ -812,5 +812,21 @@ Content-Disposition: form-data; name=""EvaluateCode""
             host?.Run();
         }
 
+        [Test]
+        public async Task Can_create_vuedesktop_project()
+        {
+            //app new vue-desktop VueApp
+            Directory.SetCurrentDirectory(@"C:\projects\");
+            try 
+            {
+                await Startup.CreateWebHost("x", new[]{ "new", "vue-desktop", "VueApp" });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
     }
 }

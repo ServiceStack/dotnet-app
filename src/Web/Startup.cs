@@ -1060,7 +1060,6 @@ namespace Web
                     catch (WebServiceException ex)
                     {
                         $"REGISTRY ERROR: {ex.Message}".Print();
-                        
                     }
 
                     "Run published App:".Print();
@@ -1091,7 +1090,7 @@ namespace Web
             {
                 var CR = Environment.NewLine;
                 throw new Exception($"GitHub Access Token required to publish App to Gist.{CR}" +
-                                    $"Specify Token with --token <token> or GITHUB_GIST_TOKEN Environment Variable.{CR}" +
+                                    $"Specify Token with --token <token> or GITHUB_TOKEN Environment Variable.{CR}" +
                                     $"Generate Access Token at: https://github.com/settings/tokens");
             }
         }

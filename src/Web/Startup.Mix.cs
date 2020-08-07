@@ -1281,10 +1281,20 @@ namespace Web
         {
             var webClient = new WebClient();
             webClient.Headers.Add(HttpHeaders.UserAgent, UserAgent);
-            if (!string.IsNullOrEmpty(Startup.GitHubToken))
-                webClient.Headers.Add(HttpHeaders.Authorization, "token " + Startup.GitHubToken);
+
+            try
+            {
+                webClient.DownloadFile(downloadUrl, fileName);
+            }
+            catch (Exception ex)
+            {
+                // Trying to download https://github.com/NetCoreTemplates/vue-desktop/archive/master.zip with token resulted in 404, changed to only use token as fallback
+                if (Startup.GitHubToken == null)
+                    throw;
                 
-            webClient.DownloadFile(downloadUrl, fileName);
+                if (Startup.Verbose) $"Failed to download '{downloadUrl}': {ex.Message}\nRetrying with token...".Print();
+                webClient.Headers.Add(HttpHeaders.Authorization, "token " + Startup.GitHubToken);
+            }
         }
    }
 
