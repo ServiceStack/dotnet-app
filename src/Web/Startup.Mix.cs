@@ -1198,7 +1198,6 @@ namespace Web
             {
                 req.Headers["Authorization"] = "token " + Startup.GitHubToken;
             }
-            
 
             if (Startup.IgnoreSslErrors)
             {
@@ -1294,6 +1293,7 @@ namespace Web
                 
                 if (Startup.Verbose) $"Failed to download '{downloadUrl}': {ex.Message}\nRetrying with token...".Print();
                 webClient.Headers.Add(HttpHeaders.Authorization, "token " + Startup.GitHubToken);
+                webClient.DownloadFile(downloadUrl, fileName);
             }
         }
    }

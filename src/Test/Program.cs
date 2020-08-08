@@ -828,5 +828,13 @@ Content-Disposition: form-data; name=""EvaluateCode""
             }
         }
 
+        [Test]
+        public async Task Can_open_mythz_spirals()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            var host = (await Startup.CreateWebHost("app", new[]{ "open", "mythz/spirals" }))?.Build();
+            host?.Run();
+        }
+
     }
 }

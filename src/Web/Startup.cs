@@ -1180,27 +1180,10 @@ namespace Web
             var gistId = gistLink?.GistId;
             if (gistId == null)
             {
-                if (target.Length == GistAppsId.Length)
-                {
-                    gistId = target;
-                }
-                else if (target.StartsWith("https://gist.github.com/"))
+                if (target.StartsWith("https://gist.github.com/"))
                 {
                     gistId = target.ToGistId();
                     appsDir = GetAppsPath(gistId);
-                }
-                else if (gistLink?.Repo != null)
-                {
-                    appsDir = InstallRepo(gistLink.Url.EndsWith(".zip")
-                            ? gistLink.Url
-                            : GitHubUtils.Gateway.GetSourceZipUrl(gistLink.User, gistLink.Repo),
-                        target);
-
-                    if (!Directory.Exists(appsDir))
-                    {
-                        $"Could not install {target}".Print();
-                        return false;
-                    }
                 }
                 else if (target.StartsWith("https://github.com/"))
                 {
@@ -1212,6 +1195,23 @@ namespace Web
                             ? target
                             : GitHubUtils.Gateway.GetSourceZipUrl(user, repo),
                         repo);
+
+                    if (!Directory.Exists(appsDir))
+                    {
+                        $"Could not install {target}".Print();
+                        return false;
+                    }
+                }
+                else if (target.Length == GistAppsId.Length)
+                {
+                    gistId = target;
+                }
+                else if (gistLink?.Repo != null)
+                {
+                    appsDir = InstallRepo(gistLink.Url.EndsWith(".zip")
+                            ? gistLink.Url
+                            : GitHubUtils.Gateway.GetSourceZipUrl(gistLink.User, gistLink.Repo),
+                        target);
 
                     if (!Directory.Exists(appsDir))
                     {
