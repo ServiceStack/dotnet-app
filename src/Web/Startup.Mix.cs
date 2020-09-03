@@ -1044,7 +1044,7 @@ namespace Web
                     var term = token is JsIdentifier termId 
                         ? termId.Name
                             : token is JsLiteral termLiteral 
-                                ? (string)termLiteral.Value
+                                ? termLiteral.Value.ConvertTo<string>()
                                 : throw new Exception(InvalidUsage);
                     
                     if (literal[0] != '=')
@@ -1059,7 +1059,7 @@ namespace Web
                         with = token is JsIdentifier withId 
                             ? withId.Name
                             : token is JsLiteral withLiteral 
-                                ? (string)withLiteral .Value
+                                ? withLiteral.Value.ConvertTo<string>()
                                 : throw new Exception(InvalidUsage);
                     }
                     else
