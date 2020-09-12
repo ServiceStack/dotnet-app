@@ -39,6 +39,7 @@
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Azure.Management.ServiceBus.dll" target="tools\netcoreapp3.1\any\Microsoft.Azure.Management.ServiceBus.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Azure.ServiceBus.dll" target="tools\netcoreapp3.1\any\Microsoft.Azure.ServiceBus.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Azure.Services.AppAuthentication.dll" target="tools\netcoreapp3.1\any\Microsoft.Azure.Services.AppAuthentication.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Bcl.AsyncInterfaces.dll" target="tools\netcoreapp3.1\any\Microsoft.Bcl.AsyncInterfaces.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.Data.Sqlite.dll" target="tools\netcoreapp3.1\any\Microsoft.Data.Sqlite.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" target="tools\netcoreapp3.1\any\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" target="tools\netcoreapp3.1\any\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
@@ -91,6 +92,7 @@
         <file src="bin\Release\netcoreapp3.1\publish\System.Data.SQLite.dll" target="tools\netcoreapp3.1\any\System.Data.SQLite.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Drawing.Common.dll" target="tools\netcoreapp3.1\any\System.Drawing.Common.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.IdentityModel.Tokens.Jwt.dll" target="tools\netcoreapp3.1\any\System.IdentityModel.Tokens.Jwt.dll" />
+        <file src="bin\Release\netcoreapp3.1\publish\System.Linq.Async.dll" target="tools\netcoreapp3.1\any\System.Linq.Async.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Net.Http.WinHttpHandler.dll" target="tools\netcoreapp3.1\any\System.Net.Http.WinHttpHandler.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Private.ServiceModel.dll" target="tools\netcoreapp3.1\any\System.Private.ServiceModel.dll" />
         <file src="bin\Release\netcoreapp3.1\publish\System.Security.Cryptography.Pkcs.dll" target="tools\netcoreapp3.1\any\System.Security.Cryptography.Pkcs.dll" />
