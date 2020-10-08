@@ -1159,6 +1159,12 @@ namespace Web
                 return true;
             }
 
+            if (IgnoreSslErrorsArgs.Contains(arg))
+            {
+                IgnoreSslErrors = true;
+                return true;
+            }
+
             return false;
         }
 
