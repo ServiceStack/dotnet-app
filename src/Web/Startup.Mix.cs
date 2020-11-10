@@ -1278,6 +1278,22 @@ namespace Web
 
         public static void DownloadFile(string downloadUrl, string fileName)
         {
+            try
+            {
+                DownloadFileInternal(downloadUrl, fileName);
+            }
+            catch (WebException e)
+            {
+                // New GitHub repos default to being created with 'main' branch, so try that if master doesn't work
+                if (e.GetStatus() == HttpStatusCode.NotFound && downloadUrl.IndexOf("master.zip", StringComparison.Ordinal) >= 0)
+                {
+                    DownloadFileInternal(downloadUrl.Replace("master.zip","main.zip"), fileName);
+                }
+            }
+        }
+
+        private static void DownloadFileInternal(string downloadUrl, string fileName)
+        {
             var webClient = new WebClient();
             webClient.Headers.Add(HttpHeaders.UserAgent, UserAgent);
 
@@ -1290,13 +1306,13 @@ namespace Web
                 // Trying to download https://github.com/NetCoreTemplates/vue-desktop/archive/master.zip with token resulted in 404, changed to only use token as fallback
                 if (Startup.GitHubToken == null)
                     throw;
-                
+
                 if (Startup.Verbose) $"Failed to download '{downloadUrl}': {ex.Message}\nRetrying with token...".Print();
                 webClient.Headers.Add(HttpHeaders.Authorization, "token " + Startup.GitHubToken);
                 webClient.DownloadFile(downloadUrl, fileName);
             }
         }
-   }
+    }
 
     public class AppHostInstructions
     {

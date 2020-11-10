@@ -1288,7 +1288,8 @@ namespace Web
 
         private static string DownloadCachedZipUrl(string zipUrl)
         {
-            var noCache = zipUrl.IndexOf("master.zip", StringComparison.OrdinalIgnoreCase) >= 0;
+            var noCache = zipUrl.IndexOf("master.zip", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                               zipUrl.IndexOf("main.zip", StringComparison.OrdinalIgnoreCase) >= 0;
             if (noCache)
             {
                 var tempFile = Path.GetTempFileName();
