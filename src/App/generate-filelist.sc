@@ -1,14 +1,14 @@
 * use output in obj\Release\app.{version}.nuspec instead *
 
-vfsFileSystem('.') |> to => fs
+var fs = vfsFileSystem('.')
 
-[] |> to => sb
-fs.fileTextContents('obj/Release/netcoreapp3.1/WebApp.csproj.FileListAbsolute.txt').readLines() |> to => lines
+var sb = []
+var lines = fs.fileTextContents('obj/Release/net5/App.csproj.FileListAbsolute.txt').readLines()
 #each line in lines where line.contains('\\bin\\')
 
-    line.substring(line.indexOf('\\bin\\') + 1) |> to => src
-    line.lastRightPart('\\') |> to => target
+    var src = line.substring(line.indexOf('\\bin\\') + 1)
+    var target = line.lastRightPart('\\')
 
-    `<file src="${src}" target="tools\\netcoreapp3.1\\any\\${target}" />`.raw()
+    `<file src="${src}" target="tools\\net5\\any\\${target}" />`.raw()
 
 /each

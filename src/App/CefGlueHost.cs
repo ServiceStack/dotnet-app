@@ -178,11 +178,6 @@ namespace ServiceStack.CefGlue.Win64
                 return base.OnProcessMessageReceived(browser, frame, sourceProcess, message);
             }
 
-            protected override void OnRenderThreadCreated(CefListValue extraInfo)
-            {
-                base.OnRenderThreadCreated(extraInfo);
-            }
-
             protected override void OnWebKitInitialized()
             {
                 base.OnWebKitInitialized();
@@ -199,11 +194,6 @@ namespace ServiceStack.CefGlue.Win64
             protected override void OnBeforeChildProcessLaunch(CefCommandLine commandLine)
             {
                 base.OnBeforeChildProcessLaunch(commandLine); //#1
-            }
-
-            protected override void OnRenderProcessThreadCreated(CefListValue extraInfo)
-            {
-                base.OnRenderProcessThreadCreated(extraInfo);  //#3
             }
             
             protected override void OnScheduleMessagePumpWork(long delayMs)
