@@ -1,14 +1,13 @@
 * use output in obj\Release\app.{version}.nuspec instead *
 
-var fs = vfsFileSystem('.')
+var fs = vfsFileSystem('obj/Release')
+var nuspec = fs.allRootFiles().last().fileContents()
+var lines = nuspec.readLines()
 
-var sb = []
-var lines = fs.fileTextContents('obj/Release/net5/App.csproj.FileListAbsolute.txt').readLines()
-#each line in lines where line.contains('\\bin\\')
+* nuspec.raw() *
 
-    var src = line.substring(line.indexOf('\\bin\\') + 1)
-    var target = line.lastRightPart('\\')
+#each line in lines where line.trim().startsWith('<file ')
 
-    `<file src="${src}" target="tools\\net5\\any\\${target}" />`.raw()
+    line.replace('""','"').replace('C:\\src\\dotnet-app\\src\\App\\','').raw()
 
 /each
