@@ -15,6 +15,7 @@ blog.sqlite
 GPUCache/
 blob_storage/
 wip/
+App_Data/
 
 # User-specific files
 *.suo
