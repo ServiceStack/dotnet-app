@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="lib/codemirror.css">
+
+<style>
+    html,body,#body {
+        height: 100%;
+    }
+    body {
+        font: 110%/1.5 system-ui, sans-serif;
+    }
+    body,.v .edit h4,.btn ul,.btn li {
+        margin: 0;
+        padding: 0;
+    }
+    .box {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid;
+        margin: 1em 0;
+        padding: 1em;
+    }
+    .err {
+        background: #131417;
+        color: white;
+        height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+    }
+    .msg {
+        max-width: 350px;
+    }
+    .CodeMirror { height: 100%; }
+    .CodeMirror pre.CodeMirror-line, .CodeMirror pre.CodeMirror-line-like { padding: 0 8px; }
+    .v {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .v .head {
+        display: flex;
+        flex: none;
+        width: 100%;
+        background: #f7f7f7;
+        border-bottom: 1px solid #ddd;
+        padding-top: .25rem;
+    }
+    .v .head .files, .v .head .result {
+        flex-direction: column;
+        width: 100%;
+        place-items: flex-end;
+    }
+    .v .head .files {
+        display: flex;
+        flex-direction: row;
+        padding-left: 29px;
+    }
+    .v .head .result {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        margin-left: 77px;
+    }
+    .v .head .btn {
+        background: #f7f7f7;
+        height: 2rem;
+        margin-right: .5rem;
+        padding: 0 .5rem;
+        place-items: center;
+        display: flex;
+        font-size: 14px;
+        margin-bottom: -1px;
+        border-bottom: 1px solid #ddd;
+        cursor: pointer;
+    }
+    .v .head .btn.active {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-bottom: 1px solid #fff;
+    }
+    .btn.dir ul {
+        display: none;
+    }
+    .v .head .result .btn, .v .head .result .edit {
+    }
+    .v .head .result .edit {
+        font-size: 13px;
+        line-height: 16px;
+        padding: 0 .5rem .25rem 0;
+        text-align: right;
+    }
+    .v .main {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: row;
+    }
+    .v .main .view {
+        display: none;
+        flex: 1 1 auto;
+    }
+    .v .main .active {
+        display: block;
+    }
+    .v .main .result {
+        flex: 1 1 auto;
+    }
+    .v .files .btn.dir {
+        position: relative;
+    }
+    .v .files .btn.dir:hover ul {
+        display: block;
+        list-style: none;
+        z-index: 5;
+        top: 32px;
+        border: 1px solid #ddd;
+        position: absolute;
+        left: -2px;
+        background: #fff;
+        border-radius: 0.25rem;
+        box-shadow: 3px 3px #f7f7f7;
+    }
+    .v .files .btn.dir li {
+        padding: .25rem .5rem;
+    }
+    .v .files .btn.dir li:hover {
+        background: #f7f7f7;
+    }
+</style>
+</head>
+<body>
+
+<div id="body"></div>
+
+<script defer src="lib/codemirror.js"></script>
+<script>
+    let $body = document.getElementById('body');
+
+    function qry(qs) {
+        qs = qs.split('+').join(' ');
+        let tokens, re = /[?&]?([^=]+)=([^&]*)/g;
+        let o = {};
+        while (tokens = re.exec(qs)) {
+            o[tokens[1]] = tokens[2];
+        }
+        return o;
+    }
+    function enc(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;').replace(/"/g, '&#34;');
+    }
+    function err(h, msg) {
+        document.body.className = 'err';
+        $body.innerHTML = '<div class="msg">'
+            + '<h3>' + h + '</h3>'
+            + '<p>' + enc(msg) + '</p>'
+            + '</div>';
+    }
+    function splitOnFirst(s, c) {
+        if (!s) return [s];
+        let pos = s.indexOf(c);
+        return pos >= 0 ? [s.substring(0, pos), s.substring(pos + 1)] : [s];
+    }
+    function splitOnLast(s, c) {
+        if (!s) return [s];
+        let pos = s.lastIndexOf(c);
+        return pos >= 0
+            ? [s.substring(0, pos), s.substring(pos + 1)]
+            : [s];
+    }
+    function ext(s) {
+        return splitOnLast(s,'.')[1] || 'txt';
+    }
+    
+    (function (qs) {
+        let sb = '';
+        for (let k in qs) {
+            sb += '<div>' + k + ': ' + qs[k] + '</div>';
+        }
+
+        let gist = qs['gist'];
+        if (!gist)
+            return err("Invalid Embed", "Missing 'gist' argument.");
+
+        let g = localStorage.getItem('gist');
+        if (!g) {
+            fetch('https://api.github.com/gists/' + gist)
+                .then(function (r) {
+                    return r.text().then(function (s) {
+                        localStorage.setItem('gist',s);
+                        render(JSON.parse(s));
+                    })
+                });
+        } else {
+            render(JSON.parse(g));
+        }
+        
+        function render(o) {
+            let files = [];
+            let lastDir = null;
+            let dirFiles = [];
+            let sep = '\\';
+            for (let file in o.files) {
+                let fileObj = o.files[file];
+                if (file.indexOf(sep) >= 0) {
+                    let dir = splitOnFirst(file,sep)[0];
+                    if (dir === lastDir || lastDir == null) {
+                        dirFiles.push(fileObj);
+                    } else {
+                        files.push(dirFiles);
+                        dirFiles = [fileObj];
+                    }
+                } else {
+                    if (dirFiles.length > 0) {
+                        files.push(dirFiles);
+                        dirFiles = [];
+                    }
+                    files.push(fileObj);
+                }
+            }
+            console.log(files);
+            
+            let activeFile = files.filter(function (f) { return !Array.isArray(f); })[0];
+            let activeFileName = activeFile && activeFile.filename; 
+
+            let sb = [
+                '<div class="v">',
+                    '<div class="head">',
+                        '<div class="files">'
+            ];
+            files.forEach(function(file) {
+                if (Array.isArray(file)) {
+                    
+                    sb = sb.concat([
+                        '<div class="btn dir">',
+                            '<span>/',splitOnFirst(file[0].filename,sep)[0],'</span>',
+                            '<ul>']);
+                    sb = sb.concat(file.map(function(f) { 
+                        return '<li data-file="' + f.filename + '">' + splitOnFirst(f.filename,sep)[1] + '</li>'; 
+                    }));
+                    sb = sb.concat(['</ul>','</div>']);
+                    
+                } else {
+                    let activeCls = file.filename === activeFileName ? ' active' : '';
+                    sb = sb.concat([
+                        '<div class="btn ','f-' + ext(file.filename), activeCls, '" data-file="' + file.filename + '">',
+                            '<span>',file.filename,'</span>',
+                        '</div>'
+                    ]);
+                }
+            });
+            sb.push('</div>'); // .files
+
+            sb = sb.concat([
+                '<div class="result">',
+                    '<div class="btn f-cs active">',
+                        '<span>Result</span>',
+                    '</div>',
+                    '<div class="edit">',
+                        '<span>edit on</span>',
+                        '<h4>gist.cafe</h4>',
+                    '</div>',
+                '</div>'
+            ]);
+            sb.push('</div>'); // .head
+            
+            sb.push('<div class="main">');
+            
+            function fileEl(file) {
+                let activeCls = file.filename === activeFileName ? ' active' : '';
+                return '<div class="view' + activeCls + '" data-file="' + file.filename + '" data-type="' + file.type + '"><textarea>' 
+                        + enc(file.content) 
+                    + '</textarea></div>';
+            }
+
+            files.forEach(function(file) {
+                if (Array.isArray(file)) {
+                    file.forEach(function (f) { 
+                        sb.push(fileEl(f)); 
+                    });
+                } else {
+                    sb.push(fileEl(file));
+                }
+            });
+
+            sb.push('<div class="result"></div>');
+            sb.push('</div>'); // .main
+            
+            sb.push('</div>'); // .v
+            
+            $body.innerHTML = sb.join('');
+        }
+    })(qry(document.location.search));
+
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.view').forEach(function (e) {
+        let cm = CodeMirror.fromTextArea(e.firstElementChild, {
+            lineNumbers: true,
+            matchBrackets: true,
+            readonly: true,
+            //mode: "text/x-csrc"
+        });
+    });
+});
+</script>
+
+</body>
+</html>

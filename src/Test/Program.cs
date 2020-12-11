@@ -316,6 +316,12 @@ namespace Run
         }
         
         [Test]
+        public async Task version()
+        {
+            await Startup.CreateWebHost("x", new[]{ "-verbose", "--version" });
+        }
+        
+        [Test]
         public async Task WebMix_help()
         {
             await Startup.CreateWebHost("web mix", new[]{ "mix" });
@@ -324,12 +330,14 @@ namespace Run
         [Test]
         public async Task Mix_search_db()
         {
+            await Startup.Mix("mix", new []{ "[db]" });
             await Startup.Mix("mix", new []{ "#db" });
         }
         
         [Test]
         public async Task Mix_search_project_db()
         {
+            await Startup.Mix("mix", new []{ "[project,db]" });
             await Startup.Mix("mix", new []{ "#project,db" });
         }
 
@@ -836,5 +844,12 @@ Content-Disposition: form-data; name=""EvaluateCode""
             host?.Run();
         }
 
+        [Test]
+        public void Can_run_TodoCrud_gists()
+        {
+            var gistId = "f111d10bd0b8de1f40cbd0f20c34a937";
+            var response = $"https://localhost:5001/gists/{gistId}/run".PostJsonToUrl("");
+            response.Print();
+        }
     }
 }

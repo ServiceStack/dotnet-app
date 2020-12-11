@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>test</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="lib/codemirror.css">
+
+<style>
+html,body,#body {
+    height: 100%;
+}
+body {
+    font: 110%/1.5 system-ui, sans-serif;
+}
+body,h4,ul,li {
+    margin: 0;
+    padding: 0;
+}
+.box {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid;
+    margin: 1em 0;
+    padding: 1em;
+}
+.err {
+    background: #131417;
+    color: white;
+    height: 100vh;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+}
+.msg {
+    max-width: 350px;
+}
+.CodeMirror { height: 100%; }
+.CodeMirror pre.CodeMirror-line, .CodeMirror pre.CodeMirror-line-like { padding: 0 8px; }
+.v {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.v .head {
+    display: flex;
+    flex: none;
+    width: 100%;
+    background: #f7f7f7;
+    border-bottom: 1px solid #ddd;
+    padding-top: .25rem;
+}
+.v .head .files, .v .head .result {
+    flex-direction: column;
+    width: 100%;
+    place-items: flex-end;
+}
+.v .head .files {
+    display: flex;
+    flex-direction: row;
+    padding-left: 29px;
+}
+.v .head .result {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-left: 77px;
+}
+.v .head .btn {
+    background: #f7f7f7;
+    height: 2rem;
+    margin-right: .5rem;
+    padding: 0 .5rem;
+    place-items: center;
+    display: flex;
+    font-size: 14px;
+    margin-bottom: -1px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+.v .head .btn.active {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-bottom: 1px solid #fff;
+}
+.btn.dir ul {
+    display: none;
+}
+.v .head .result .btn, .v .head .result .edit {
+}
+.v .head .result .edit {
+    font-size: 13px;
+    line-height: 16px;
+    padding: 0 .5rem .25rem 0;
+    text-align: right;
+}
+.v .main {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: row;
+}
+.v .main .view {
+    display: none;
+    flex: 1 1 auto;
+}
+.v .main .active {
+    display: block;
+}
+.v .main .result {
+    flex: 1 1 auto;
+}
+.v .files .btn.dir {
+    position: relative;
+}
+.v .files .btn.dir:hover ul {
+    display: block;
+    list-style: none;
+    z-index: 5;
+    top: 32px;
+    border: 1px solid #ddd;
+    position: absolute;
+    left: -2px;
+    background: #fff;
+    border-radius: 0.25rem;
+    box-shadow: 3px 3px #f7f7f7;
+}
+.v .files .btn.dir li {
+    padding: .25rem .5rem;
+}
+.v .files .btn.dir li:hover {
+    background: #f7f7f7;
+}
+</style>
+    <script defer src="lib/codemirror.js"></script>
+</head>
+<body>
+
+<div id="body">
+    
+    <div class="v">
+        
+        <div class="head">
+            <div class="files">
+                <div class="btn dir">
+                    <span>/.vscode</span>
+                    <ul>
+                        <li data-file=".vscode/launch.json">launch.json</li>
+                        <li data-file=".vscode/tasks.json">tasks.json</li>
+                    </ul>
+                </div>
+                <div class="btn f-cs active">
+                    <span>Program.cs</span>
+                </div>
+                <div class="btn f-csproj">
+                    <span>TodoCrud.csproj</span>
+                </div>
+            </div>
+            
+            <div class="result">
+                <div class="btn f-cs active">
+                    <span>Result</span>
+                </div>
+                
+                <div class="edit">
+                    <span>edit on</span>
+                    <h4>gist.cafe</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main">
+
+            <div class="view"><textarea data-file=".vscode/launch.json"></textarea></div>
+            <div class="view"><textarea data-file=".vscode/tasks.json"></textarea></div>
+            <div class="view active"><textarea data-file="Program.cs">using ServiceStack;
+using ServiceStack.Text;
+using ServiceStack.OrmLite;
+using ServiceStack.DataAnnotations;
+
+var dbFactory = new OrmLiteConnectionFactory(":memory:", SqliteDialect.Provider);
+var db = dbFactory.Open(); // Open ADO.NET DB Connection
+
+db.CreateTable&lt;Todo&gt;();
+
+var newTodo = new Todo {
+    Content = "Learn OrmLite",
+    Order = 1
+};
+db.Save(newTodo);
+
+var savedTodo = db.SingleById&lt;Todo&gt;(newTodo.Id);
+"Saved Todo: {0}".Print(savedTodo.Dump());
+
+savedTodo.Done = true;
+db.Update(savedTodo);
+
+var updatedTodo = db.SingleById&lt;Todo&gt;(newTodo.Id);
+"Updated Todo: {0}".Print(updatedTodo.Dump());
+
+db.DeleteById&lt;Todo&gt;(newTodo.Id);
+
+var remainingTodos = db.Select&lt;Todo&gt;();
+"No more Todos: {0}".Print(remainingTodos.Dump());
+
+Inspect.vars(new { newTodo, savedTodo, updatedTodo, remainingTodos });
+
+public class Todo
+{
+    [AutoIncrement]
+    public long Id { get; set; }
+    public string Content { get; set; }
+    public int Order { get; set; }
+    public bool Done { get; set; }
+}</textarea></div>
+            <div class="view"><textarea data-file="TodoCrud.csproj"></textarea></div>
+            
+            <div class="result active"></div>
+        </div>
+        
+    </div>
+
+<script src="lib/codemirror.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.view').forEach(function (e) {
+
+        let cm = CodeMirror.fromTextArea(e.firstChild, {
+            lineNumbers: true,
+            matchBrackets: true,
+            mode: "text/x-csrc"
+        });
+
+    });
+});
+</script>
+
+</div>
+
+
+</body>
+</html>
