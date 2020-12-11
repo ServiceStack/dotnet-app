@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net5</TargetFramework>
-    <Version>5.1.0</Version>
+    <Version>5.1.2</Version>
     <AssemblyName>x</AssemblyName>
     <IsPackable>true</IsPackable>
     <PackageId>x</PackageId>
