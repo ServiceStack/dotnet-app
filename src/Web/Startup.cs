@@ -1475,7 +1475,7 @@ Usage:
   {tool} mix                     Show available gists to mixin            (Alias '+')
   {tool} mix <name>              Write gist files locally, e.g:           (Alias +init)
   {tool} mix init                Create empty .NET Core ServiceStack App
-  {tool} mix #<tag>              Search available gists
+  {tool} mix [tag]               Search available gists
   {tool} mix <gist-url>          Write all Gist text files to current directory
   {tool} gist <gist-id>          Write all Gist text files to current directory
 
@@ -1578,7 +1578,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             var cmd = Regex.Replace(args[0], "^-+", "/");
 
             Task<string> checkUpdatesAndQuit = null;
-            Task<string> beginCheckUpdates() => $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync(requestFilter:req => req.ApplyRequestFilters());
                         
             var arg = args[0];
             if (RefAlias.Keys.Contains(arg) || RefAlias.Values.Contains(arg))
@@ -1742,14 +1741,14 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (arg == "list" || arg == "l")
                 {
                     RegisterStat(tool, "list");
-                    checkUpdatesAndQuit = beginCheckUpdates();
+                    checkUpdatesAndQuit = BeginCheckUpdates(tool);
 
                     PrintGistLinks(tool, GetGistAppsLinks(), usage:$"Usage: {tool} open <name>");
                 }
                 else if (arg == "new")
                 {
                     RegisterStat(tool, "new");
-                    checkUpdatesAndQuit = beginCheckUpdates();
+                    checkUpdatesAndQuit = BeginCheckUpdates(tool);
                     
                     await PrintSources(GitHubSourceTemplates.Split(';'));
                     
@@ -1760,7 +1759,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     if (arg == "+")
                     {
                         RegisterStat(tool, arg);
-                        checkUpdatesAndQuit = beginCheckUpdates();
+                        checkUpdatesAndQuit = BeginCheckUpdates(tool);
                         PrintGistLinks(tool, GetGistApplyLinks());
                     }
                     else
@@ -1771,7 +1770,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         if (ApplyGists(tool, gistAliases))
                             return new Instruction { Command = "+", Handled = true };
 
-                        checkUpdatesAndQuit = beginCheckUpdates();
+                        checkUpdatesAndQuit = BeginCheckUpdates(tool);
                     }
                 }
                 else if (arg == "init") //backwards compat, create Sharp App
@@ -1789,7 +1788,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else if (new[] { "/v", "/version" }.Contains(cmd))
                 {
                     RegisterStat(tool, "version");
-                    checkUpdatesAndQuit = beginCheckUpdates();
+                    checkUpdatesAndQuit = BeginCheckUpdates(tool);
                     $"Version: {GetVersion()}".Print();
                     $"ServiceStack: {Env.VersionString}".Print();
                     $"Framework: {RuntimeInformation.FrameworkDescription}".Print();
@@ -1799,7 +1798,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else if (new[] { "/clean", "/clear" }.Contains(cmd))
                 {
                     RegisterStat(tool, "clean");
-                    checkUpdatesAndQuit = beginCheckUpdates();
+                    checkUpdatesAndQuit = BeginCheckUpdates(tool);
                     var cachesDir = GetCacheDir();
                     DeleteDirectory(cachesDir);
                     $"All caches deleted in '{cachesDir}'".Print();
@@ -1822,7 +1821,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     if (ApplyGists(tool, gistAliases))
                         return new Instruction { Command = "+", Handled = true };
 
-                    checkUpdatesAndQuit = beginCheckUpdates();
+                    checkUpdatesAndQuit = BeginCheckUpdates(tool);
                 }
                 if (arg == "gist")
                 {
@@ -1840,7 +1839,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     string fileName = url.LastRightPart('/');
 
                     RegisterStat(tool, fileName, "get");
-                    // checkUpdatesAndQuit = beginCheckUpdates();
+                    // checkUpdatesAndQuit = BeginCheckUpdates(tool);
 
                     var bytes = await url.GetBytesFromUrlAsync(requestFilter: req => {
                         req.UserAgent = GitHubUtils.UserAgent;
@@ -3306,11 +3305,16 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public static List<string> ExcludeFoldersNamed = new List<string>
         {
-            ".git",
-            "bin",
-            "obj",
-            "publish",
-            "GPUCache",
+            ".git",        //git
+            "bin",         //.NET
+            "obj",         //.NET
+            "publish",     //Gist publish folder
+            "GPUCache",    //CEF GPU Caches
+            ".idea",       //Intellij IDEAs
+            ".vs",         //VS
+            ".dart_tool",  //dart
+            "xcuserdata",  //Xcode
+            ".gistrun",    //gistrun
         };
         
         public static List<string> ExcludeFileExtensions = new List<string> {

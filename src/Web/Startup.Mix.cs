@@ -137,7 +137,7 @@ namespace Web
 
                 "".Print();
 
-                $"  Search:  mix #<tag> Available tags: {string.Join(", ", tags)}".Print();
+                $"  Search:  mix [tag] Available tags: {string.Join(", ", tags)}".Print();
 
                 "".Print();
 
@@ -150,7 +150,7 @@ namespace Web
 
                 "".Print();
 
-                var tagSearch = "#<tag>";
+                var tagSearch = "[tag]";
                 $"Search:  {tool} + {tagSearch.PadRight(Math.Max(padName - 9, 0), ' ')} Available tags: {string.Join(", ", tags)}"
                     .Print();
             }
@@ -204,24 +204,46 @@ namespace Web
             {
                 try
                 {
-                    var json = await checkUpdatesAndQuit;
-                    var response = JSON.parse(json);
-                    if (response is Dictionary<string, object> r &&
-                        r.TryGetValue("items", out var oItems) && oItems is List<object> items &&
-                        items.Count > 0 && items[0] is Dictionary<string, object> item &&
-                        item.TryGetValue("upper", out var oUpper) && oUpper is string upper)
+                    var xml = await checkUpdatesAndQuit;
+
+                    var entryPos = xml.IndexOf("<entry>", StringComparison.Ordinal);
+                    if (entryPos >= 0)
                     {
-                        if (GetVersion() != upper) {
-                            "".Print();
-                            $"new version available, update with:".Print();
-                            "".Print();
-                            $"  dotnet tool update -g {tool}".Print();
+                        var idPos = xml.IndexOf("<id>", entryPos, StringComparison.Ordinal);
+                        if (idPos >= 0)
+                        {
+                            var endIdPos = xml.IndexOf("</id>", idPos, StringComparison.Ordinal);
+                            var startIndex = idPos + "<id>".Length;
+                            var url = xml.Substring(startIndex, endIdPos - startIndex);
+                            var version = url.LastRightPart('/');
+
+                            if (Verbose) $"Latest {tool} version: {version}".Print();
+                            if (GetVersion() != version) {
+                                "".Print();
+                                $"new version available, update with:".Print();
+                                "".Print();
+                                $"  dotnet tool update -g {tool}".Print();
+                            }
                         }
                     }
+                    
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    /*ignore*/
+                    if (Verbose)
+                    {
+                        $"Failed to download https://www.nuget.org/packages/{tool}/atom.xml:".Print();
+                        ex.ToString().Print();
+                        if (ex is WebException webEx)
+                        {
+                            try
+                            {
+                                var err = await webEx.GetResponseBodyAsync();
+                                err.Print();
+                            }
+                            catch { /*ignore*/ }
+                        }
+                    }
                 }
                 return true;
             }
@@ -986,8 +1008,8 @@ namespace Web
 
                     $"Only display available gists with a specific tag:".Print();
 
-                    $"  mix #<tag>".Print();
-                    $"  mix #<tag>,<tag>,<tag>".Print();
+                    $"  mix [tag]".Print();
+                    $"  mix [tag1,tag2]".Print();
                     
                     return false;
                 }
@@ -1079,21 +1101,25 @@ namespace Web
             }
 
             Task<string> checkUpdatesAndQuit = null;
-            Task<string> beginCheckUpdates() =>
-                $"https://api.nuget.org/v3/registration3/{tool}/index.json".GetJsonFromUrlAsync(req => req.ApplyRequestFilters());
             
             if (dotnetArgs.Count == 0)
             {
                 RegisterStat(tool, "list");
-                checkUpdatesAndQuit = beginCheckUpdates();
+                checkUpdatesAndQuit = BeginCheckUpdates(tool);
                 PrintGistLinks(tool, GetGistApplyLinks());
             }
             else
             {
-                if (args[0].FirstCharEquals('#'))
+                var arg = args[0]; 
+                if (arg.FirstCharEquals('#'))
                 {
-                    RegisterStat(tool, args[0], "search");
-                    PrintGistLinks(tool, GetGistApplyLinks(), args[0].Substring(1));
+                    RegisterStat(tool, arg, "search");
+                    PrintGistLinks(tool, GetGistApplyLinks(), arg.Substring(1));
+                }
+                else if (arg.FirstCharEquals('[') && arg[arg.Length -1] == ']')
+                {
+                    RegisterStat(tool, arg, "search");
+                    PrintGistLinks(tool, GetGistApplyLinks(), arg.Substring(1, arg.Length - 2));
                 }
                 else
                 {
@@ -1117,6 +1143,9 @@ namespace Web
             await CheckForUpdates(tool, checkUpdatesAndQuit);
             return false;
         }
+        
+        public static Task<string> BeginCheckUpdates(string tool) =>
+            $"https://www.nuget.org/packages/{tool}/atom.xml".GetStringFromUrlAsync();
 
         private static string GetGistAliasesFilePath() => 
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".servicestack", "gist.aliases");
