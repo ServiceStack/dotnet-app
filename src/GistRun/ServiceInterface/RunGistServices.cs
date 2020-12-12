@@ -24,7 +24,46 @@ namespace GistRun.ServiceInterface
         public const string StatsJson = ".gistrun/stats.json";
         public const string VarsJson = ".gistrun/vars.json";
 
-        public async Task<object> Any(RunGist request)
+        public object Get(RunGist request)
+        {
+            if (string.IsNullOrEmpty(request.Version))
+                throw new ArgumentNullException(nameof(RunGist.Version));
+
+            var gistVersion = $"{request.Id}/{request.Version}";
+            var projectPath = Path.Combine(AppConfig.ProjectsBasePath, Path.Combine(request.Id, request.Version));
+            if (Directory.Exists(projectPath))
+            {
+                string stdout = null;
+                string stderr = null;
+                var fs = new FileSystemVirtualFiles(projectPath);
+                var statsFile = fs.GetFile(StatsJson);
+                var statsJson = statsFile.ReadAllText();
+                var entry = statsJson.FromJson<StatsLogEntry>();
+
+                var outFile = fs.GetFile(StdOut);
+                if (outFile != null)
+                    stdout = outFile.ReadAllText();
+                var errFile = fs.GetFile(StdErr);
+                if (errFile != null)
+                    stderr = errFile.ReadAllText();
+
+                var varsJson = fs.GetFile(VarsJson);
+                return new RunScriptResponse {
+                    GistVersion = gistVersion,
+                    ExitCode = entry.ExitCode,
+                    Output = stdout,
+                    Error = stderr,
+                    DurationMs = entry.DurationMs,
+                    Vars = varsJson != null
+                        ? (Dictionary<string,object>)JSON.parse(varsJson.ReadAllText())
+                        : null,
+                };
+            }
+            
+            throw HttpError.NotFound("Unseen gist");
+        }
+
+        public async Task<object> Post(RunGist request)
         {
             var gistId = request.Id;
             var gistVersion = request.Version != null
@@ -68,7 +107,7 @@ namespace GistRun.ServiceInterface
             {
                 var statsJson = statsFile.ReadAllText();
                 entry = statsJson.FromJson<StatsLogEntry>();
-                useCachedResults = entry.StartDate + TimeSpan.FromSeconds(AppConfig.CacheResultsSecs) > DateTime.UtcNow; 
+                useCachedResults = entry.StartDate + TimeSpan.FromSeconds(AppConfig.CacheResultsSecs) > DateTime.UtcNow;
                 if (useCachedResults)
                 {
                     entry.Count += 1;
@@ -98,8 +137,8 @@ namespace GistRun.ServiceInterface
 
                 var result = sessionId != null
                     ? await ProcessUtils.RunAsync(processInfo, AppConfig.ProcessTimeoutMs,
-                        onOut: data => ServerEvents.NotifySession(sessionId, "stdout", data, channel: gistId),
-                        onError: data => ServerEvents.NotifySession(sessionId, "stderr", data, channel: gistId))
+                        onOut: data => ServerEvents.NotifySession(sessionId, "cmd.stdout", data, channel: gistId),
+                        onError: data => ServerEvents.NotifySession(sessionId, "cmd.stderr", data, channel: gistId))
                     : await ProcessUtils.RunAsync(processInfo, AppConfig.ProcessTimeoutMs);
 
                 entry = new StatsLogEntry {

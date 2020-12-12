@@ -3,41 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="lib/codemirror.css">
-
+    <link rel="stylesheet" href="theme/idea.css">
+    <script defer src="lib/codemirror.js"></script>
+    <script defer src="addon/selection/active-line.js"></script>
+    <script defer src="mode/clike/clike.js"></script>
+    <script defer src="mode/css/css.js"></script>
+    <script defer src="mode/xml/xml.js"></script>
+    <script defer src="mode/javascript/javascript.js"></script>
+    <script defer src="mode/htmlmixed/htmlmixed.js"></script>
+    <script defer src="/js/servicestack-client.js"></script>
 <style>
-    html,body,#body {
-        height: 100%;
-    }
-    body {
-        font: 110%/1.5 system-ui, sans-serif;
-    }
-    body,.v .edit h4,.btn ul,.btn li {
-        margin: 0;
-        padding: 0;
-    }
-    .box {
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid;
-        margin: 1em 0;
-        padding: 1em;
-    }
-    .err {
-        background: #131417;
-        color: white;
-        height: 100vh;
-        margin: 0;
-        display: grid;
-        place-items: center;
-        padding: 2rem;
-    }
-    .msg {
-        max-width: 350px;
-    }
-    .CodeMirror { height: 100%; }
+    html,body,#body,.v { height: 100%; }
+    body { font: 110%/1.5 system-ui, sans-serif; }
+    body,.v .edit h4,.btn ul,.btn li { margin: 0; padding: 0; }
+    a { color: #428bca; text-decoration: none; }
+    .box { box-sizing:border-box; display:flex; align-items:center; justify-content:center; border:2px solid; margin:1em 0; padding:1em; }
+    .err { background:#131417; color:white; height:100vh; margin:0; display:grid; place-items:center; padding:2rem; }
+    .msg { max-width:350px; }
+    .CodeMirror { height:100%; font-size:14px; }
     .CodeMirror pre.CodeMirror-line, .CodeMirror pre.CodeMirror-line-like { padding: 0 8px; }
+    .CodeMirror-selected {background: rgba(160,197,232,.4) !important;}
+    
+    /*readonly*/
+    .CodeMirror-cursor, div.CodeMirror-cursor { visibility: visible !important; }
+    .v .main .view { border: 1px solid rgba(255,255,255,0); }
+    .v .main .view:focus-within { border: 1px solid #444; }
+    
     .v {
         display: flex;
         flex-direction: column;
@@ -59,15 +50,14 @@
     .v .head .files {
         display: flex;
         flex-direction: row;
-        padding-left: 29px;
     }
     .v .head .result {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
-        margin-left: 77px;
     }
     .v .head .btn {
+        color: #444;
         background: #f7f7f7;
         height: 2rem;
         margin-right: .5rem;
@@ -99,19 +89,61 @@
         display: flex;
         flex: 1 1 auto;
         flex-direction: row;
+        overflow: hidden;
     }
     .v .main .view {
         display: none;
-        flex: 1 1 auto;
+        flex: 0 0 50%;
+        overflow-y: auto;
     }
     .v .main .active {
         display: block;
     }
     .v .main .result {
-        flex: 1 1 auto;
+        flex: 0 0 50%;
+        overflow: auto;
+    }
+    .center {
+        display: grid;
+        place-items: center;
+    }
+    .run-btn {
+        cursor: pointer;
+        font-size: 24px;
+        border: 2px solid #444;
+        border-radius: .25rem;
+        padding: 0 .5rem .3rem .3rem;
+        text-transform: lowercase;
+        box-shadow: 3px 3px #f7f7f7;
+        user-select: none;
+    }
+    .run-btn:active {
+        transform: translateY(2px);
+    }
+    .run-btn svg {
+        vertical-align: middle;
+    }
+    .run-btn.running { opacity: .5; }
+    .run-btn.running:active { transform: none; }
+    .v .main .result .output {
+        padding: .25rem;
+        font-family: monospace;
+        white-space: pre-wrap;
+        tab-size: 4;
+        font-size: 16px;
+    }
+    .v .files .btn:first-child {
+        margin-left: 29px;
     }
     .v .files .btn.dir {
         position: relative;
+    }
+    .v .files .btn.dir .hover {
+        display: none;
+    }
+    .v .files .btn.dir:hover .icon {
+        transform: rotate(90deg);
+        transition: transform .1s ease-in-out;
     }
     .v .files .btn.dir:hover ul {
         display: block;
@@ -131,183 +163,493 @@
     .v .files .btn.dir li:hover {
         background: #f7f7f7;
     }
+    .v .files .btn.dir-file {
+        display: none;
+    }
+    .v .files .btn.dir-file[data-file] {
+        display: flex;
+    }
+    .v .files .btn.dir-file .close {
+        margin: .2rem 0 0 .2rem;
+    }
+    .v .files .btn.dir-file.active:hover .close {
+        color: #111;
+    }
+
+    .w-3 { width:.75rem; } .w-4 { width:1rem; } .w-5 { width:1.25rem; } .w-6 { width:1.5rem; } .w-8 { width:2rem; } .w-full { width:100%; }
+    .h-3 { height:.75rem; } .h-4 { height:1rem; } .h-5 { height:1.25rem; } .h-6 { height:1.5rem; } .h-8 { height:2rem; } .h-full { height:100%; }
+
+    .m.connected { color: #1c7430; }
+    .m.spacer { height: 20px; }
+    .m.completed { color: #999; }
+    .m.error { color: #880000; }
+    .m.inspect { background: #f7f7f7; color: #666; text-align:center; font-family: system-ui, sans-serif; padding: .1rem; }
+    .m.var { white-space:normal; padding: .2rem; font-family: system-ui, sans-serif; }
+    .m.var label { font-weight: bold; display: block; cursor: pointer; user-select:none; }
+    .m.var label svg { vertical-align: middle; }
+    .m.var.active label svg { transform: rotate(90deg); transition: transform .1s ease-in-out; }
+    .m.var .jsonviewer { display: none; }
+    .m.var.active .jsonviewer { display: block; }
+
+    .jsonviewer { border:1px solid #ddd; padding:.25rem; margin-left:1rem; font-size:14px; }
+    .jsonviewer .ib { display: inline-block; }
+    .jsonviewer table { border-collapse:collapse; border: solid 1px #ccc; clear: left; }
+    .jsonviewer th { text-align: left; padding: 4px 8px; text-shadow: #fff 1px 1px -1px; background: #f1f1f1; white-space:nowrap; font-weight: bold; }
+    .jsonviewer td { padding: 8px 8px 0 8px; vertical-align: top; line-height: 18px; }
+    .jsonviewer dl { margin: 0; clear: left; }
+    .jsonviewer dt { font-weight: bold; width: 160px; clear: left; float: left; display:block; white-space:nowrap; line-height: 26px; }
+    .jsonviewer dd { display: block; float: left; line-height: 26px; max-width: 600px; margin: 0; }
+    .jsonviewer dl dl dt { font-weight: bold; }
+    .jsonviewer hr { display:none; }
+    .jsonviewer td dl HR { display:block; padding: 0; clear: left; border: none; }
+    .jsonviewer td dl { padding: 4px; margin: 0; height:100%; max-width: 700px; }
+    .jsonviewer dl td dl dt { padding: 2px; margin: 0 10px 0 0; font-weight: bold; width: 120px; overflow: hidden; clear: left; float: left; display:block; }
+    .jsonviewer dl td dl dd { margin: 0; padding: 2px; display: block; float: left; }
+    .jsonviewer tbody>tr:last-child>td { padding: 8px; }
+    .clearfix { clear:both; }
+
+    ::-webkit-scrollbar { width:8px; height:10px; }
+    ::-webkit-scrollbar-thumb { background-color: #ddd; }
 </style>
 </head>
 <body>
 
 <div id="body"></div>
 
-<script defer src="lib/codemirror.js"></script>
 <script>
-    let $body = document.getElementById('body');
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+let $body = $('#body');
 
-    function qry(qs) {
-        qs = qs.split('+').join(' ');
-        let tokens, re = /[?&]?([^=]+)=([^&]*)/g;
-        let o = {};
-        while (tokens = re.exec(qs)) {
-            o[tokens[1]] = tokens[2];
-        }
-        return o;
+function qry(qs) {
+    qs = qs.split('+').join(' ');
+    let tokens, re = /[?&]?([^=]+)=([^&]*)/g;
+    let o = {};
+    while (tokens = re.exec(qs)) {
+        o[tokens[1]] = tokens[2];
     }
-    function enc(s) {
-        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;').replace(/"/g, '&#34;');
+    return o;
+}
+function enc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;').replace(/"/g, '&#34;');
+}
+function err(h, msg) {
+    $body.className = 'err';
+    $body.innerHTML = '<div class="msg">'
+        + '<h3>' + h + '</h3>'
+        + '<p>' + enc(msg) + '</p>'
+        + '</div>';
+}
+function splitOnFirst(s, c) {
+    if (!s) return [s];
+    let pos = s.indexOf(c);
+    return pos >= 0 ? [s.substring(0, pos), s.substring(pos + 1)] : [s];
+}
+function splitOnLast(s, c) {
+    if (!s) return [s];
+    let pos = s.lastIndexOf(c);
+    return pos >= 0
+        ? [s.substring(0, pos), s.substring(pos + 1)]
+        : [s];
+}
+function ext(s) {
+    return splitOnLast(s,'.')[1] || 'txt';
+}
+function sanitize(name) {
+    return name && name.replace(/\\/g,'/').replace(/["']/g,'');
+}
+function eq(a,b) {
+    return sanitize(a) === sanitize(b);
+}
+
+let btnRun = `<div class="run-btn">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+        run
+    </div>`;
+
+(function (qs,cb) {
+    let sb = '';
+    for (let k in qs) {
+        sb += '<div>' + k + ': ' + qs[k] + '</div>';
     }
-    function err(h, msg) {
-        document.body.className = 'err';
-        $body.innerHTML = '<div class="msg">'
-            + '<h3>' + h + '</h3>'
-            + '<p>' + enc(msg) + '</p>'
-            + '</div>';
-    }
-    function splitOnFirst(s, c) {
-        if (!s) return [s];
-        let pos = s.indexOf(c);
-        return pos >= 0 ? [s.substring(0, pos), s.substring(pos + 1)] : [s];
-    }
-    function splitOnLast(s, c) {
-        if (!s) return [s];
-        let pos = s.lastIndexOf(c);
-        return pos >= 0
-            ? [s.substring(0, pos), s.substring(pos + 1)]
-            : [s];
-    }
-    function ext(s) {
-        return splitOnLast(s,'.')[1] || 'txt';
+
+    let gistId = qs['gist'];
+    if (!gistId)
+        return err("Invalid Embed", "Missing 'gist' argument.");
+
+    let g = localStorage.getItem('gist');
+    if (!g) {
+        fetch('https://api.github.com/gists/' + gistId)
+            .then(function (r) {
+                return r.text().then(function (s) {
+                    localStorage.setItem('gist',s);
+                    render(JSON.parse(s));
+                })
+            });
+    } else {
+        render(JSON.parse(g));
     }
     
-    (function (qs) {
-        let sb = '';
-        for (let k in qs) {
-            sb += '<div>' + k + ': ' + qs[k] + '</div>';
+    function render(o) {
+        if (cb) cb(o);
+        let files = [];
+        let dirs = [];
+        let lastDir = null;
+        let dirFiles = [];
+        let sep = '/';
+        for (let file in o.files) {
+            let fileObj = o.files[file];
+            let name = sanitize(file);
+            if (name.indexOf(sep) >= 0) {
+                let dir = splitOnFirst(name,sep)[0];
+                if (dir === lastDir || lastDir == null) {
+                    dirFiles.push(fileObj);
+                } else {
+                    dirs.push(dirFiles);
+                    dirFiles = [fileObj];
+                }
+            } else {
+                if (dirFiles.length > 0) {
+                    dirs.push(dirFiles);
+                    dirFiles = [];
+                }
+                files.push(fileObj);
+            }
         }
-
-        let gist = qs['gist'];
-        if (!gist)
-            return err("Invalid Embed", "Missing 'gist' argument.");
-
-        let g = localStorage.getItem('gist');
-        if (!g) {
-            fetch('https://api.github.com/gists/' + gist)
-                .then(function (r) {
-                    return r.text().then(function (s) {
-                        localStorage.setItem('gist',s);
-                        render(JSON.parse(s));
-                    })
-                });
-        } else {
-            render(JSON.parse(g));
-        }
+        //console.log(files);
+        let activeFile = files[0];
+        window.activeFileName = sanitize(qs.show || (activeFile && activeFile.filename));
         
-        function render(o) {
-            let files = [];
-            let lastDir = null;
-            let dirFiles = [];
-            let sep = '\\';
-            for (let file in o.files) {
-                let fileObj = o.files[file];
-                if (file.indexOf(sep) >= 0) {
-                    let dir = splitOnFirst(file,sep)[0];
-                    if (dir === lastDir || lastDir == null) {
-                        dirFiles.push(fileObj);
-                    } else {
-                        files.push(dirFiles);
-                        dirFiles = [fileObj];
-                    }
-                } else {
-                    if (dirFiles.length > 0) {
-                        files.push(dirFiles);
-                        dirFiles = [];
-                    }
-                    files.push(fileObj);
-                }
-            }
-            console.log(files);
-            
-            let activeFile = files.filter(function (f) { return !Array.isArray(f); })[0];
-            let activeFileName = activeFile && activeFile.filename; 
-
-            let sb = [
-                '<div class="v">',
-                    '<div class="head">',
-                        '<div class="files">'
-            ];
-            files.forEach(function(file) {
-                if (Array.isArray(file)) {
-                    
-                    sb = sb.concat([
-                        '<div class="btn dir">',
-                            '<span>/',splitOnFirst(file[0].filename,sep)[0],'</span>',
-                            '<ul>']);
-                    sb = sb.concat(file.map(function(f) { 
-                        return '<li data-file="' + f.filename + '">' + splitOnFirst(f.filename,sep)[1] + '</li>'; 
-                    }));
-                    sb = sb.concat(['</ul>','</div>']);
-                    
-                } else {
-                    let activeCls = file.filename === activeFileName ? ' active' : '';
-                    sb = sb.concat([
-                        '<div class="btn ','f-' + ext(file.filename), activeCls, '" data-file="' + file.filename + '">',
-                            '<span>',file.filename,'</span>',
-                        '</div>'
-                    ]);
-                }
-            });
-            sb.push('</div>'); // .files
-
-            sb = sb.concat([
-                '<div class="result">',
-                    '<div class="btn f-cs active">',
-                        '<span>Result</span>',
-                    '</div>',
-                    '<div class="edit">',
-                        '<span>edit on</span>',
-                        '<h4>gist.cafe</h4>',
-                    '</div>',
-                '</div>'
-            ]);
-            sb.push('</div>'); // .head
-            
-            sb.push('<div class="main">');
-            
-            function fileEl(file) {
-                let activeCls = file.filename === activeFileName ? ' active' : '';
-                return '<div class="view' + activeCls + '" data-file="' + file.filename + '" data-type="' + file.type + '"><textarea>' 
-                        + enc(file.content) 
-                    + '</textarea></div>';
-            }
-
-            files.forEach(function(file) {
-                if (Array.isArray(file)) {
-                    file.forEach(function (f) { 
-                        sb.push(fileEl(f)); 
-                    });
-                } else {
-                    sb.push(fileEl(file));
-                }
-            });
-
-            sb.push('<div class="result"></div>');
-            sb.push('</div>'); // .main
-            
-            sb.push('</div>'); // .v
-            
-            $body.innerHTML = sb.join('');
-        }
-    })(qry(document.location.search));
-
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.view').forEach(function (e) {
-        let cm = CodeMirror.fromTextArea(e.firstElementChild, {
-            lineNumbers: true,
-            matchBrackets: true,
-            readonly: true,
-            //mode: "text/x-csrc"
+        let sb = [
+            `<div class="v">
+                <div class="head">
+                    <div class="files">`];
+        
+        dirs.forEach(dirFiles => {
+            sb.push(
+                `<div class="btn dir">
+                    <svg class="icon w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        <span>${splitOnFirst(sanitize(dirFiles[0].filename),sep)[0]}</span>
+                        <ul>`);
+            sb.push(...dirFiles.map(f => `<li data-file="${sanitize(f.filename)}">${splitOnFirst(sanitize(f.filename),sep)[1]}</li>`));
+            sb.push(`</ul></div>`);
         });
+
+        sb.push(
+            `<div class="btn dir-file">
+                <span></span>
+                <a class="close" title="close"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></a>
+            </div>`);
+        
+        files.forEach(file => {
+            sb.push(
+                `<div class="btn f-${ext(file.filename)}" data-file="${sanitize(file.filename)}">
+                    <span>${sanitize(file.filename)}</span>
+                </div>`);
+        });
+        sb.push('</div>'); // .files
+
+        sb.push(
+            `<div class="result">
+                <div class="btn f-cs active">
+                    <span>Result</span>
+                </div>
+                <div class="edit">
+                    <span>view on</span>
+                    <div><a href="http://gist.github.com/${gistId}" target="top">github</a></div>
+                </div>
+            </div>`);
+        
+        sb.push('</div>'); // .head
+        
+        sb.push('<div class="main">');
+        
+        let fileEl = file =>
+            `<div class="view" data-file="${sanitize(file.filename)}" data-type="${file.type}">
+                <textarea>${enc(file.content)}</textarea>
+            </div>`;
+
+        dirs.forEach(dirFiles => {
+            dirFiles.forEach(f => {
+                sb.push(fileEl(f));
+            });
+        });
+        files.forEach(file => {
+            sb.push(fileEl(file));
+        });
+        
+        sb.push(`<div class="result">
+                    <div class="center h-full">${btnRun}</div>
+                </div>
+            </div>
+        </div>`);
+        
+        $body.innerHTML = sb.join('');
+    }
+})(qry(document.location.search), o => {
+    window.gist = o;
+    loadCachedVersion(`${o.id}/${o.history[0].version}`);
+});
+
+let extModes = {
+    'cs': 'text/x-csharp',
+    'js': 'text/javascript',
+    'ts': 'text/javascript',
+    'json': 'text/javascript',
+    'csproj': 'text/xml',
+    'xml': 'text/xml',
+    'css': 'text/css',
+    'html': 'htmlmixed',
+};
+
+function cm(e) {
+    if (!e) return;
+    let next = e.firstElementChild.nextElementSibling;
+    if (next && next.classList.contains('CodeMirror')) return;
+    let filename = e.getAttribute('data-file');
+    let mode = extModes[ext(filename)] || 'text/plain';
+    let cm = CodeMirror.fromTextArea(e.firstElementChild, {
+        lineNumbers: true,
+        styleActiveLine: true,
+        matchBrackets: true,
+        readOnly: true,
+        theme: 'idea',
+        mode: mode,
     });
+}
+function select(el) {
+    if (el) el.classList.add('active');
+    return el;
+}
+function deselect(el) {
+    if (el) el.classList.remove('active');
+    return el;
+}
+function openFile(filename) {
+    if (!filename) return;
+    deselect($('.v .head .files .btn.active'));
+    deselect($('.v .main .view.active'));
+    select($(".v .head .files [data-file='" + filename + "']"));
+    cm(select($(".v .main .view[data-file='" + filename + "']")));
+}
+function openDirFile(filename) {
+    if (!filename) return;
+    openFile(filename);
+    let dirFileMenu = $('.v .head .files .btn.dir-file');
+    if (!dirFileMenu.classList.contains('active'))
+        dirFileMenu.classList.add('active');
+    dirFileMenu.firstElementChild.innerHTML = filename;
+    dirFileMenu.setAttribute('data-file',filename);
+}
+function on(sel,handlers) {
+    $$(sel).forEach(e => {
+        for (let evt in handlers) {
+            let fn = handlers[evt];
+            if (typeof evt === 'string' && typeof fn === 'function') {
+                e.addEventListener(evt, fn.bind(e));
+            }
+        }
+    });
+}
+
+let toPascalCase = (s) => !s ? s : s.charAt(0).toUpperCase() + s.substring(1);
+let splitCase = (t) => typeof t != 'string' ? t : t.replace(/([A-Z]|[0-9]+)/g, ' $1').replace(/_/g, ' ').trim();
+let humanize = s => (!s || s.indexOf(' ') >= 0 ? s : splitCase(s));
+let show = (k) => typeof k !== "string" || k.substr(0, 2) !== "__";
+let keyFmt = (t) => humanize(toPascalCase(t));
+let uniqueKeys = (m) => {
+    let h = {};
+    for (let i = 0, len = m.length; i < len; i++) {
+        const values = m[i];
+        for (let k in values) {
+            if (values.hasOwnProperty(k) && show(k)) {
+                h[k] = k;
+            }
+        }
+    }
+    return h;
+};
+
+let valueFmt = (k, v, vFmt) => vFmt;
+let num = (m) => m;
+let date = (s) => toDate(s);
+let pad = (d) => d < 10 ? '0' + d : d;
+let dmft = (d) => d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate());
+let str = (m) => m.substr(0, 6) === '/Date(' ? dmft(date(m)) : m;
+let obj = (m) => {
+    return (`<dl>
+            ${Object.keys(m).filter(show).map(k => (
+        `<dt class="ib">${keyFmt(k)}</dt><dd>${valueFmt(k, m[k], val(m[k]))}</dd>`
+    )).join('')}
+        </dl>`);
+};
+let arr = (m) => {
+    if (typeof m[0] == 'string' || typeof m[0] == 'number')
+        return `<span>${m.join(', ')}</span>`;
+    let h = uniqueKeys(m);
+    return (`
+        <table>
+            <caption></caption>
+        <thead>
+            <tr>
+                ${Object.keys(h).map(k => (`<th><b></b>${keyFmt(k)}</th>`)).join('')}
+            </tr>
+        </thead>
+        <tbody>
+        ${m.map(row => (
+            `<tr>
+                ${Object.keys(h).filter(show).map(k => `<td>${valueFmt(k, row[k], val(row[k]) )}</td>`).join('')}
+            </tr>`)).join('')}
+        </tbody>
+    </table>`);
+};
+let val = (m, valueFn) => {
+    if (valueFn)
+        valueFmt = valueFn;
+    if (m == null) return "";
+    if (typeof m == "number") return `${num(m)}`;
+    if (typeof m == "string") return str(m);
+    if (typeof m == "boolean") return m ? "true" : "false";
+    return m.length ? arr(m) : obj(m);
+};
+
+let connected = '<div class="m connected">connected...</div><div class="m spacer"></div>';
+let svgVar = '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>';
+
+function renderOutput($output,o,opt) {
+    //console.log('o',o);
+    let cached = opt && opt.cached;
+    let sb = [`<div class="m stdout">${o.output}</div>`];
+    if (o.exitCode) {
+        sb.push(`<div class="m exitcode">exit code ${o.exitCode}</div>`);
+    }
+    if (o.error) {
+        sb.push(`<div class="m stderr">${o.error}</div>`);
+    }
+    sb.push('<div class="m spacer"></div>');
+    if (!cached) {
+        sb.push(`<div class="m completed">completed in ${o.durationMs}ms.</div>`);
+    }
+    sb.push('<div class="m spacer"></div>');
+
+    if (o.vars && Object.keys(o.vars).length > 0) {
+        sb.push('<div class="m inspect">inspect</div>');
+        for (let k in o.vars) {
+            sb.push(
+                `<div class="m var active">
+                    <label>${svgVar}${k}</label>
+                    <div class="jsonviewer">${val(o.vars[k])}<div class="clearfix"></div></div>
+                </div>`);
+        }
+    }
+
+    sb.push(`<div class="center" style="white-space:normal;font-family:system-ui,sans-serif;margin:1rem 0;">${btnRun}</div>`);
+    $output.innerHTML = (cached ? '' : connected) + sb.join('');
+    initBtnRun();
+
+    on('.m.var label', {
+        click: function (e) {
+            let cls = this.parentElement.classList;
+            if (cls.contains('active')) {
+                cls.remove('active');
+            } else {
+                cls.add('active');
+            }
+        }
+    });
+}
+
+function loadCachedVersion(gist) {
+    fetch(`/gists/${gist}/run`, {
+            headers: { 'Accept': 'application/json' },
+        })
+        .then(r => {
+            if (r.ok) {
+                return r.json().then(o => {
+                    $('.main .result').innerHTML = '<div class="output"></div>';
+                    renderOutput($('.main .result .output'),o,{ cached:true });
+                });
+            }
+        })
+}
+
+function runGist(gist) {
+    let $result = $('.main .result');
+    let $output = null;
+    let result = null;
+    let sse = new ServerEventsClient('/',[splitOnFirst(gist,'/')[0]], {
+        handlers: {
+            onConnect: sub => {
+                $result.innerHTML = '<div class="output"></div>';
+                $output = $('.main .result .output');
+                $output.innerHTML = connected;
+
+                fetch(`/gists/${gist}/run`, {
+                        method: "POST",
+                        headers: { 'Accept': 'application/json' },
+                    })
+                    .then(r => r.json())
+                    .then(o => {
+                        renderOutput($output,result = o);
+                    });
+            },
+            stdout: msg => {
+                if (result) return;
+                $output.insertAdjacentHTML('beforeend', '<div class="m">' + msg + '</div>');
+            },
+            stderr: msg => {
+                if (result) return;
+                $output.insertAdjacentHTML('beforeend', '<div class="m error">' + msg + '</div>');
+            },
+        }
+    }).start();
+}
+
+function initBtnRun() {
+    on('.run-btn', {
+        click: function(e) {
+            if (this.classList.contains('running')) return;
+            this.classList.add('running');
+            runGist(window.gist.id + '/' + window.gist.history[0].version);
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    Object.assign(window, window['@servicestack/client']); //import into global namespace
+    openFile(window.activeFileName);
+    on('.v .head .files .btn', { 
+        click: function (evt) {
+            let e = this;
+            let filename = e.getAttribute('data-file');
+            if (filename) {
+                if (e.classList.contains('dir-file')) {
+                    openDirFile(filename);
+                } else {
+                    openFile(filename);
+                }
+            }
+        } 
+    });
+    on('.v .head .files .btn.dir li', {
+        click: function (evt) {
+            let e = this;
+            let filename = e.getAttribute('data-file');
+            if (filename) {
+                openDirFile(filename);
+            }
+        }
+    });
+    on('.v .head .files .btn.dir-file .close', {
+        click: function (e) {
+            let filename = this.parentElement.getAttribute('data-file');
+            if (filename) {
+                this.parentElement.removeAttribute('data-file');
+                openFile(window.activeFileName);
+            }
+        }
+    });
+    initBtnRun();
 });
 </script>
 
