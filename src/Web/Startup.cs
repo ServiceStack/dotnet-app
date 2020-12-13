@@ -1010,8 +1010,9 @@ namespace Web
             var createGist = string.IsNullOrEmpty(publishUrl);
             if (createGist)
             {
+                var defaultName = new DirectoryInfo(Environment.CurrentDirectory).Name.Replace("_", " ");
                 var gist = gateway.CreateGithubGist(
-                    Description ?? new DirectoryInfo(Environment.CurrentDirectory).Name + (isSharpApp ? " Sharp App" : " files"),
+                    Description ?? defaultName + (isSharpApp ? " Sharp App" : ""),
                     isPublic: true,
                     files: files);
 
