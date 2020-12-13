@@ -132,8 +132,8 @@
         tab-size: 4;
         font-size: 16px;
     }
-    .v .files .btn:first-child {
-        margin-left: 29px;
+    .v .files .spacer {
+        margin-left: 30px;
     }
     .v .files .btn.dir {
         position: relative;
@@ -217,9 +217,9 @@
 <div id="body"></div>
 
 <script>
-function $(sel) { return document.querySelector(sel); }
-function $$(sel) { return document.querySelectorAll(sel); }
-let $body = $('#body');
+let $ = sel => document.querySelector(sel),
+    $$ = sel => document.querySelectorAll(sel),
+    $body = $('#body');
 
 function qry(qs) {
     qs = qs.split('+').join(' ');
@@ -255,11 +255,30 @@ function splitOnLast(s, c) {
 function ext(s) {
     return splitOnLast(s,'.')[1] || 'txt';
 }
-function sanitize(name) {
+function fname(name) {
     return name && name.replace(/\\/g,'/').replace(/["']/g,'');
 }
 function eq(a,b) {
-    return sanitize(a) === sanitize(b);
+    return fname(a) === fname(b);
+}
+function gistRef(gist) {
+    return `${gist.id}/${gist.history[0].version}`;
+}
+function saveGist(gistId,strGist) {
+    localStorage.setItem(`gist:${gistId}`,strGist);
+    localStorage.setItem(`gist:${gistId}:time`,new Date().getTime());
+}
+function getGist(gistId) {
+    let strGist = localStorage.getItem(`gist:${gistId}`);
+    let cachedAt = parseInt(localStorage.getItem(`gist:${gistId}:time`));
+    let dayMs = 24 * 60 * 60 * 1000; 
+    if (cachedAt > 0 && cachedAt + dayMs > new Date().getTime()) {
+        return strGist;
+    }
+    return null;
+}
+function removeGist(gistId) {
+    localStorage.removeItem(`gist:${gistId}`);
 }
 
 let btnRun = `<div class="run-btn">
@@ -277,29 +296,40 @@ let btnRun = `<div class="run-btn">
     if (!gistId)
         return err("Invalid Embed", "Missing 'gist' argument.");
 
-    let g = localStorage.getItem('gist');
+    let g = !qs.nocache && getGist(gistId);
     if (!g) {
-        fetch('https://api.github.com/gists/' + gistId)
+        fetch(`https://api.github.com/gists/${gistId}`)
             .then(function (r) {
-                return r.text().then(function (s) {
-                    localStorage.setItem('gist',s);
-                    render(JSON.parse(s));
-                })
+                if (r.ok) {
+                    return r.text().then(function (s) {
+                        saveGist(gistId,s);
+                        render(JSON.parse(s));
+                    });
+                } else {
+                    return r.text()
+                        .then(s => {
+                            var msg = r.statusText;
+                            try {
+                                let o = JSON.parse(s);
+                                msg = o.message || msg;
+                            } catch (e) {}
+                            err(`${r.status} ${msg}`, r.status == 404 ? "Gist does not exist." : "Could not access gist.");
+                        });
+                }
             });
     } else {
         render(JSON.parse(g));
     }
     
-    function render(o) {
-        if (cb) cb(o);
+    function render(gist) {
         let files = [];
         let dirs = [];
         let lastDir = null;
         let dirFiles = [];
         let sep = '/';
-        for (let file in o.files) {
-            let fileObj = o.files[file];
-            let name = sanitize(file);
+        for (let file in gist.files) {
+            let fileObj = gist.files[file];
+            let name = fname(file);
             if (name.indexOf(sep) >= 0) {
                 let dir = splitOnFirst(name,sep)[0];
                 if (dir === lastDir || lastDir == null) {
@@ -318,20 +348,21 @@ let btnRun = `<div class="run-btn">
         }
         //console.log(files);
         let activeFile = files[0];
-        window.activeFileName = sanitize(qs.show || (activeFile && activeFile.filename));
+        let activeFileName = fname(qs.show || (activeFile && activeFile.filename));
         
         let sb = [
             `<div class="v">
                 <div class="head">
-                    <div class="files">`];
+                    <div class="files">
+                        <div class="spacer"></div>`];
         
         dirs.forEach(dirFiles => {
             sb.push(
                 `<div class="btn dir">
                     <svg class="icon w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        <span>${splitOnFirst(sanitize(dirFiles[0].filename),sep)[0]}</span>
+                        <span>${splitOnFirst(fname(dirFiles[0].filename),sep)[0]}</span>
                         <ul>`);
-            sb.push(...dirFiles.map(f => `<li data-file="${sanitize(f.filename)}">${splitOnFirst(sanitize(f.filename),sep)[1]}</li>`));
+            sb.push(...dirFiles.map(f => `<li data-file="${fname(f.filename)}">${splitOnFirst(fname(f.filename),sep)[1]}</li>`));
             sb.push(`</ul></div>`);
         });
 
@@ -343,8 +374,8 @@ let btnRun = `<div class="run-btn">
         
         files.forEach(file => {
             sb.push(
-                `<div class="btn f-${ext(file.filename)}" data-file="${sanitize(file.filename)}">
-                    <span>${sanitize(file.filename)}</span>
+                `<div class="btn f-${ext(file.filename)}" data-file="${fname(file.filename)}">
+                    <span>${fname(file.filename)}</span>
                 </div>`);
         });
         sb.push('</div>'); // .files
@@ -365,7 +396,7 @@ let btnRun = `<div class="run-btn">
         sb.push('<div class="main">');
         
         let fileEl = file =>
-            `<div class="view" data-file="${sanitize(file.filename)}" data-type="${file.type}">
+            `<div class="view" data-file="${fname(file.filename)}" data-type="${file.type}">
                 <textarea>${enc(file.content)}</textarea>
             </div>`;
 
@@ -385,11 +416,47 @@ let btnRun = `<div class="run-btn">
         </div>`);
         
         $body.innerHTML = sb.join('');
+        
+        function init() {
+            Object.assign(window, window['@servicestack/client']);
+
+            loadCachedVersion(gist);
+            openFile(activeFileName);
+            on('.v .head .files .btn', {
+                click: function (evt) {
+                    let filename = this.getAttribute('data-file');
+                    if (filename) {
+                        if (this.classList.contains('dir-file')) {
+                            openDirFile(filename);
+                        } else {
+                            openFile(filename);
+                        }
+                    }
+                }
+            });
+            on('.v .head .files .btn.dir li', {
+                click: function (evt) {
+                    let filename = this.getAttribute('data-file');
+                    if (filename) {
+                        openDirFile(filename);
+                    }
+                }
+            });
+            on('.v .head .files .btn.dir-file .close', {
+                click: function (e) {
+                    let filename = this.parentElement.getAttribute('data-file');
+                    if (filename) {
+                        this.parentElement.removeAttribute('data-file');
+                        openFile(activeFileName);
+                    }
+                }
+            });
+            initBtnRun(gist);
+        }
+        if (document.readyState === "complete") init();
+        else window.addEventListener("DOMContentLoaded", init);
     }
-})(qry(document.location.search), o => {
-    window.gist = o;
-    loadCachedVersion(`${o.id}/${o.history[0].version}`);
-});
+})(qry(document.location.search));
 
 let extModes = {
     'cs': 'text/x-csharp',
@@ -516,7 +583,7 @@ let val = (m, valueFn) => {
 let connected = '<div class="m connected">connected...</div><div class="m spacer"></div>';
 let svgVar = '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>';
 
-function renderOutput($output,o,opt) {
+function renderOutput($output,gist,o,opt) {
     //console.log('o',o);
     let cached = opt && opt.cached;
     let sb = [`<div class="m stdout">${o.output}</div>`];
@@ -545,7 +612,7 @@ function renderOutput($output,o,opt) {
 
     sb.push(`<div class="center" style="white-space:normal;font-family:system-ui,sans-serif;margin:1rem 0;">${btnRun}</div>`);
     $output.innerHTML = (cached ? '' : connected) + sb.join('');
-    initBtnRun();
+    initBtnRun(gist);
 
     on('.m.var label', {
         click: function (e) {
@@ -560,14 +627,14 @@ function renderOutput($output,o,opt) {
 }
 
 function loadCachedVersion(gist) {
-    fetch(`/gists/${gist}/run`, {
+    fetch(`/gists/${gistRef(gist)}/run`, {
             headers: { 'Accept': 'application/json' },
         })
         .then(r => {
             if (r.ok) {
                 return r.json().then(o => {
                     $('.main .result').innerHTML = '<div class="output"></div>';
-                    renderOutput($('.main .result .output'),o,{ cached:true });
+                    renderOutput($('.main .result .output'),gist,o,{ cached:true });
                 });
             }
         })
@@ -577,20 +644,20 @@ function runGist(gist) {
     let $result = $('.main .result');
     let $output = null;
     let result = null;
-    let sse = new ServerEventsClient('/',[splitOnFirst(gist,'/')[0]], {
+    let sse = new ServerEventsClient('/',[gist.id], {
         handlers: {
             onConnect: sub => {
                 $result.innerHTML = '<div class="output"></div>';
                 $output = $('.main .result .output');
                 $output.innerHTML = connected;
 
-                fetch(`/gists/${gist}/run`, {
+                fetch(`/gists/${gistRef(gist)}/run`, {
                         method: "POST",
                         headers: { 'Accept': 'application/json' },
                     })
                     .then(r => r.json())
                     .then(o => {
-                        renderOutput($output,result = o);
+                        renderOutput($output,gist,result = o);
                     });
             },
             stdout: msg => {
@@ -605,52 +672,29 @@ function runGist(gist) {
     }).start();
 }
 
-function initBtnRun() {
+function initBtnRun(gist) {
     on('.run-btn', {
         click: function(e) {
             if (this.classList.contains('running')) return;
             this.classList.add('running');
-            runGist(window.gist.id + '/' + window.gist.history[0].version);
+            runGist(gist);
+
+            fetch(`https://api.github.com/gists/${gist.id}`)
+                .then(function (r) {
+                    if (r.ok) {
+                        return r.text().then(function (s) {
+                            let latestGist = JSON.parse(s);
+                            if (gistRef(gist) != gistRef(latestGist)) {
+                                saveGist(gist.id,s);
+                            }
+                        });
+                    } else if (r.status == 404) {
+                        removeGist(gist.id);
+                    }
+                });
         }
     });
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    Object.assign(window, window['@servicestack/client']); //import into global namespace
-    openFile(window.activeFileName);
-    on('.v .head .files .btn', { 
-        click: function (evt) {
-            let e = this;
-            let filename = e.getAttribute('data-file');
-            if (filename) {
-                if (e.classList.contains('dir-file')) {
-                    openDirFile(filename);
-                } else {
-                    openFile(filename);
-                }
-            }
-        } 
-    });
-    on('.v .head .files .btn.dir li', {
-        click: function (evt) {
-            let e = this;
-            let filename = e.getAttribute('data-file');
-            if (filename) {
-                openDirFile(filename);
-            }
-        }
-    });
-    on('.v .head .files .btn.dir-file .close', {
-        click: function (e) {
-            let filename = this.parentElement.getAttribute('data-file');
-            if (filename) {
-                this.parentElement.removeAttribute('data-file');
-                openFile(window.activeFileName);
-            }
-        }
-    });
-    initBtnRun();
-});
 </script>
 
 </body>
