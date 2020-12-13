@@ -59,8 +59,7 @@
     .v .head .btn {
         color: #444;
         height: 2rem;
-        margin-right: .5rem;
-        padding: 0 .5rem;
+        padding: 0 .75rem;
         place-items: center;
         display: flex;
         font-size: 14px;
@@ -71,9 +70,6 @@
     .v .head .btn.active {
         background: #fff;
         border-top: 2px solid #4C679E;
-    }
-    .btn.dir ul {
-        display: none;
     }
     .v .head .result .btn, .v .head .result .edit {
     }
@@ -131,23 +127,35 @@
         font-size: 16px;
     }
     .v .files .spacer {
-        margin-left: 31px;
+        width: 31px;
     }
-    .v .files .btn.dir {
+    .v .files .revisions {
+        color: #888;
+        height: 30px;
+        width: 26px;
+        padding: 0px 0 0 5px;
+    }
+    .dropdown {
         position: relative;
     }
-    .v .files .btn.dir .hover {
+    .dropdown ul {
         display: none;
     }
-    .v .files .btn.dir:hover .icon {
+    .dropdown .hover {
+        display: none;
+    }
+    .dropdown .icon {
+        margin-right: .1rem;
+    }
+    .dropdown:hover .icon {
         transform: rotate(90deg);
         transition: transform .1s ease-in-out;
     }
-    .v .files .btn.dir:hover ul {
+    .dropdown:hover ul {
         display: block;
         list-style: none;
         z-index: 5;
-        top: 32px;
+        top: 30px;
         border: 1px solid #ddd;
         position: absolute;
         left: -2px;
@@ -155,11 +163,11 @@
         border-radius: 0.25rem;
         box-shadow: 3px 3px #f7f7f7;
     }
-    .v .files .btn.dir li {
+    .dropdown li {
         padding: .25rem .5rem;
         white-space: nowrap;
     }
-    .v .files .btn.dir li:hover {
+    .dropdown li:hover {
         background: #f7f7f7;
     }
     .v .files .btn.dir-file {
@@ -214,6 +222,18 @@
 <body>
 
 <div id="body"></div>
+
+<script>
+//timeago.org
+(function(e){"use strict";var r=["second","minute","hour","day","week","month","year"];var a=["秒","分钟","小时","天","周","个月","年"];function t(e,t){n[e]=t}function i(e){return n[e]||n.en_US}var n={},f=[60,60,24,7,365/7/12,12];
+function o(e){return e instanceof Date?e:!isNaN(e)||/^\d+$/.test(e)?new Date(parseInt(e)):(e=(e||"").trim().replace(/\.\d+/,"").replace(/-/,"/").replace(/-/,"/").replace(/(\d)T(\d)/,"$1 $2").replace(/Z/," UTC").replace(/([+-]\d\d):?(\d\d)/," $1$2"),new Date(e))}
+function d(e,t){for(var n=e<0?1:0,r=e=Math.abs(e),a=0;e>=f[a]&&a<f.length;a++)e/=f[a];return(0===(a*=2)?9:1)<(e=Math.floor(e))&&(a+=1),t(e,a,r)[n].replace("%s",e.toString())}function l(e,t){return((t?o(t):new Date)-o(e))/1e3}var s="timeago-id";function h(e){return parseInt(e.getAttribute(s))}
+var p={},v=function(e){clearTimeout(e),delete p[e]};function m(e,t,n,r){v(h(e));var a=r.relativeDate,i=r.minInterval,o=l(t,a);e.innerText=d(o,n);var u,c=setTimeout(function(){m(e,t,n,r)},Math.min(1e3*Math.max(function(e){for(var t=1,n=0,r=Math.abs(e);e>=f[n]&&n<f.length;n++)e/=f[n],t*=f[n];
+return r=(r%=t)?t-r:t,Math.ceil(r)}(o),i||1),2147483647));p[c]=0,u=c,e.setAttribute(s,u)}t("en_US",function(e,t){if(0===t)return["just now","right now"];var n=r[Math.floor(t/2)];return 1<e&&(n+="s"),[e+" "+n+" ago","in "+e+" "+n]}),t("zh_CN",function(e,t){if(0===t)return["刚刚","片刻后"];
+var n=a[~~(t/2)];return[e+" "+n+"前",e+" "+n+"后"]}),e.cancel=function(e){e?v(h(e)):Object.keys(p).forEach(v)},e.format=function(e,t,n){return d(l(e,n&&n.relativeDate),i(t))},e.register=t,e.render=function(e,t,n){var r=e.length?e:[e];
+return r.forEach(function(e){m(e,e.getAttribute("datetime"),i(t),n||{})}),r}
+})(window.timeago={});
+</script>
 
 <script>
 let $ = sel => document.querySelector(sel),
@@ -357,12 +377,32 @@ let btnRun = `<div class="run-btn">
         let sb = [
             `<div class="v">
                 <div class="head">
-                    <div class="files">
-                        <div class="spacer"></div>`];
+                    <div class="files">`];
+        
+        if (gist.history.length > 1) {
+            let calcHref = x => {
+                let newQs = {};
+                let sb = '';
+                for (let k in qs) {
+                    sb += sb === '' ? '?' : '&';
+                    sb += k + '=' + (k === 'gist' ? gist.id + '/' + x.version : qs[k]);
+                }
+                return location.pathname + sb;
+            };
+            sb.push(`<div class="revisions btn dropdown">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                <ul>
+                    ${gist.history.map(x => `<li><a title="by ${x.user.login} - ${x.change_status.additions} additions, ${x.change_status.deletions} deletions" href="${calcHref(x)}">
+                        ${timeago.format(Date.parse(x.committed_at))}</a></li>`).join('')}
+                </ul>
+            </div>`);
+        } else {
+            sb.push(`<div class="spacer"></div>`);
+        }
         
         dirs.forEach(dirFiles => {
             sb.push(
-                `<div class="btn dir">
+                `<div class="btn dir dropdown">
                     <svg class="icon w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     <span>${splitOnFirst(fname(dirFiles[0].filename),sep)[0]}</span>
                     <ul>`);
