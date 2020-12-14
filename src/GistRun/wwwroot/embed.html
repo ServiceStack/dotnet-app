@@ -41,6 +41,7 @@
         background: #f7f7f7;
         border-bottom: 1px solid #ddd;
         padding-top: .25rem;
+        box-shadow: 2px 1px rgb(0,0,0,.1);
     }
     .v .head .files, .v .head .result {
         flex-direction: column;
@@ -56,7 +57,7 @@
         flex-direction: row;
         justify-content: space-between;
     }
-    .v .head .btn {
+    .btn {
         color: #444;
         height: 2rem;
         padding: 0 .75rem;
@@ -66,18 +67,27 @@
         margin-bottom: .2rem;
         border-top: 2px solid rgba(0,0,0,0);
         cursor: pointer;
+        user-select: none;
     }
-    .v .head .btn.active {
+    .btn.sm {
+        font-size: 12px;
+        margin-bottom: 0;
+        padding: 0 .5rem;
+        height: 1.1rem;
+    }
+    .btn.active {
         background: #fff;
         border-top: 2px solid #4C679E;
     }
-    .v .head .result .btn, .v .head .result .edit {
-    }
-    .v .head .result .edit {
-        font-size: 13px;
-        line-height: 16px;
+    .v .head .edit {
+        font-size: 12px;
+        line-height: 14px;
         padding: 0 .5rem .25rem 0;
         text-align: right;
+        color: #888;
+    }
+    .v .head .edit a {
+        font-size: 13px;
     }
     .v .main {
         display: flex;
@@ -111,20 +121,29 @@
         box-shadow: 3px 3px #f7f7f7;
         user-select: none;
     }
+    .run-btn.sm {
+        padding: 0 .2rem;
+        border-width: 1px;
+        color: #000;
+        margin-right: .25rem;
+    }
+    .run-btn.sm svg { margin-right: .1rem }
     .run-btn:active {
         transform: translateY(2px);
     }
     .run-btn svg {
         vertical-align: middle;
     }
-    .run-btn.running { opacity: .5; }
-    .run-btn.running:active { transform: none; }
     .v .main .result .output {
+        display: none;
         padding: .25rem;
         font-family: monospace;
         white-space: pre-wrap;
         tab-size: 4;
         font-size: 16px;
+    }
+    .v .main .output.active {
+        display: block;
     }
     .v .files .spacer {
         width: 31px;
@@ -182,6 +201,28 @@
     .v .files .btn.dir-file.active:hover .close {
         color: #111;
     }
+    .v .foot {
+        font-size: 12px;
+        vertical-align: middle;
+        color: #666;
+        background: #f7f7f7;
+        display: flex;
+        border-top: 1px solid rgba(0,0,0,.1);
+    }
+    .v .foot .left,.v .foot .right {
+        flex: 0 0 50%;
+        height: 24px;
+        display: flex;
+        place-items: center;
+    }
+    .v .foot .left {
+    }
+    .v .foot .right {
+        justify-content: space-between;
+    }
+    .v .foot .left .made {
+        margin-left: .5rem;
+    }
 
     .w-3 { width:.75rem; } .w-4 { width:1rem; } .w-5 { width:1.25rem; } .w-6 { width:1.5rem; } .w-8 { width:2rem; } .w-full { width:100%; }
     .h-3 { height:.75rem; } .h-4 { height:1rem; } .h-5 { height:1.25rem; } .h-6 { height:1.5rem; } .h-8 { height:2rem; } .h-full { height:100%; }
@@ -190,13 +231,31 @@
     .m.spacer { height: 20px; }
     .m.completed { color: #999; }
     .m.error { color: #880000; }
-    .m.inspect { background: #f7f7f7; color: #666; text-align:center; font-family: system-ui, sans-serif; padding: .1rem; }
-    .m.var { white-space:normal; padding: .2rem; font-family: system-ui, sans-serif; }
-    .m.var label { font-weight: bold; display: block; cursor: pointer; user-select:none; }
-    .m.var label svg { vertical-align: middle; }
-    .m.var.active label svg { transform: rotate(90deg); transition: transform .1s ease-in-out; }
-    .m.var .jsonviewer { display: none; }
-    .m.var.active .jsonviewer { display: block; }
+
+    .main .result .vars, .main .result .var {
+        display: none;
+    }
+    .main .result .vars.active, .main .result .var.active {
+        display: block;
+    }
+    .main .result .vars .var label {
+        display: block;
+        text-align: center;
+        margin: .25rem 0;
+        color: #444;
+        font-size: 14px;
+    }
+    .foot .vars {
+        display: flex;
+    }
+    .foot .vars .btn {
+        margin-right: .1rem;
+        user-select: none;
+    }
+
+    .running .vars { visibility: hidden; }
+    .running .run-btn { opacity: .5; }
+    .running .run-btn:active { transform: none; }
 
     .jsonviewer { border:1px solid #ddd; padding:.25rem; margin-left:1rem; font-size:14px; }
     .jsonviewer .ib { display: inline-block; }
@@ -215,11 +274,31 @@
     .jsonviewer tbody>tr:last-child>td { padding: 8px; }
     .clearfix { clear:both; }
 
-    ::-webkit-scrollbar { width:8px; height:10px; }
-    ::-webkit-scrollbar-thumb { background-color: #ddd; }
+    ::-webkit-scrollbar { width:8px; height:10px; } ::-webkit-scrollbar-thumb { background-color: #ddd; }
+    .v .CodeMirror-vscrollbar, .v .result { scrollbar-color: #ddd #fff; scrollbar-width: thin; } /*FF*/
+
+    .viewonly .v .head .result, .viewonly .v .main .result, .viewonly .v .foot, .v.noresult .main .result, .v.nofiles .main .view { display:none; }
+    .viewonly .v .main .view, .v.noresult .main .view, .v.nofiles .main .result { flex-basis: 100%; }
+    .splash { 
+        display: none;
+        place-content: center;
+        place-items: center;
+        width: 100%;
+    }
+    .v.nofiles.noresult .main .splash { display: flex; }
 </style>
 </head>
 <body>
+
+<script>
+if (!('fetch' in window || 'EventSource' in window)) {
+    document.body.className = 'err';
+    document.write('<div class="msg">'
+        + '<h3>Outdated Browser detected</h3>'
+        + '<p>Please upgrade to a modern browser.</p>'
+        + '</div>')
+}
+</script>
 
 <div id="body"></div>
 
@@ -254,10 +333,10 @@ function enc(s) {
 }
 function err(h, msg) {
     $body.className = 'err';
-    $body.innerHTML = '<div class="msg">'
-        + '<h3>' + h + '</h3>'
-        + '<p>' + enc(msg) + '</p>'
-        + '</div>';
+    $body.innerHTML = `<div class="msg">
+        <h3>${h}</h3>
+        <p>${enc(msg)}</p>
+    </div>`;
 }
 function splitOnFirst(s, c) {
     if (!s) return [s];
@@ -300,11 +379,8 @@ function removeGist(gistId) {
     localStorage.removeItem(`gist:${gistId}`);
 }
 let dirLabel = name => name.replace(/\//g,' / ');
-
-let btnRun = `<div class="run-btn">
-        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
-        run
-    </div>`;
+let svgPlay = size =>
+    `<svg class="w-${size} h-${size}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>`;
 
 (function (qs,cb) {
     let sb = '';
@@ -328,12 +404,12 @@ let btnRun = `<div class="run-btn">
                 } else {
                     return r.text()
                         .then(s => {
-                            var msg = r.statusText;
+                            let msg = r.statusText;
                             try {
                                 let o = JSON.parse(s);
                                 msg = o.message || msg;
                             } catch (e) {}
-                            err(`${r.status} ${msg}`, r.status == 404 ? "Gist does not exist." : "Could not access gist.");
+                            err(`${r.status} ${msg}`, r.status === 404 ? "Gist does not exist." : "Could not access gist.");
                         });
                 }
             });
@@ -373,6 +449,10 @@ let btnRun = `<div class="run-btn">
         //console.log(files);
         let activeFile = files[0];
         let activeFileName = fname(qs.show || (activeFile && activeFile.filename));
+
+        if (qs.mode && qs.mode.indexOf('viewonly') >= 0) {
+            document.body.classList.add('viewonly');
+        }
         
         let sb = [
             `<div class="v">
@@ -426,7 +506,7 @@ let btnRun = `<div class="run-btn">
 
         sb.push(
             `<div class="result">
-                <div class="btn f-cs active">
+                <div class="btn active">
                     <span>Result</span>
                 </div>
                 <div class="edit">
@@ -452,10 +532,23 @@ let btnRun = `<div class="run-btn">
         files.forEach(file => {
             sb.push(fileEl(file));
         });
-        
+
         sb.push(`<div class="result">
-                    <div class="center h-full">${btnRun}</div>
+                    <div class="center h-full"><div class="run-btn">${svgPlay(6)}run</div></div>
                 </div>
+                <div class="splash">
+                      <span>See the Gist <a href="https://gist.github.com/${gistRef(gist)}">${qs.title || gist.description}</a> 
+                      by ${gist.owner.login} (<a href="https://gist.github.com/${gist.owner.login}">@${gist.owner.login}</a>)
+                      on <a href="https://gist.cafe">GistCafe</a>.</span>
+                </div>
+            </div>
+            <div class="foot">
+                <div class="left">
+                    <div class="made">
+                        with ❤ by <a href="https://servicestack.net" target="_top">servicestack</a>
+                    </div>
+                </div>
+                <div class="right"></div>
             </div>
         </div>`);
         
@@ -482,12 +575,12 @@ let btnRun = `<div class="run-btn">
                 click: function (evt) {
                     let filename = this.getAttribute('data-file');
                     if (filename) {
-                        openDirFile(filename);
+                        openDirFile(filename,true);
                     }
                 }
             });
             on('.v .head .files .btn.dir-file .close', {
-                click: function (e) {
+                click: function (evt) {
                     let filename = this.parentElement.getAttribute('data-file');
                     if (filename) {
                         this.parentElement.removeAttribute('data-file');
@@ -495,6 +588,17 @@ let btnRun = `<div class="run-btn">
                     }
                 }
             });
+            on('.head .result .btn', {
+                click: function (evt) {
+                    let cls = this.classList;
+                    cls.toggle('active');
+                    if (cls.contains('active')) {
+                        $('.v').classList.remove('noresult');
+                    } else {
+                        $('.v').classList.add('noresult');
+                    }
+                }
+            })
             initBtnRun(gist);
         }
         if (document.readyState === "complete") init();
@@ -536,21 +640,51 @@ function deselect(el) {
     if (el) el.classList.remove('active');
     return el;
 }
+function checkActiveFiles() {
+    if ($$(`.v .head .files .btn.active`).length > 0) {
+        $('.v').classList.remove('nofiles');
+    } else {
+        $('.v').classList.add('nofiles');
+    }
+}
 function openFile(filename) {
     if (!filename) return;
+
+    let sel = `[data-file='${filename}']`;
+    let btn = $(`.v .head .files ${sel}`), btnCls = btn.classList;
+    let activate = !btnCls.contains(`active`);
+
     deselect($('.v .head .files .btn.active'));
     deselect($('.v .main .view.active'));
-    select($(".v .head .files [data-file='" + filename + "']"));
-    cm(select($(".v .main .view[data-file='" + filename + "']")));
+
+    if (activate) {
+        btnCls.add('active');
+        cm(select($(`.v .main .view${sel}`)));
+    } else {
+        btnCls.remove('active');
+    }
+    checkActiveFiles();
 }
-function openDirFile(filename) {
+function openDirFile(filename,force) {
     if (!filename) return;
-    openFile(filename);
-    let dirFileMenu = $('.v .head .files .btn.dir-file');
-    if (!dirFileMenu.classList.contains('active'))
-        dirFileMenu.classList.add('active');
-    dirFileMenu.firstElementChild.innerHTML = dirLabel(filename);
-    dirFileMenu.setAttribute('data-file',filename);
+
+    let sel = `[data-file='${filename}']`;
+    let dirFileMenu = $('.v .head .files .btn.dir-file'), btnCls = dirFileMenu.classList;
+    let activate = force || !btnCls.contains('active');
+    deselect($('.v .head .files .btn.active'));
+    deselect($('.v .main .view.active'));
+
+    if (activate) {
+        dirFileMenu.firstElementChild.innerHTML = dirLabel(filename);
+        dirFileMenu.setAttribute('data-file',filename);
+    }
+    if (activate) {
+        btnCls.add('active');
+        cm(select($(`.v .main .view${sel}`)));
+    } else {
+        btnCls.remove('active');
+    }
+    checkActiveFiles();
 }
 function on(sel,handlers) {
     $$(sel).forEach(e => {
@@ -625,10 +759,10 @@ let val = (m, valueFn) => {
 };
 
 let connected = '<div class="m connected">connected...</div><div class="m spacer"></div>';
-let svgVar = '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>';
 
-function renderOutput($output,gist,o,opt) {
+function renderResult($output,$vars,gist,o,opt) {
     //console.log('o',o);
+    $('.v').classList.remove('running');
     let cached = opt && opt.cached;
     let sb = [`<div class="m stdout">${o.output}</div>`];
     if (o.exitCode) {
@@ -643,31 +777,40 @@ function renderOutput($output,gist,o,opt) {
     }
     sb.push('<div class="m spacer"></div>');
 
+    let sbVars = [], sbVarBtns = [];
     if (o.vars && Object.keys(o.vars).length > 0) {
-        sb.push('<div class="m inspect">inspect</div>');
-        for (let k in o.vars) {
-            sb.push(
-                `<div class="m var active">
-                    <label>${svgVar}${k}</label>
+        Object.keys(o.vars).forEach(k => {
+            sbVarBtns.push(`<div class="btn sm" data-var="${k}">${k}</div>`);
+            sbVars.push(
+                `<div class="m var" data-var="${k}">
+                    <label>${k}</label>
                     <div class="jsonviewer">${val(o.vars[k])}<div class="clearfix"></div></div>
                 </div>`);
-        }
+        });
+
+        $('.foot .right').innerHTML = `<div class="vars">${sbVarBtns.join('')}</div><div class="btn sm run-btn">${svgPlay(4)}rerun</div>`;
+        initBtnRun(gist);
+
+        on('.foot .vars .btn', {
+            click: function (e) {
+                //let cls = this.parentElement.classList;
+                let name = this.getAttribute('data-var');
+                if (!name) return;
+                let sel = `[data-var=${name}]`;
+
+                $(`.main .vars ${sel}`).classList.toggle('active');
+                $(`.foot .vars ${sel}`).classList.toggle('active');
+                
+                let showVars = $$(`.foot .vars .active`).length > 0;
+                (showVars ? $output : $vars).classList.remove('active');
+                (showVars ? $vars : $output).classList.add('active');
+            }
+        });
+
+        $output.innerHTML = (cached ? '' : connected) + sb.join('');
+        $vars.innerHTML = sbVars.join('');
     }
 
-    sb.push(`<div class="center" style="white-space:normal;font-family:system-ui,sans-serif;margin:1rem 0;">${btnRun}</div>`);
-    $output.innerHTML = (cached ? '' : connected) + sb.join('');
-    initBtnRun(gist);
-
-    on('.m.var label', {
-        click: function (e) {
-            let cls = this.parentElement.classList;
-            if (cls.contains('active')) {
-                cls.remove('active');
-            } else {
-                cls.add('active');
-            }
-        }
-    });
 }
 
 function loadCachedVersion(gist) {
@@ -677,8 +820,8 @@ function loadCachedVersion(gist) {
         .then(r => {
             if (r.ok) {
                 return r.json().then(o => {
-                    $('.main .result').innerHTML = '<div class="output"></div>';
-                    renderOutput($('.main .result .output'),gist,o,{ cached:true });
+                    $('.main .result').innerHTML = '<div class="output active"></div><div class="vars"></div>';
+                    renderResult($('.main .result .output'),$(`.main .result .vars`),gist,o,{ cached:true });
                 });
             }
         })
@@ -686,14 +829,13 @@ function loadCachedVersion(gist) {
 
 function runGist(gist) {
     let $result = $('.main .result');
-    let $output = null;
+    let $output,$vars;
     let result = null;
     let sse = new ServerEventsClient('/',[gist.id], {
         handlers: {
             onConnect: sub => {
-                $result.innerHTML = '<div class="output"></div>';
-                $output = $('.main .result .output');
-                $output.innerHTML = connected;
+                $result.innerHTML = `<div class="output active">${connected}</div><div class="vars"></div>`;
+                $output = $('.main .result .output'), $vars = $('.main .result .vars');
 
                 fetch(`/gists/${gistRef(gist)}/run`, {
                         method: "POST",
@@ -701,7 +843,7 @@ function runGist(gist) {
                     })
                     .then(r => r.json())
                     .then(o => {
-                        renderOutput($output,gist,result = o);
+                        renderResult($output,$vars,gist,result = o);
                     });
             },
             stdout: msg => {
@@ -719,8 +861,9 @@ function runGist(gist) {
 function initBtnRun(gist) {
     on('.run-btn', {
         click: function(e) {
-            if (this.classList.contains('running')) return;
-            this.classList.add('running');
+            let vCls = $('.v').classList;
+            if (vCls.contains('running')) return;
+            vCls.add('running');
             runGist(gist);
 
             fetch(`https://api.github.com/gists/${gist.id}`)
@@ -728,11 +871,11 @@ function initBtnRun(gist) {
                     if (r.ok) {
                         return r.text().then(function (s) {
                             let latestGist = JSON.parse(s);
-                            if (gistRef(gist) != gistRef(latestGist)) {
+                            if (gistRef(gist) !== gistRef(latestGist)) {
                                 saveGist(gist.id,s);
                             }
                         });
-                    } else if (r.status == 404) {
+                    } else if (r.status === 404) {
                         removeGist(gist.id);
                     }
                 });
