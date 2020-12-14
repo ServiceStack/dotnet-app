@@ -22,4 +22,16 @@ namespace GistRun.ServiceModel
         
         public ResponseStatus ResponseStatus { get; set; }
     }
+
+    [Route("/embed/{Id}")]
+    [Route("/embed/{Id}/{Version}")]
+    public class EmbedGist : IReturn<string>
+    {
+        public string Id { get; set; }
+        public string Version { get; set; }
+        
+        public int? Height { get; set; }
+        
+        public string Mode { get; set; }
+    }
 }

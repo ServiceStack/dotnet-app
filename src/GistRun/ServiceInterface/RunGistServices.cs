@@ -14,7 +14,7 @@ namespace GistRun.ServiceInterface
     {
         public IServerEvents ServerEvents { get; set; }
         public AppConfig AppConfig { get; set; }
-        
+        public GistCache GistCache { get; set; }
         public StatsLogger StatsLogger { get; set; }
         
         public object Any(Hello request) => new HelloResponse { Result = $"Hello, {request.Name}!" };
@@ -81,16 +81,15 @@ namespace GistRun.ServiceInterface
             }
             else
             {
-                var gistVfs = new GistVirtualFiles(gistVersion ?? gistId, AppConfig.GitHubAccessToken);
-
-                var gist = (GithubGist) await gistVfs.GetGistAsync();
+                var gist = await GistCache.GetGistAsync(gistVersion ?? gistId, nocache: true);
+                var gistVfs = new GistVirtualFiles(gist, AppConfig.GitHubAccessToken);
                 await gistVfs.LoadAllTruncatedFilesAsync();
 
                 gistId = gist.Id;
                 gistVersion = $"{gist.Id}/{gist.History[0].Version}";
                 projectPath = Path.Combine(AppConfig.ProjectsBasePath, gistVersion);
                 FileSystemVirtualFiles.AssertDirectory(projectPath);
-                
+
                 fs = new FileSystemVirtualFiles(projectPath);
                 fs.WriteFiles(gistVfs.GetAllFiles());
             }

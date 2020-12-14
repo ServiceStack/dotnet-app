@@ -851,5 +851,13 @@ Content-Disposition: form-data; name=""EvaluateCode""
             var response = $"https://localhost:5001/gists/{gistId}/run".PostJsonToUrl("");
             response.Print();
         }
+
+        [Test]
+        public void Can_get_rate_limits()
+        {
+            var gateway = new GitHubGateway(Environment.GetEnvironmentVariable("GITHUB_TOKEN"));
+            var result = gateway.GetRateLimits();
+            result.PrintDump();
+        }
     }
 }

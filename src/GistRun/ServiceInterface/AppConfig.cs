@@ -11,6 +11,7 @@ namespace GistRun.ServiceInterface
         public string GitHubAccessToken { get; set; }
         public string DotNetPath { get; set; }
         public int CacheResultsSecs { get; set; }
+        public int CacheLatestGistCheckSecs { get; set; }
 
         public string GetExePath(IVirtualFiles vfs)
         {

@@ -64,12 +64,15 @@ namespace GistRun
                 DotNetPath = ScriptContext.ProtectedMethods.exePath("dotnet"),
                 ProcessTimeoutMs = AppSettings.Get(nameof(AppConfig.ProcessTimeoutMs), 60 * 1000),
                 CacheResultsSecs = AppSettings.Get(nameof(AppConfig.CacheResultsSecs), 24 * 60 * 60),
+                CacheLatestGistCheckSecs = AppSettings.Get(nameof(AppConfig.CacheLatestGistCheckSecs), 60),
             });
-
-            Plugins.Add(new SharpPagesFeature());
-
+            container.Register(c => new GitHubGateway(c.Resolve<AppConfig>().GitHubAccessToken));
+            container.Register(c =>
+                new GistCache(c.Resolve<AppConfig>(), c.Resolve<GitHubGateway>()));
             container.Register(c =>
                 new StatsLogger(new FileSystemVirtualFiles(Path.Combine(dataDir, "stats").AssertDir())));
+
+            Plugins.Add(new SharpPagesFeature());
 
             Plugins.Add(new ServerEventsFeature());
         }
