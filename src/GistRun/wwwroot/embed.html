@@ -447,7 +447,8 @@ let svgPlay = size =>
             dirs.push(dirFiles);
         }
         //console.log(files);
-        let activeFile = files[0];
+        let priorityNames = ['program','main'];
+        let activeFile = files.filter(f => priorityNames.indexOf(splitOnFirst(f.filename,'.')[0].toLowerCase()) >= 0)[0] || files[0];
         let activeFileName = fname(qs.show || (activeFile && activeFile.filename));
 
         if (qs.mode && qs.mode.indexOf('viewonly') >= 0) {
