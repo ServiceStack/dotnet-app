@@ -7,6 +7,8 @@
     <script defer src="lib/codemirror.js"></script>
     <script defer src="addon/selection/active-line.js"></script>
     <script defer src="mode/clike/clike.js"></script>
+    <script defer src="mode/mllike/mllike.js"></script>
+    <script defer src="mode/vb/vb.js"></script>
     <script defer src="mode/css/css.js"></script>
     <script defer src="mode/xml/xml.js"></script>
     <script defer src="mode/javascript/javascript.js"></script>
@@ -230,7 +232,7 @@
     .m.connected { color: #1c7430; }
     .m.spacer { height: 20px; }
     .m.completed { color: #999; }
-    .m.error { color: #880000; }
+    .m.error,.m.stderr { color: #C00; }
 
     .main .result .vars, .main .result .var {
         display: none;
@@ -622,10 +624,14 @@ let M = {
 
 let extModes = {
     'cs': 'text/x-csharp',
+    'fs': 'text/x-fsharp',
+    'vb': 'text/x-vb',
     'js': 'text/javascript',
     'ts': 'text/javascript',
     'json': 'text/javascript',
     'csproj': 'text/xml',
+    'fsproj': 'text/xml',
+    'vbproj': 'text/xml',
     'xml': 'text/xml',
     'css': 'text/css',
     'html': 'htmlmixed',
@@ -780,7 +786,7 @@ function renderResult($output,$vars,gist,o,opt) {
     let cached = opt && opt.cached;
     let sb = [`<div class="m stdout">${o.output}</div>`];
     if (o.exitCode) {
-        sb.push(`<div class="m exitcode">exit code ${o.exitCode}</div>`);
+        sb.push(`<div class="m exitcode${o.exitCode === 0 ? '' : ' error'}">exit code ${o.exitCode}</div>`);
     }
     if (o.error) {
         sb.push(`<div class="m stderr">${o.error}</div>`);
@@ -801,30 +807,29 @@ function renderResult($output,$vars,gist,o,opt) {
                     <div class="jsonviewer">${val(o.vars[k])}<div class="clearfix"></div></div>
                 </div>`);
         });
-
-        $('.foot .right').innerHTML = `<div class="vars">${sbVarBtns.join('')}</div><div class="btn sm run-btn">${svgPlay(4)}rerun</div>`;
-        initBtnRun(gist);
-
-        on('.foot .vars .btn', {
-            click: function (e) {
-                //let cls = this.parentElement.classList;
-                let name = this.getAttribute('data-var');
-                if (!name) return;
-                let sel = `[data-var=${name}]`;
-
-                $(`.main .vars ${sel}`).classList.toggle('active');
-                $(`.foot .vars ${sel}`).classList.toggle('active');
-                
-                let showVars = $$(`.foot .vars .active`).length > 0;
-                (showVars ? $output : $vars).classList.remove('active');
-                (showVars ? $vars : $output).classList.add('active');
-            }
-        });
-
-        $output.innerHTML = (cached ? '' : connected) + sb.join('');
-        $vars.innerHTML = sbVars.join('');
     }
 
+    $('.foot .right').innerHTML = `<div class="vars">${sbVarBtns.join('')}</div><div class="btn sm run-btn">${svgPlay(4)}rerun</div>`;
+    initBtnRun(gist);
+
+    on('.foot .vars .btn', {
+        click: function (e) {
+            //let cls = this.parentElement.classList;
+            let name = this.getAttribute('data-var');
+            if (!name) return;
+            let sel = `[data-var=${name}]`;
+
+            $(`.main .vars ${sel}`).classList.toggle('active');
+            $(`.foot .vars ${sel}`).classList.toggle('active');
+
+            let showVars = $$(`.foot .vars .active`).length > 0;
+            (showVars ? $output : $vars).classList.remove('active');
+            (showVars ? $vars : $output).classList.add('active');
+        }
+    });
+
+    $output.innerHTML = (cached ? '' : connected) + sb.join('');
+    $vars.innerHTML = sbVars.join('');
 }
 
 function loadCachedVersion(gist) {
