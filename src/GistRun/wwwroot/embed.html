@@ -351,7 +351,7 @@ function splitOnLast(s, c) {
         : [s];
 }
 function ext(s) {
-    return splitOnLast(s,'.')[1] || 'txt';
+    return (splitOnLast(s,'.')[1] || 'txt').toLowerCase();
 }
 function fname(name) {
     return name && name.replace(/\\/g,'/').replace(/["']/g,'');
@@ -381,6 +381,12 @@ function removeGist(gistId) {
 let dirLabel = name => name.replace(/\//g,' / ');
 let svgPlay = size =>
     `<svg class="w-${size} h-${size}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>`;
+
+let M = {
+    ViewOnly: false,
+    activeFileName: '',
+    gist: null,
+};
 
 (function (qs,cb) {
     let sb = '';
@@ -418,6 +424,7 @@ let svgPlay = size =>
     }
     
     function render(gist) {
+        M.gist = gist;
         let files = [];
         let dirs = [];
         let lastDir = null;
@@ -449,9 +456,12 @@ let svgPlay = size =>
         //console.log(files);
         let priorityNames = ['program','main'];
         let activeFile = files.filter(f => priorityNames.indexOf(splitOnFirst(f.filename,'.')[0].toLowerCase()) >= 0)[0] || files[0];
-        let activeFileName = fname(qs.show || (activeFile && activeFile.filename));
+        M.activeFileName = fname(qs.show || (activeFile && activeFile.filename));
 
-        if (qs.mode && qs.mode.indexOf('viewonly') >= 0) {
+        M.ViewOnly = qs.mode && qs.mode.indexOf('viewonly') >= 0;
+        let projExts = ['csproj','vbproj','fsproj'];
+        M.ViewOnly = M.ViewOnly || !files.some(f => projExts.indexOf(ext(f.filename)) >= 0);
+        if (M.ViewOnly) {
             document.body.classList.add('viewonly');
         }
         
@@ -554,12 +564,15 @@ let svgPlay = size =>
         </div>`);
         
         $body.innerHTML = sb.join('');
+        if (M.ViewOnly) {
+            $('.v').classList.add('noresult');
+        }
         
         function init() {
             Object.assign(window, window['@servicestack/client']);
 
             loadCachedVersion(gist);
-            openFile(activeFileName);
+            openFile(M.activeFileName);
             on('.v .head .files .btn', {
                 click: function (evt) {
                     let filename = this.getAttribute('data-file');
@@ -585,7 +598,7 @@ let svgPlay = size =>
                     let filename = this.parentElement.getAttribute('data-file');
                     if (filename) {
                         this.parentElement.removeAttribute('data-file');
-                        openFile(activeFileName);
+                        openFile(M.activeFileName);
                     }
                 }
             });
