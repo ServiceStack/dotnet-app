@@ -218,7 +218,7 @@ namespace Web
                     GistUpdate = true;
                     continue;
                 }
-                if (arg == "publish")
+                if (arg == "publish" || arg == ".publish")
                 {
                     publish = true;
                     continue;
