@@ -550,14 +550,17 @@ namespace Web
         {
             if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(projectName))
                 return input;
-            
-            var projectNameKebab = CamelToKebab(projectName);
-            var splitPascalCase = projectName.SplitPascalCase();
+
+            var condensed = projectName.Replace("_", ""); 
+            var projectNameKebab = CamelToKebab(condensed);
+            var splitPascalCase = condensed.SplitPascalCase();
             var ret = input
+                .Replace("My_App", projectName)
+                .Replace("MyApp", condensed)
                 .Replace("My App", splitPascalCase)
-                .Replace("MyApp", projectName)
                 .Replace("my-app", projectNameKebab)
-                .Replace("myapp", projectName.ToLower());
+                .Replace("myapp", condensed.ToLower())
+                .Replace("my_app", projectName.ToLower());
 
             if (!Env.IsWindows)
                 ret = ret.Replace("\r", "");
