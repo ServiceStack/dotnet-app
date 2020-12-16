@@ -616,10 +616,9 @@
                 $(`.embed-copy-body textarea#${this.htmlFor}`).classList.add('active');
             }
         })
-        
-        on('.options input,.options select', {
-            change: updateEmbed
-        })
+
+        on('.options input', { keyup: updateEmbed });
+        on('.options select', { change: updateEmbed });
 
     </script>
 </body>
