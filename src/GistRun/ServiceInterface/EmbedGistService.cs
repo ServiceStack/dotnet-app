@@ -41,7 +41,7 @@ namespace GistRun.ServiceInterface
         public async Task Any(EmbedGist request)
         {
             Response.ContentType = "application/javascript";
-            var height = request.Height ?? 600;
+            var height = request.Height ?? 750;
             try
             {
                 var hasVersion = !string.IsNullOrEmpty(request.Version);
@@ -49,9 +49,14 @@ namespace GistRun.ServiceInterface
                     ? $"{request.Id}/{request.Version}"
                     : request.Id).LeftPart('.');
 
-                
                 var gist = await GistCache.GetGistAsync(gistVersion, nocache:false);
-                var embedUrl = Request.ResolveAbsoluteUrl($"/embed?gist={gistVersion}&title={gist.Description.UrlEncode()}&user={gist.Owner.Login}")
+                var requiredQs = $"?gist={gistVersion}";
+                if (string.IsNullOrEmpty(Request.QueryString["title"]))
+                    requiredQs += $"&title={gist.Description.UrlEncode()}";
+                if (string.IsNullOrEmpty(Request.QueryString["user"]))
+                    requiredQs += $"&user={gist.Owner.Login}";
+                
+                var embedUrl = Request.ResolveAbsoluteUrl($"/embed{requiredQs}")
                     + (Request.RawUrl.IndexOf('?') >= 0 ? "&" + Request.RawUrl.RightPart('?') : "");
                 var iframe = $"<iframe src=\"{embedUrl}\" style=\"height:{height}px;width:100%;border:1px solid #ddd\"></iframe>";
                 var html = $"document.write(`{iframe}`)";

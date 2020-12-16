@@ -1,42 +1,626 @@
 <html>
 <head>
-    <title>Gist Run</title>
-    <link rel="stylesheet" href="/css/bootstrap.css">
+    <title>Gist Cafe</title>
+
+    <style>
+        a {
+            color: #007bff;
+            text-decoration: none;
+            background-color: transparent;
+        }
+        a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            margin-bottom: .5rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 0;
+            margin-bottom: .5rem;
+        }
+        .h3, h3 {
+            font-size: 1.75rem;
+        }
+        .h4, h4 {
+            font-size: 1.5rem;
+        }
+        .h5, h5 {
+            font-size: 1.25rem;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        svg {
+            overflow: hidden;
+            vertical-align: middle;
+        }
+        button, input {
+            overflow: visible;
+        }
+        button, input, optgroup, select, textarea {
+            margin: 0;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+        }
+        body {
+            font: 110%/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+            background: #fcfcfc;
+            color: #444;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            place-items: center;
+            margin: 2rem 0 0 0;
+        }
+        .hero .tagline {
+            margin: 2rem 0;
+        }
+        .body {
+            display: flex;
+            flex-direction: column;
+            place-items: center;
+            margin-top: 2rem;
+        }
+        .content {
+            width: 900px;
+        }
+        #lang-content {
+            width: 600px;
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-style: italic;
+        }
+
+        .cafe svg {
+            width: 80px;
+            height: 80px;
+        }
+
+        .langs {
+            display: flex;
+            min-width: 560px;
+            justify-content: space-between;
+        }
+
+        .langs svg {
+            width: 120px;
+            height: 120px;
+            user-select: none;
+        }
+
+        .langs span {
+            cursor: pointer;
+            display: block;
+            padding: 5px;
+            border-radius: 100%;
+        }
+
+        .langs span:active {
+            transform: translateY(2px);
+        }
+
+        .langs span.active {
+            background: #ddd;
+            box-shadow: 1px 1px rgba(0, 0, 0, .25);
+        }
+
+        em {
+            font-family: monospace;
+            font-style: normal;
+            font-size: 120%;
+            color: #05930c;
+        }
+        .sm em {
+            font-size: 100%;
+        }
+
+        pre.sh {
+            background: #eee;
+            border-radius: 5px;
+            margin: 1rem 0;
+            padding: .5rem 1rem;
+        }
+
+        pre.sh::before {
+            content: "$ ";
+        }
+
+        pre.cs {
+            background: #eee;
+            padding: .5rem;
+        }
+
+        blockquote { color: #666; margin: 0 0 .5rem 0; }
+        blockquote.sm {
+            font-size: 16px;
+        }
+
+        p.sm {
+            font-size: 14px;
+        }
+
+        .invalid-feedback {
+            color: #dc3545;
+            display: none;
+        }
+        .error .invalid-feedback {
+            display: block;
+        }
+        
+        .share.error #txtGist {
+            border: 1px solid #dc3545;
+        }
+        .share.error #txtGist[value=""] {
+            border: none;
+        }
+        .share.error .usage {
+            visibility: hidden;
+        }
+
+        .options { margin: 1rem 0 0 0; }
+        .options .row { display: flex; margin: 2px 0 0 0; }
+        .options label { flex: 1 1 50%; text-align: right; padding: 0 1rem 0 0; }
+        .options div { flex: 1 1 50%; text-align: left; }
+        .options select { width: 130px; height: 30px; margin: 2px 0; }
+
+        .btn {
+            color: #444;
+            height: 2rem;
+            padding: 0 .75rem;
+            place-items: center;
+            display: flex;
+            margin-bottom: .2rem;
+            border-top: 2px solid rgba(0,0,0,0);
+            cursor: pointer;
+            user-select: none;
+        }
+        .btn.active {
+            background: #fff;
+            border-top: 2px solid #4C679E;
+            box-shadow: 1px 1px rgba(0,0,0,.2);
+        }
+        .embed-copy {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0 0 0;
+        }
+        .embed-copy-body textarea {
+            width: 100%;
+            display: none;
+            font-size: 16px;
+            min-height: 180px;
+        }
+        .embed-copy-body textarea.active {
+            display: block;
+        }
+        
+        .foot { border-top: 1px solid #ddd; margin: 6rem 0 0 0; padding: 1rem 0; text-align: center; color: #666; font-size: 16px; }
+        .foot .copy svg { width: 28px; height: 28px; }
+        .foot .copy a { opacity: .25; }
+        .foot .copy a:hover { opacity: .75; }
+        
+    </style>
 </head>
 <body>
+<i hidden>{{ '/js/hot-fileloader.js' |> ifDebugIncludeScript }}</i>
 
+<div class="hero">
+    <h1>
+        gist.cafe
+        <span class="cafe">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><ellipse fill="#99AAB5" cx="18" cy="26" rx="18" ry="10"/><ellipse fill="#CCD6DD" cx="18" cy="24" rx="18" ry="10"/><path
+                fill="#F5F8FA" d="M18 31C3.042 31 1 16 1 12h34c0 2-1.958 19-17 19z"/><path fill="#CCD6DD" d="M34.385 9.644c2.442-10.123-9.781-7.706-12.204-5.799-1.34-.148-2.736-.234-4.181-.234-9.389 0-17 3.229-17 8.444C1 17.271 8.611 21.5 18 21.5s17-4.229 17-9.444c0-.863-.226-1.664-.615-2.412zm-2.503-2.692c-1.357-.938-3.102-1.694-5.121-2.25 1.875-.576 4.551-.309 5.121 2.25z"/><ellipse
+                fill="#8A4B38" cx="18" cy="13" rx="15" ry="7"/><path fill="#D99E82" d="M20 17c-.256 0-.512-.098-.707-.293-2.337-2.337-2.376-4.885-.125-8.262.739-1.109.9-2.246.478-3.377-.461-1.236-1.438-1.996-1.731-2.077-.553 0-.958-.443-.958-.996 0-.552.491-.995 1.043-.995.997 0 2.395 1.153 3.183 2.625 1.034 1.933.91 4.039-.351 5.929-1.961 2.942-1.531 4.332-.125 5.738.391.391.391 1.023 0 1.414-.195.196-.451.294-.707.294zm-6-2c-.256 0-.512-.098-.707-.293-2.337-2.337-2.376-4.885-.125-8.262.727-1.091.893-2.083.494-2.947-.444-.961-1.431-1.469-1.684-1.499-.552 0-.989-.447-.989-1 0-.552.458-1 1.011-1 .997 0 2.585.974 3.36 2.423.481.899 1.052 2.761-.528 5.131-1.961 2.942-1.531 4.332-.125 5.738.391.391.391 1.023 0 1.414-.195.197-.451.295-.707.295z"/></svg>
+        </span>
+    </h1>
 
-<p class="codepen" 
-   data-height="544" 
-   data-theme-id="light" 
-   data-default-tab="html,result" 
-   data-user="Vue" 
-   data-slug-hash="VwLxeEz" 
-   data-pen-title="Intro-Components-1"
-   style="height: 544px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px solid; margin: 1em 0; padding: 1em;"
->
-  <span>See the Pen <a href="https://codepen.io/team/Vue/pen/VwLxeEz">
-  Intro-Components-1</a> by Vue (<a href="https://codepen.io/Vue">@Vue</a>)
-  on <a href="https://codepen.io">CodePen</a>.</span>
+    <p class="tagline">Create, share & embed your executable C#, F# and VB .NET 5 gists.</p>
+
+    <p>choose</p>
+    <div class="langs">
+        <span data-lang="cs"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" transform="rotate(-45 32.002 31.994)" fill="#05930c"/><path
+                d="M53.92 10.08a31 31 0 010 43.84L10.08 10.08a31 31 0 0143.84 0z" fill="#0b9e0b"/><path
+                d="M30.46 45a17.21 17.21 0 01-7.4 1.52 13.47 13.47 0 01-5.39-1 12 12 0 01-4.13-2.9 12.93 12.93 0 01-2.64-4.41 16.26 16.26 0 01-.9-5.67 17.38 17.38 0 011-5.93 14.07 14.07 0 012.82-4.77 13 13 0 014.44-3.17 14.31 14.31 0 015.85-1.15 17.51 17.51 0 016.39 1.09v2.77a14.17 14.17 0 00-6.5-1.49 11.77 11.77 0 00-4.82.94 10 10 0 00-3.55 2.61 11.56 11.56 0 00-2.21 3.95 15.57 15.57 0 00-.76 5 14.88 14.88 0 00.68 4.56 11 11 0 002 3.74 9.6 9.6 0 003.33 2.54 10.76 10.76 0 004.63.94 14.43 14.43 0 007.11-1.7zM54 27.72h-5.2L47.47 34H53l-.43 1.8h-5.45l-1.7 7.77h-2l1.68-7.77H40l-1.63 7.8h-2L38 35.82h-5.3l.37-1.8h5.33l1.33-6.31h-5.56l.39-1.8h5.55L41.79 18h2l-1.68 7.93h5.08l1.7-7.93h2l-1.7 7.93h5.25zm-12.26 0L40.38 34h5.1l1.37-6.31z"
+                fill="#fff"/></svg></span>
+        <span data-lang="vb"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" transform="rotate(-45 32.002 31.994)" fill="#004e8c"/><path
+                d="M53.92 10.08a31 31 0 010 43.84L10.08 10.08a31 31 0 0143.84 0z" fill="#025d9b"/><path
+                d="M21.3 46h-2.54L8.57 18h2.91l7.93 22.38q.21.63.38 1.26a11.92 11.92 0 01.26 1.36h.08q.1-.55.27-1.2t.45-1.42L29.11 18h2.81zm13.83 0V18h7.66a9.82 9.82 0 013.13.47 7 7 0 012.38 1.32 5.72 5.72 0 011.51 2 6.39 6.39 0 01.53 2.62A7.52 7.52 0 0150 26.7a6.76 6.76 0 01-1 1.92 6.36 6.36 0 01-1.53 1.5 7.69 7.69 0 01-2.06 1v.08a7.65 7.65 0 012.59.7 6.45 6.45 0 012 1.43 6.23 6.23 0 011.27 2.06 7.24 7.24 0 01.44 2.61 8 8 0 01-.64 3.25 7.45 7.45 0 01-1.81 2.54 8.22 8.22 0 01-2.76 1.65A10.22 10.22 0 0143 46zm2.6-25.62v9.94h3.63a8.4 8.4 0 002.58-.37 5.65 5.65 0 002-1.07 4.72 4.72 0 001.26-1.7 5.51 5.51 0 00.44-2.25q0-4.55-5.66-4.55zm0 12.29v11h4.82a7.05 7.05 0 004.78-1.46A5.18 5.18 0 0049 38.05q0-5.39-7.32-5.39z"
+                fill="#fff"/></svg></span>
+        <span data-lang="fs"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" transform="rotate(-45 32.002 31.994)" fill="#721481"/><path
+                d="M53.92 10.08a31 31 0 010 43.84L10.08 10.08a31 31 0 0143.84 0z" fill="#7e1b96"/><path
+                d="M17.23 20.37v10.55h10.23v2.36H17.23V46h-2.6V18h13.66v2.38zm34.06 7.35h-5.2L44.73 34h5.53l-.43 1.8h-5.45l-1.7 7.77h-2l1.68-7.77h-5.07l-1.66 7.8h-2l1.66-7.77H30l.37-1.8h5.33l1.3-6.31h-5.57l.39-1.8h5.55L39 18h2l-1.68 7.93h5.08L46.15 18h2l-1.7 7.93h5.25zm-12.29 0L37.64 34h5.1l1.37-6.31z"
+                fill="#fff"/></svg></span>
+    </div>
+    
+</div>
+
+<template id="lang-html">
+<div class="prereq">
+    <h3>Prerequisite</h3>
+
+    <ol>
+        <li>
+            Install <a href="https://dotnet.microsoft.com/download">.NET 5</a>
+        </li>
+        <li>
+            Install <a href="https://docs.servicestack.net/dotnet-tool">x dotnet tool</a>
+            <pre class="sh">dotnet tool install --global x</pre>
+        </li>
+    </ol>
+
+    <blockquote class="sm">The <em>x</em> dotnet tool lets you easily create console apps & upload them to
+        gists.
+    </blockquote>
+</div>
+
+<div class="create">
+    <h3>Create</h3>
+
+    <pre class="sh">md Project_Name</pre>
+    <pre class="sh">cd Project_Name && x mix console</pre>
+
+    <p>This will create a basic C# Console App you can run locally with:</p>
+
+    <pre class="sh">dotnet run</pre>
+
+    <p class="sm">
+        To help quickly visualize your program output, the referenced ServiceStack.Common
+        lib includes <em>.PrintDump()</em> and <em>.PrintDumpTable()</em>
+        <a href="https://docs.servicestack.net/dump-utils">dump utils</a>
+        to dump objects to the console. <br>
+        Whilst <em>Inspect.vars()</em> saves objects you can inspect in the UI after the Gist is run.
+    </p>
+</div>
+
+<div class="upload">
+    <h3>Upload</h3>
+
+    <p>
+        To create gists you'll need to generate a
+        <a href="https://github.com/settings/tokens/new">GitHub Access Token</a> with <b>gist</b> scope
+        and add it to your <em>GITHUB_TOKEN</em> Environment Variable
+        (<a href="https://superuser.com/questions/949560/how-do-i-set-system-environment-variables-in-windows-10">win</a>,
+        <a href="https://apple.stackexchange.com/q/356441/12255">mac</a>,
+        <a href="https://www.digitalocean.com/community/tutorials/how-to-read-and-set-environmental-and-shell-variables-on-linux">linux</a>).
+    </p>
+
+    <blockquote class="sm">(alternatively use <em>-token</em> arg in each publish command)</blockquote>
+
+    <p>
+        Then to publish your App to a new Gist run:
+    </p>
+
+    <pre class="sh">x publish -desc "Description"</pre>
+
+    <blockquote class="sm">If <em>-desc</em> is unspecified the description is generated from your folder name.
+    </blockquote>
+
+    <p>To update your App run publish again:</p>
+
+    <pre class="sh">x publish</pre>
+</div>
+</template>
+<template id="tpl-html">
+<p class="gistrun" data-gist="{gist}" data-height="{height}" data-gist-title="{title}" data-user="{user}" {attrs}=""
+   style="height:{height}px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:2px solid #ddd;margin:1em 0;padding:1em;">
+    <span>See the Gist <a href="https://gist.cafe/{gist}">{title}</a>
+    by (<a href="https://gist.github.com/{user}">@{user}</a>)
+    on <a href="https://gist.cafe">gist.cafe</a>.</span>
 </p>
-<script async src="https://cpwebassets.codepen.io/assets/embed/ei.js"></script>
+</template>
 
-<p class="gistrun" data-gist="15924975c70e07534aa9a76a598af38c" data-height="544" data-gist-title="Todo CRUD" data-user="gistlyn"
-   style="height:544px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:2px solid #ddd;margin:1em 0;padding:1em;">
-  <span>See the Gist <a href="https://gist.github.com/15924975c70e07534aa9a76a598af38c">Todo CRUD</a> 
-  by gistlyn (<a href="https://gist.github.com/gistlyn">@gistlyn</a>)
-  on <a href="https://gist.cafe">GistCafe</a>.</span>
-</p><script src="/embed.js"></script>
+<div class="body">
+    <div id="lang-content"></div>
+    <div class="content">
 
-<script src="/embed/15924975c70e07534aa9a76a598af38c/1d2fb5519bfe38d2c8412fa68b003ef5e4e56dc3.js?height=300&mode=viewonly"></script>
+        <div class="share" style="text-align:center">
+            <h3>Share</h3>
 
-<script src="/js/servicestack-client.js"></script>
-<script>
-    Object.assign(window, window['@servicestack/client']); //import into global namespace
-</script>
+            <p>
+                Share an executable gist by adding its id to the URL
+            </p>
 
-<!--
--->
+            <div>
+                <input id="txtGist" type="text" onfocus="this.select()" onchange="handleGist(this)" onkeyup="handleGist(this)"
+                       style="width:340px;padding:.5rem;font: 18px monospace;">
+                <div class="invalid-feedback"></div>
+            </div>
 
+            <div class="usage">
+                <p style="padding: 1rem 0 0">
+                    fullscreen <a id="lnkGistCafe" href="https://gist.cafe/c71b3f0123b3d9d08c1b11c98c2ff379">https://gist.cafe/c71b3f0123b3d9d08c1b11c98c2ff379</a>
+                </p>
+
+                <h3>Embed</h3>
+
+                <div id="preview"><iframe src="/embed?gist=c71b3f0123b3d9d08c1b11c98c2ff379" frameborder="0" style="width:100%;height:750px"></iframe></div>
+
+                <div class="options">
+                    <div class="row">
+                        <label for="height">height</label>
+                        <div><input id="height" type="number" style="width:75px" value="750"> px</div>
+                    </div>
+                    <div class="row">
+                        <label for="title">title</label>
+                        <div><input id="title" type="text" style="width: 250px"></div>
+                    </div>
+                    <div class="row">
+                        <label for="show">show</label>
+                        <div><select id="show"></select></div>
+                    </div>
+                    <div class="row" style="margin: 0">
+                        <label for="mode">mode</label>
+                        <div><select id="mode">
+                            <option></option>
+                            <option value="viewonly">viewonly</option>
+                            <option value="resultonly">resultonly</option>
+                        </select></div>
+                    </div>
+                </div>
+
+                <div class="embed-copy">
+                    <label class="btn active" for="embed-script">script</label>
+                    <label class="btn" for="embed-html">HTML (recommended)</label>
+                    <label class="btn" for="embed-iframe">iframe</label>
+                </div>
+                <div class="embed-copy-body">
+                    <textarea class="active" id="embed-script"></textarea>
+                    <textarea id="embed-html"></textarea>
+                    <textarea id="embed-iframe"></textarea>
+                </div>
+                <p class="sm">copy & paste code</p>
+            </div>
+            
+        </div>
+    </div>
+</div>
+<div class="foot">
+    <div class="copy">
+        <a href="https://servicestack.net"><svg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'> <style> .path{} </style><g id='servicestack-svg'><path class='path' stroke='null' d='m16.564516,43.33871c16.307057,2.035887 54.629638,20.41875 60.67742,46.306452l-78.241936,0c19.859879,-1.616734 36.825605,-27.344758 17.564516,-46.306452zm6.387097,-30.33871c6.446976,7.105645 9.520766,16.74617 9.26129,26.666129c16.546573,6.726411 41.376412,24.690121 46.625807,49.979033l19.161291,0c-8.123589,-43.132863 -54.529839,-73.551412 -75.048388,-76.645162z' /></g></svg></a>
+        &copy; 2020 ServiceStack, Inc.</div>
+</div>
+
+    <script>
+        let $ = sel => document.querySelector(sel),
+            $$ = sel => document.querySelectorAll(sel);
+
+        let LANGS = {
+            cs: {
+                gist: 'c71b3f0123b3d9d08c1b11c98c2ff379',
+            },
+            vb: {
+                gist: '166fc83646f5e15f8caa2e80a763305f',
+                replace: {
+                    'C#': 'VB.NET',
+                    'mix console': 'mix console-vb'
+                }
+            },
+            fs: {
+                gist: 'c33b525c276ec68df1c748dc2da7f497',
+                replace: {
+                    'C#': 'F#',
+                    'mix console': 'mix console-fs'
+                }
+            },
+        }
+        let langs = Object.keys(LANGS);
+        let M = {
+            gist: LANGS['cs'].gist
+        }
+        let GistCache = {
+            'c71b3f0123b3d9d08c1b11c98c2ff379': {
+                id: 'c71b3f0123b3d9d08c1b11c98c2ff379',
+                description: 'Simple C# .NET 5 Console App',
+                files: {
+                    'MyApp.csproj': {},
+                    'Program.cs': {}
+                },
+                owner: {
+                    login: 'gistlyn',
+                }
+            },
+            '166fc83646f5e15f8caa2e80a763305f': {
+                id: '166fc83646f5e15f8caa2e80a763305f',
+                description: 'Simple VB .NET 5 Console App',
+                files: {
+                    'MyApp.vbproj': {},
+                    'Program.vb': {}
+                },
+                owner: {
+                    login: 'gistlyn',
+                }
+            },
+            'c33b525c276ec68df1c748dc2da7f497': {
+                id: 'c33b525c276ec68df1c748dc2da7f497',
+                description: 'Simple F# .NET 5 Console App',
+                files: {
+                    'MyApp.fsproj': {},
+                    'Program.fs': {}
+                },
+                owner: {
+                    login: 'gistlyn',
+                }
+            },
+        };
+        
+        function fetchGist(gistId,cb,err) {
+            let cachedGist = GistCache[gistId];
+            if (cachedGist) {
+                cb(cachedGist);
+            } else {
+                fetch(`https://api.github.com/gists/${gistId}`)
+                    .then(function (r) {
+                        if (r.ok) {
+                            return r.text().then(function (s) {
+                                let gist = JSON.parse(s);
+                                GistCache[gistId] = gist;
+                                cb(gist);
+                            });
+                        } else {
+                            if (r.status === 404) {
+                                err('gist does not exist');
+                            } else {
+                                r.text().then(function (body) {
+                                    err((body ? JSON.parse(body).message : null) || r.statusText);
+                                });
+                            }
+                        }
+                    });
+            }
+        }
+
+        function updateEmbed() {
+            let gist = GistCache[M.gist],
+                height = $('#height').value || '750',
+                title = $('#title').value || gist.description,
+                user = gist.owner.login,
+                show = $('#show').value,
+                mode = $('#mode').value;
+            
+            let attrs = [];
+            if (show) attrs.push(`show="${show}"`);
+            if (mode) attrs.push(`mode="${mode}"`);
+            let embedHtml = $('#tpl-html').innerHTML.trim()
+                .replace(/{gist}/g,M.gist)
+                .replace(/{user}/g,user)
+                .replace(/{title}/g,title)
+                .replace(/{height}/g,height);
+            embedHtml = embedHtml.replace('{attrs}=""',attrs.length > 0 ? attrs.join(' ') : '');
+            $('#embed-html').innerHTML = embedHtml + '<script ' + 'src="https://gist.cafe/embed.js"></' + 'script>';
+
+            function toQs(o,c) {
+                let qs = '';
+                Object.keys(o).forEach(function (k) {
+                    if (!o[k]) return;
+                    qs += qs ? '&' : c;
+                    qs += `${k}=${encodeURIComponent(o[k]).replace(/%20/g,'+')}`;
+                });
+                return qs;
+            }
+
+            let qsOptions = {
+                height: height !== '750' ? height : '',
+                title: title !== gist.description ? title : '',
+                show: show,
+                mode: mode
+            };
+            $('#embed-script').value = `<script ` + `src="https://gist.cafe/embed/${M.gist}.js${toQs(qsOptions,'?')}"></` + 'script>';
+
+            $('#embed-iframe').value = `<iframe src="https://gist.cafe/embed?gist=${M.gist}${toQs(qsOptions,'&')}" frameborder="0" style="height:${height}px;width:100%;border:1px solid #ddd"></iframe>`;
+            $('#preview').innerHTML = $('#embed-iframe').value.replace('https://gist.cafe','');
+        }
+
+        function fname(name) {
+            return name && name.replace(/\\/g,'/').replace(/["']/g,'');
+        }
+        function selectGist(id) {
+            fetchGist(id, function (gist) {
+                M.gist = id;
+                let $lnk = $('#lnkGistCafe');
+                $lnk.innerHTML = $lnk.href = `https://gist.cafe/${id}`;
+                $('.share').classList.remove('error');
+                $('#txtGist').value = id;
+                // $('#preview iframe').src = `/embed?gist=${M.gist}`;
+                $('#title').placeholder = gist.description;
+                let sb = Object.keys(gist.files)
+                    .filter(function (f) { return fname(f).indexOf('/') === -1 })
+                    .map(function (f) { return `<option value="${f}">${f}</option>` });
+                $('#show').innerHTML = '<option></option>' + sb.join('');
+                updateEmbed();
+            }, function (errMsg) {
+                $('.share').classList.add('error');
+                $('#txtGist').nextElementSibling.innerHTML = errMsg;
+            });
+        }
+        function handleGist(e) {
+            let id = e.value.trim();
+            if (id.length !== 20 && id.length !== 32) {
+                $('.share').classList.add('error');
+                return;
+            }
+            selectGist(id);
+        }
+
+        function on(sel, handlers) {
+            $$(sel).forEach(e => {
+                Object.keys(handlers).forEach(function (evt) {
+                    let fn = handlers[evt];
+                    if (typeof evt === 'string' && typeof fn === 'function') {
+                        e.addEventListener(evt, fn.bind(e));
+                    }
+                })
+            });
+        }
+
+        function handleLang(e) {
+            let cls = this.classList, activate = !cls.contains('active');
+            $$('.langs span').forEach(function (e) {
+                e.classList.remove('active');
+            });
+            if (activate) {
+                cls.add('active');
+                let lang = this.getAttribute('data-lang');
+                location.hash = lang;
+                let html = $('#lang-html').innerHTML;
+                let langHtml = html;
+                let replaceTokens = LANGS[lang].replace || {};
+                Object.keys(replaceTokens).forEach(k => langHtml = langHtml.replace(k,replaceTokens[k]));
+                $('#lang-content').innerHTML = langHtml;
+                selectGist(LANGS[lang].gist)
+            } else {
+                history.pushState("", document.title, window.location.pathname + window.location.search);
+                $('#lang-content').innerHTML = '';
+            }
+        }
+
+        function OnInput() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        }
+        function resizeTextAreas() {
+            $$('textarea').forEach(function (tx) {
+                tx.setAttribute('style', 'height:' + (tx.scrollHeight) + 'px;overflow-y:hidden;');
+                tx.addEventListener("input", OnInput, false);
+                tx.addEventListener("focus", function (e) { this.select(); }, false);
+            });
+        }
+        resizeTextAreas();
+        
+        selectGist($('#txtGist').value = M.gist);
+        on('.langs span', {click: handleLang});
+        if (location.hash) {
+            let lang = location.hash.substring(1);
+            if (langs.indexOf(lang) >= 0) {
+                let $lang = $(`.langs span[data-lang='${lang}']`);
+                if ($lang) {
+                    handleLang.bind($lang)($lang);
+                }
+            }
+        }
+        
+        on('.embed-copy .btn', {
+            click: function (e) {
+                let cls = this.classList;
+                $$('.embed-copy .btn').forEach(function (e) { e.classList.remove('active'); })
+                $$('.embed-copy-body textarea').forEach(function (e) { e.classList.remove('active'); })
+                this.classList.add('active');
+                $(`.embed-copy-body textarea#${this.htmlFor}`).classList.add('active');
+            }
+        })
+        
+        on('.options input,.options select', {
+            change: updateEmbed
+        })
+
+    </script>
 </body>
 </html>

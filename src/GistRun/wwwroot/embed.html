@@ -225,6 +225,11 @@
     .v .foot .left .made {
         margin-left: .5rem;
     }
+    .v .head .title {
+        font-size: 14px;
+        line-height: 36px;
+        color: #666;
+    }
 
     .w-3 { width:.75rem; } .w-4 { width:1rem; } .w-5 { width:1.25rem; } .w-6 { width:1.5rem; } .w-8 { width:2rem; } .w-full { width:100%; }
     .h-3 { height:.75rem; } .h-4 { height:1rem; } .h-5 { height:1.25rem; } .h-6 { height:1.5rem; } .h-8 { height:2rem; } .h-full { height:100%; }
@@ -388,6 +393,7 @@ let M = {
     ViewOnly: false,
     activeFileName: '',
     gist: null,
+    title: ''
 };
 
 (function (qs,cb) {
@@ -466,6 +472,7 @@ let M = {
         if (M.ViewOnly) {
             document.body.classList.add('viewonly');
         }
+        M.title = document.title = qs.title != null ? decodeURIComponent(qs.title) : gist.description;
         
         let sb = [
             `<div class="v">
@@ -522,6 +529,7 @@ let M = {
                 <div class="btn active">
                     <span>Result</span>
                 </div>
+                <div class="title">${M.title}</div>
                 <div class="edit">
                     <span>view on</span>
                     <div><a href="http://gist.github.com/${gistId}" target="top">github</a></div>
@@ -550,7 +558,7 @@ let M = {
                     <div class="center h-full"><div class="run-btn">${svgPlay(6)}run</div></div>
                 </div>
                 <div class="splash">
-                      <span>See the Gist <a href="https://gist.github.com/${gistRef(gist)}">${qs.title || gist.description}</a> 
+                      <span>See the Gist <a href="https://gist.github.com/${gistRef(gist)}">${M.title}</a> 
                       by ${gist.owner.login} (<a href="https://gist.github.com/${gist.owner.login}">@${gist.owner.login}</a>)
                       on <a href="https://gist.cafe">GistCafe</a>.</span>
                 </div>
@@ -574,7 +582,11 @@ let M = {
             Object.assign(window, window['@servicestack/client']);
 
             loadCachedVersion(gist);
-            openFile(M.activeFileName);
+            if (qs.mode === 'resultonly') {
+                $('.v').classList.add('nofiles');
+            } else {
+                openFile(M.activeFileName);
+            }
             on('.v .head .files .btn', {
                 click: function (evt) {
                     let filename = this.getAttribute('data-file');
@@ -643,14 +655,17 @@ function cm(e) {
     if (next && next.classList.contains('CodeMirror')) return;
     let filename = e.getAttribute('data-file');
     let mode = extModes[ext(filename)] || 'text/plain';
-    let cm = CodeMirror.fromTextArea(e.firstElementChild, {
-        lineNumbers: true,
-        styleActiveLine: true,
-        matchBrackets: true,
-        readOnly: true,
-        theme: 'idea',
-        mode: mode,
-    });
+    // rendering issues if created when hidden
+    setTimeout(() => {
+        let cm = CodeMirror.fromTextArea(e.firstElementChild, {
+            lineNumbers: true,
+            styleActiveLine: true,
+            matchBrackets: true,
+            readOnly: true,
+            theme: 'idea',
+            mode: mode,
+        });
+    }, 0);
 }
 function select(el) {
     if (el) el.classList.add('active');

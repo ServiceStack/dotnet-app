@@ -1,10 +1,10 @@
 document.querySelectorAll('.gistrun[data-gist]').forEach(function(e) {
-var height = e.getAttribute('data-height');
-var iframe = document.createElement('iframe'),s=iframe.style;
+let height = e.getAttribute('data-height');
+let iframe = document.createElement('iframe'),s=iframe.style;
 s.width='100%';
 s.height=height+'px';
 s.border='1px solid #ddd';
-var sb='';
+let sb='';
 e.getAttributeNames().forEach(function(k) {
   if (k.indexOf('data-')===0) { 
       sb += sb ? '&' : '?'; 
