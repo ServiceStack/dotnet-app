@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="lib/codemirror.css">
-    <link rel="stylesheet" href="theme/idea.css">
-    <script defer src="lib/codemirror.js"></script>
-    <script defer src="addon/selection/active-line.js"></script>
-    <script defer src="mode/clike/clike.js"></script>
-    <script defer src="mode/mllike/mllike.js"></script>
-    <script defer src="mode/vb/vb.js"></script>
-    <script defer src="mode/css/css.js"></script>
-    <script defer src="mode/xml/xml.js"></script>
-    <script defer src="mode/javascript/javascript.js"></script>
-    <script defer src="mode/htmlmixed/htmlmixed.js"></script>
+    <link rel="stylesheet" href="/lib/codemirror.css">
+    <link rel="stylesheet" href="/theme/idea.css">
+    <script defer src="/lib/codemirror.js"></script>
+    <script defer src="/addon/selection/active-line.js"></script>
+    <script defer src="/mode/clike/clike.js"></script>
+    <script defer src="/mode/mllike/mllike.js"></script>
+    <script defer src="/mode/vb/vb.js"></script>
+    <script defer src="/mode/css/css.js"></script>
+    <script defer src="/mode/xml/xml.js"></script>
+    <script defer src="/mode/javascript/javascript.js"></script>
+    <script defer src="/mode/htmlmixed/htmlmixed.js"></script>
     <script defer src="/js/servicestack-client.js"></script>
 <style>
     html,body,#body,.v { height: 100%; }
@@ -390,6 +390,7 @@ let svgPlay = size =>
     `<svg class="w-${size} h-${size}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>`;
 
 let M = {
+    isEmbed: location.search.indexOf('gist=') >= 0,
     ViewOnly: false,
     activeFileName: '',
     gist: null,
@@ -404,7 +405,18 @@ let M = {
 
     let gistId = qs['gist'];
     if (!gistId)
-        return err("Invalid Embed", "Missing 'gist' argument.");
+    {
+        let path = location.pathname.substring(1);
+        let pos = path.indexOf('/');
+        let isGistId = (pos === 32 && path.length === 73) || (pos === 20 && path.length === 61)
+            || (path.length === 32 || path.length === 20);
+        if (isGistId) {
+            gistId = path;
+        } else {
+            return err("Invalid Embed", "Missing 'gist' argument.");
+        }
+    }
+    
 
     let g = !qs.nocache && getGist(gistId);
     if (!g) {
@@ -484,10 +496,14 @@ let M = {
                 let newQs = {};
                 let sb = '';
                 for (let k in qs) {
-                    sb += sb === '' ? '?' : '&';
+                    if (k === 'gist') continue;
+                    sb += '&';
                     sb += k + '=' + (k === 'gist' ? gist.id + '/' + x.version : qs[k]);
                 }
-                return location.pathname + sb;
+                let ret = M.isEmbed
+                    ? location.pathname + `?gist=${gist.id}/${x.version}${sb}`
+                    : `/${gist.id}/${x.version}${sb}`;
+                return ret;
             };
             sb.push(`<div class="revisions btn dropdown">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>

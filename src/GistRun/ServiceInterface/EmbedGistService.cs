@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using GistRun.ServiceModel;
@@ -7,11 +8,31 @@ using ServiceStack.Text;
 
 namespace GistRun.ServiceInterface
 {
+    [FallbackRoute("/{PathInfo*}", Matches="AcceptsHtml")]
+    public class Fallback : IReturn<string>
+    {
+        public string PathInfo { get; set; }
+    }
+    
     public class EmbedGistService : Service
     {
         public AppConfig AppConfig { get; set; }
         public GistCache GistCache { get; set; }
 
+        public object Any(Fallback request)
+        {
+            var path = request.PathInfo;
+            if (path?.Length > 0 && path.IndexOf('.') == -1)
+            {
+                var pos = path.IndexOf('/');
+                var isGistId = (pos == 32 && path.Length == 73) || (pos == 20 && path.Length == 61)
+                    || (path.Length == 32 || path.Length == 20);
+                if (isGistId)
+                    return new HttpResult(new FileInfo("wwwroot/embed.html"));
+            }
+            return new HttpResult(new FileInfo("wwwroot/index.html"));
+        }
+        
         public async Task WriteErrorJs(Exception ex, int height)
         {
             var title = ex.GetType().Name.SplitCamelCase().Replace('_', ' ');
