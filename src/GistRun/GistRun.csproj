@@ -17,7 +17,12 @@
     </ItemGroup>
 
     <ItemGroup>
-    <PackageReference Include="ServiceStack" Version="5.*" />
+      <PackageReference Include="ServiceStack" Version="5.*" />
+      <!-- Not needed by project but pre-caching packages used by dotnet gists -->
+      <PackageReference Include="ServiceStack.Server" Version="5.*" />
+      <PackageReference Include="ServiceStack.Aws" Version="5.*" />
+      <PackageReference Include="ServiceStack.Azure" Version="5.*" />
+      
 <!--    <ProjectReference Include="..\..\..\..\Source\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj" />-->
 <!--    <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj" />-->
 <!--    <ProjectReference Include="..\..\..\..\Source\Servicestack\src\ServiceStack.Client\ServiceStack.Client.Source.csproj" />-->
