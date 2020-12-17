@@ -1,5 +1,6 @@
 mkdir prefetch
 cd prefetch
+dotnet nuget add source https://www.myget.org/F/servicestack -n myget.org
 dotnet new console
 dotnet add package ServiceStack.Server
 dotnet add package ServiceStack.Aws
