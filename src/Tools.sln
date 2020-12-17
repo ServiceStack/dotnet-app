@@ -59,6 +59,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multitenancy", "example-plu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GistRun", "GistRun\GistRun.csproj", "{09332644-C18D-48B2-8B17-72000ADEC5EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceStack.Kestrel.Source", "..\..\ServiceStack\src\ServiceStack.Kestrel\ServiceStack.Kestrel.Source.csproj", "{3396001A-D2E9-4BC3-BD50-20919703554D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -363,6 +365,18 @@ Global
 		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|x64.Build.0 = Release|Any CPU
 		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|x86.ActiveCfg = Release|Any CPU
 		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|x86.Build.0 = Release|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|x64.Build.0 = Debug|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|x86.Build.0 = Debug|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Release|x64.ActiveCfg = Release|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Release|x64.Build.0 = Release|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Release|x86.ActiveCfg = Release|Any CPU
+		{3396001A-D2E9-4BC3-BD50-20919703554D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -393,5 +407,6 @@ Global
 		{0000F7C4-2A04-4F00-BC63-929AC848FD1E} = {67196256-5B58-487D-BB47-887EB5BF083A}
 		{AA808872-60A7-49D1-9482-CB19D62B4018} = {67196256-5B58-487D-BB47-887EB5BF083A}
 		{AF171C43-A365-4B12-94BF-8DB6150E0530} = {2CED8076-9242-4C3B-89F6-46FB9E1BCB08}
+		{3396001A-D2E9-4BC3-BD50-20919703554D} = {67196256-5B58-487D-BB47-887EB5BF083A}
 	EndGlobalSection
 EndGlobal
