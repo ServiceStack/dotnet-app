@@ -17,11 +17,9 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.101
-    - name: CD
-      run: cd src/GistRun
     - name: Restore dependencies
       run: dotnet restore
+      working-directory: ./src/GistRun      
     - name: Build
       run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      working-directory: ./src/GistRun
