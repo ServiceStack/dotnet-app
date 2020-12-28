@@ -111,12 +111,15 @@ namespace Web
         public static string[] DebugArgs = CreateArgs("debug", withFlag:'d');
         public static string[] ReleaseArgs = CreateArgs("release", withFlag:'c');
         public static string[] DescriptionArgs = CreateArgs("desc");
+        public static string[] IncludeArgs = CreateArgs("include");
         
         public static string Description { get; set; }
         
         static string[] TokenArgs = CreateArgs("token");
         
         static string[] PathArgs = CreateArgs("path");
+
+        public static string[] Includes = { };
         public static string PathArg { get; set; }
 
         public static string RunScript { get; set; }
@@ -604,7 +607,7 @@ namespace Web
                 return null;
             }
 
-            var allow = new[] { "-h", "-help", "--help", "-v", "-version", "--version", "-clear", "--clear", "-clean", "--clean" };
+            var allow = new[] { "-h", "-help", "--help", "-v", "-version", "--version", "-clear", "--clear", "-clean", "--clean", "-include", "--include" };
             var unknownFlag = dotnetArgs.FirstOrDefault(x => x.StartsWith("-") && !allow.Contains(x)); 
             if (unknownFlag != null)
                 throw new Exception($"Unknown flag: '{unknownFlag}'");
@@ -961,7 +964,7 @@ namespace Web
 
             var files = new Dictionary<string, object>();
             Environment.CurrentDirectory.CopyAllToDictionary(files,
-                excludePaths: WebTemplateUtils.ExcludeFoldersNamed.ToArray(),
+                excludePaths:WebTemplateUtils.GetExcludedFolderNames(Environment.CurrentDirectory).ToArray(),
                 excludeExtensions: WebTemplateUtils.ExcludeFileExtensions.ToArray());
 
             string publishUrl = null;
@@ -1127,6 +1130,12 @@ namespace Web
             if (TokenArgs.Contains(arg))
             {
                 GitHubToken = NextArg(ref i);
+                return true;
+            }
+
+            if (IncludeArgs.Contains(arg))
+            {
+                Includes = NextArg(ref i).Split(';');
                 return true;
             }
 
@@ -1682,7 +1691,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var dirInfo = new DirectoryInfo(dirArg);
                 var files = new Dictionary<string, object>();
                 dirInfo.FullName.CopyAllToDictionary(files, 
-                    excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray(),
+                    excludePaths:WebTemplateUtils.GetExcludedFolderNames(dirInfo.FullName).ToArray(),
                     excludeExtensions:WebTemplateUtils.ExcludeFileExtensions.ToArray());
 
                 if (files.Count == 0)
@@ -1714,7 +1723,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var dirInfo = new DirectoryInfo(dirArg);
                 var files = new Dictionary<string, object>();
                 dirInfo.FullName.CopyAllToDictionary(files, 
-                    excludePaths:WebTemplateUtils.ExcludeFoldersNamed.ToArray(),
+                    excludePaths:WebTemplateUtils.GetExcludedFolderNames(dirInfo.FullName).ToArray(),
                     excludeExtensions:WebTemplateUtils.ExcludeFileExtensions.ToArray());
                 
                 if (files.Count == 0)
@@ -3304,24 +3313,53 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             return authProvider;
         }
 
-        public static List<string> ExcludeFoldersNamed = new List<string>
-        {
-            ".git",        //git
-            "bin",         //.NET
-            "obj",         //.NET
-            "publish",     //Gist publish folder
-            "GPUCache",    //CEF GPU Caches
-            ".idea",       //Intellij IDEAs
-            ".vs",         //VS
-            ".dart_tool",  //dart
-            "xcuserdata",  //Xcode
-            ".gistrun",    //gistrun
+        public static List<string> ExcludeFoldersNamed = new() {
+            ".git",         //git
+            "bin",          //.NET (Exception: excluded when Dart pubspec.yml detected)
+            "obj",          //.NET
+            "publish",      //Gist publish folder
+            "GPUCache",     //CEF GPU Caches
+            ".idea",        //Intellij IDEAs
+            ".vs",          //VS
+            "node_modules", //node
+            ".dart_tool",   //dart
+            "build",        //dart + gradle (.kt/.java)
+            "flutter_build",//flutter
+            "xcuserdata",   //Xcode
+            ".gistrun",     //gistrun
+            "__pycache__",  //python
         };
         
-        public static List<string> ExcludeFileExtensions = new List<string> {
+        public static List<string> ExcludeFileExtensions = new() {
             ".log",
             ".publish",
+            ".packages",    //dart pub
+            "pubspec.lock", //dart lock
+            ".gradle",      //gradle (.kt/.java)
+            ".iml",         //IDEA IDE
+            ".gradletasknamecache", //gradle
         };
+
+        public static List<string> GetExcludedFolderNames(string workingDir=null)
+        {
+            var includes = new List<string>(Startup.Includes);
+            // dart uses bin/ folder for command-line scripts
+            if (workingDir != null)
+            {
+                var hasDartPubSpec = File.Exists(Path.Combine(workingDir, "pubspec.yaml"));
+                if (hasDartPubSpec && !includes.Contains("bin"))
+                {
+                    includes.Add("bin");
+                }
+            }
+            
+            var excludePaths = ExcludeFoldersNamed
+                .Where(x => !includes.Contains(x)).ToList();
+            
+            if (Startup.Verbose) $"Excluded folders: {excludePaths.Join(", ")} in '{workingDir}', overridable with --include <dir1>;<dir2>".Print();
+
+            return excludePaths;
+        }
 
         public static void CopyAllTo(this string src, string dst, string[] excludePaths=null)
         {
@@ -3380,10 +3418,13 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             foreach (string newPath in Directory.GetFiles(src, "*.*", SearchOption.AllDirectories))
             {
+                if (excludePaths == null)
+                    excludePaths = GetExcludedFolderNames(src).ToArray();
+                
                 if (!excludePaths.IsEmpty() && excludePaths.Any(x => newPath.StartsWith(x)))
                     continue;
 
-                if (ExcludeFoldersNamed.Any(x => newPath.Contains($"{d}{x}{d}", StringComparison.OrdinalIgnoreCase)))
+                if (excludePaths.Any(x => newPath.Contains($"{d}{x}{d}", StringComparison.OrdinalIgnoreCase)))
                     continue;
                 
                 if (excludeExtensions?.Length > 0 && excludeExtensions.Any(x => newPath.EndsWith(x)))

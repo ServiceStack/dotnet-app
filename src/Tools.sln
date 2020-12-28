@@ -57,14 +57,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceStack.Desktop.Source
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multitenancy", "example-plugins\Multitenancy\Multitenancy.csproj", "{AF171C43-A365-4B12-94BF-8DB6150E0530}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GistRun", "GistRun\GistRun.csproj", "{09332644-C18D-48B2-8B17-72000ADEC5EA}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceStack.Kestrel.Source", "..\..\ServiceStack\src\ServiceStack.Kestrel\ServiceStack.Kestrel.Source.csproj", "{3396001A-D2E9-4BC3-BD50-20919703554D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{C2CC9EF0-298F-43B5-807F-CB26D14A6E29}"
-ProjectSection(SolutionItems) = preProject
-	..\.github\workflows\dotnet.yml = ..\.github\workflows\dotnet.yml
-EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -358,18 +351,6 @@ Global
 		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|x64.Build.0 = Release|Any CPU
 		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|x86.ActiveCfg = Release|Any CPU
 		{AF171C43-A365-4B12-94BF-8DB6150E0530}.Release|x86.Build.0 = Release|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Debug|x64.Build.0 = Debug|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Debug|x86.Build.0 = Debug|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|x64.ActiveCfg = Release|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|x64.Build.0 = Release|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|x86.ActiveCfg = Release|Any CPU
-		{09332644-C18D-48B2-8B17-72000ADEC5EA}.Release|x86.Build.0 = Release|Any CPU
 		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3396001A-D2E9-4BC3-BD50-20919703554D}.Debug|x64.ActiveCfg = Debug|Any CPU
