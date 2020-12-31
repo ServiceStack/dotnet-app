@@ -837,6 +837,29 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_create_shortcut_custom_target_and_arguments()
+        {
+            Directory.SetCurrentDirectory(@"C:\Users\mythz\apps\vuedesktop\dist");
+            try 
+            {
+                await Startup.CreateWebHost("app", new[] {
+                    "shortcut", 
+                    "-target", 
+                    "C:\\Program Files\\dotnet\\dotnet.exe",
+                    "-arguments",
+                    "%USERPROFILE%\\apps\\vuedesktop\\app\\app.dll %USERPROFILE%\\apps\\vuedesktop\\dist\\app.settings",
+                    "-workdir",
+                    "^%USERPROFILE^%\\apps\\vuedesktop\\dist",
+                });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        [Test]
         public async Task Can_open_mythz_spirals()
         {
             DeleteCreateAndSetDirectory("wip\\TestRepo");

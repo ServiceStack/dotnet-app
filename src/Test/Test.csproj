@@ -63,7 +63,7 @@
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack\ServiceStack.Source.csproj" />
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Api.OpenApi\ServiceStack.Api.OpenApi.Source.csproj" />
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Server\ServiceStack.Server.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Kestrel\ServiceStack.Kestrel.Source.csproj" />
+<!--        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Kestrel\ServiceStack.Kestrel.Source.csproj" />-->
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite\ServiceStack.OrmLite.Source.csproj" />
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite\ServiceStack.OrmLite.Sqlite.Source.csproj" />
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.SqlServer\ServiceStack.OrmLite.SqlServer.Source.csproj" />

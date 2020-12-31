@@ -112,6 +112,15 @@ namespace Web
         public static string[] ReleaseArgs = CreateArgs("release", withFlag:'c');
         public static string[] DescriptionArgs = CreateArgs("desc");
         public static string[] IncludeArgs = CreateArgs("include");
+
+        public static string[] TargetArgs = CreateArgs("target");
+        public static string Target { get; set; }
+
+        public static string[] ArgumentsArgs = CreateArgs("arguments");
+        public static string Arguments { get; set; }
+        
+        public static string[] WorkDirArgs = CreateArgs("workdir");
+        public static string WorkDir { get; set; }
         
         public static string Description { get; set; }
         
@@ -170,7 +179,8 @@ namespace Web
 
             var createShortcut = false;
             var publish = false;
-            var publishExe = false;
+            var copySelf = false;
+            string copySelfTo = ".";
             string createShortcutFor = null;
             string runProcess = null;
             var runSharpApp = false;
@@ -226,10 +236,16 @@ namespace Web
                     publish = true;
                     continue;
                 }
-                if (arg == "publish-exe")
+                if (arg == "--copy-self")
                 {
-                    publishExe = true;
-                    continue;
+                    copySelf = true;
+                    if (i + 1 < args.Length && !(args[i + 1].StartsWith("-") || args[i + 1].StartsWith("/")))
+                        copySelfTo = args[++i];
+
+                    var fromDir = Path.GetDirectoryName(typeof(Startup).Assembly.Location);
+                    fromDir.CopyAllTo(copySelfTo);
+                    
+                    return null;
                 }
                 if (arg == "mix" || arg == "-mix")
                 {
@@ -607,7 +623,7 @@ namespace Web
                 return null;
             }
 
-            var allow = new[] { "-h", "-help", "--help", "-v", "-version", "--version", "-clear", "--clear", "-clean", "--clean", "-include", "--include" };
+            var allow = new[] { "-h", "-help", "--help", "-v", "-version", "--version", "-location", "--location", "-clear", "--clear", "-clean", "--clean", "-include", "--include" };
             var unknownFlag = dotnetArgs.FirstOrDefault(x => x.StartsWith("-") && !allow.Contains(x)); 
             if (unknownFlag != null)
                 throw new Exception($"Unknown flag: '{unknownFlag}'");
@@ -625,7 +641,7 @@ namespace Web
                     $"Command: gist-new".Print();
                 if (GistUpdate)
                     $"Command: gist-update".Print();
-                if (publishExe)
+                if (copySelf)
                     $"Command: publish-exe".Print();
                 if (RunScript != null)
                     $"Command: run {RunScript} {RunScriptArgs.ToJsv()}".Print();
@@ -806,6 +822,15 @@ namespace Web
                 }
 
                 var icon = GetIconPath(appDir, createShortcutFor);
+
+                if (!string.IsNullOrEmpty(Target))
+                    targetPath = Target.Replace("^%","%");
+
+                if (!string.IsNullOrEmpty(Arguments))
+                    arguments = Arguments.Replace("^%","%");
+
+                if (!string.IsNullOrEmpty(WorkDir))
+                    appDir = WorkDir.Replace("^%","%");
 
                 if (Verbose) $"CreateShortcut: {shortcutPath}, {targetPath}, {arguments}, {appDir}, {icon}".Print();
 
@@ -1136,6 +1161,24 @@ namespace Web
             if (IncludeArgs.Contains(arg))
             {
                 Includes = NextArg(ref i).Split(';');
+                return true;
+            }
+
+            if (TargetArgs.Contains(arg))
+            {
+                Target = NextArg(ref i);
+                return true;
+            }
+
+            if (ArgumentsArgs.Contains(arg))
+            {
+                Arguments = NextArg(ref i);
+                return true;
+            }
+
+            if (WorkDirArgs.Contains(arg))
+            {
+                WorkDir = NextArg(ref i);
                 return true;
             }
 
@@ -1804,6 +1847,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     $"Framework: {RuntimeInformation.FrameworkDescription}".Print();
                     $"OS: {Environment.OSVersion}".Print();
                     AppVersion?.Print();
+                }
+                else if (new[] {"/location"}.Contains(cmd))
+                {
+                    typeof(Startup).Assembly.Location.Print();
+                    return new Instruction { Command = "location", Handled = true };
                 }
                 else if (new[] { "/clean", "/clear" }.Contains(cmd))
                 {
@@ -3324,6 +3372,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             "node_modules", //node
             ".dart_tool",   //dart
             "build",        //dart + gradle (.kt/.java)
+            ".gradle",      //gradle (.kt/.java)
             "flutter_build",//flutter
             "xcuserdata",   //Xcode
             ".gistrun",     //gistrun
@@ -3335,7 +3384,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             ".publish",
             ".packages",    //dart pub
             "pubspec.lock", //dart lock
-            ".gradle",      //gradle (.kt/.java)
             ".iml",         //IDEA IDE
             ".gradletasknamecache", //gradle
         };
