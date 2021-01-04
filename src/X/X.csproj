@@ -17,7 +17,8 @@
     <PackageProjectUrl>https://github.com/ServiceStack/dotnet-app</PackageProjectUrl>
     <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
     <LangVersion>latest</LangVersion>
-    <DefineConstants>$(DefineConstants);NETCORE3</DefineConstants>
+    <RootNamespace>Web</RootNamespace>
+    <DefineConstants>$(DefineConstants);NETCORE3;NETCORE5</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
 <!--    <FrameworkReference Include="Microsoft.AspNetCore.App" />-->
@@ -31,6 +32,7 @@
     <PackageReference Include="NUglify" Version="1.11.0" />
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="5.0.0" />
     <PackageReference Include="WinApi" Version="4.*" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
       
     <!-- 
     <PackageReference Include="ServiceStack.Text" Version="5.*" />

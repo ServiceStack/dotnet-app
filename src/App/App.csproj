@@ -25,7 +25,8 @@
     <LangVersion>latest</LangVersion>
     <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>-->
     <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
-    <RootNamespace>WebApp</RootNamespace>
+    <RootNamespace>Web</RootNamespace>
+    <DefineConstants>$(DefineConstants);NETCORE3;NETCORE5</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
