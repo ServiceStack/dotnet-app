@@ -72,6 +72,8 @@
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Redis\src\ServiceStack.Redis\ServiceStack.Redis.Source.csproj" />
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.Source.csproj" />
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.Source.csproj" />
+
+        <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     </ItemGroup>
     <ItemGroup>
       <Compile Include="..\App\Shortcut.cs">

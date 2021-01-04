@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Win32;
 using NUnit.Framework;
 using ServiceStack;
 using ServiceStack.Desktop;
@@ -881,6 +882,51 @@ Content-Disposition: form-data; name=""EvaluateCode""
             var gateway = new GitHubGateway(Environment.GetEnvironmentVariable("GITHUB_TOKEN"));
             var result = gateway.GetRateLimits();
             result.PrintDump();
+        }
+
+        [Test]
+        public void Register_gist_URL_Scheme()
+        {
+            var rootKey = "gist";
+            var exeName = "x.exe";
+            
+            var openKeys = new List<RegistryKey>();
+            RegistryKey recordKey(RegistryKey key)
+            {
+                if (key != null) openKeys.Add(key);
+                return key;
+            }
+
+            try
+            {
+                var appKey = recordKey(Registry.CurrentUser.OpenSubKey("Software")?.OpenSubKey("Classes")?.OpenSubKey(rootKey));
+                if (appKey == null)
+                {
+                    var userRoot = recordKey(Registry.CurrentUser.OpenSubKey("Software", true))?
+                        .OpenSubKey("Classes", true);   
+                    var key = userRoot.CreateSubKey(rootKey);   
+                    key.SetValue("URL Protocol", "gist.cafe");   
+                    var profilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    var commandStr = Path.Combine(profilePath, ".dotnet", "tools", exeName) + " \"%1\"";
+                    key.CreateSubKey(@"shell\open\command")?.SetValue("", commandStr);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                foreach (var key in openKeys)
+                {
+                    try
+                    {
+                        key.Close();
+                    }
+                    catch { }
+                }
+            }
+            
         }
     }
 }

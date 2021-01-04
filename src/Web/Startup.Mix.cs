@@ -1166,8 +1166,7 @@ namespace Web
 
         private static string GetCachedFilePath(string zipUrl)
         {
-            var invalidFileNameChars = new HashSet<char>(Path.GetInvalidFileNameChars()) { ':' };
-            var safeFileName = new string(zipUrl.Where(c => !invalidFileNameChars.Contains(c)).ToArray());
+            var safeFileName = zipUrl.GetSafeFileName();
             var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var cachedPath = Path.Combine(homeDir, ".servicestack", "cache", safeFileName);
             return cachedPath;
@@ -1192,6 +1191,13 @@ namespace Web
 
     public static class MixUtils
     {
+        public static string GetSafeFileName(this string path)
+        {
+            var invalidFileNameChars = new HashSet<char>(Path.GetInvalidFileNameChars()) {':'};
+            var safeFileName = new string(path.Where(c => !invalidFileNameChars.Contains(c)).ToArray());
+            return safeFileName;
+        }
+
         public static bool Exists(this Dictionary<string, string> map, string name) => map.ContainsKey(name);
 
         public static string GetRequiredString(this Dictionary<string, string> map, string name) =>
@@ -1240,12 +1246,24 @@ namespace Web
         public static void HandleProgramExceptions(this Exception ex)
         {
             ex = ex.UnwrapIfSingleException();
+
+            if (Startup.Verbose)
+            {
+                if (ex is WebException webEx)
+                {
+                    var errorResponse = (HttpWebResponse)webEx.Response;
+                    var responseBody = errorResponse.ResponseStream().ToUtf8String();
+                    Console.WriteLine(responseBody);
+                    Console.WriteLine();
+                }
+            }
+            
             Console.WriteLine(Startup.Verbose ? ex.ToString() : ex.Message);
 
             if (ex.Message.IndexOf("SSL connection", StringComparison.Ordinal) >= 0)
             {
                 Console.WriteLine("");
-                Console.WriteLine("SSL Connection Errors can be ignored with care using switch: --ignore-ssl-errors");
+                Console.WriteLine(@"SSL Connection Errors can be ignored with care using switch: --ignore-ssl-errors");
             }
         }
 

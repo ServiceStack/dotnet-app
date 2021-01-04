@@ -107,6 +107,12 @@ namespace Web
             return Path.Combine(homeDir, ".sharp-apps", gistAlias);
         }
 
+        public static string GetGistsPath(string gistDir)
+        {
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return Path.Combine(homeDir, "gists", gistDir);
+        }
+
         public static bool? DebugMode { get; set; }
         public static string[] DebugArgs = CreateArgs("debug", withFlag:'d');
         public static string[] ReleaseArgs = CreateArgs("release", withFlag:'c');
@@ -136,6 +142,7 @@ namespace Web
 
         public static bool GistNew { get; set; }
         public static bool GistUpdate { get; set; }
+        public static bool GistOpen { get; set; }
 
         public static Dictionary<string, object> RunScriptArgs = new Dictionary<string, object>();
         public static List<string> RunScriptArgV = new List<string>();
@@ -221,6 +228,12 @@ namespace Web
                     runLispRepl = runSharpApp = true;
                     continue;
                 }
+
+                if (arg == "gist-open" || arg == "open-gist")
+                {
+                    GistOpen = true;
+                    continue;
+                }
                 if (arg == "gist-new")
                 {
                     GistNew = true;
@@ -231,6 +244,7 @@ namespace Web
                     GistUpdate = true;
                     continue;
                 }
+
                 if (arg == "publish" || arg == ".publish")
                 {
                     publish = true;
@@ -1064,9 +1078,11 @@ namespace Web
             }
             else
             {
+#if !NETCOREAPP2_1
                 var gistId = publishUrl.LastRightPart('/');
-                gateway.WriteGistFiles(gistId, files);
+                gateway.WriteGistFiles(gistId, files, Description, deleteMissing:true);
                 $"updated: {publishUrl}".Print();
+#endif
             }
 
             if (isSharpApp)
@@ -1503,6 +1519,7 @@ Usage:
   {tool} new <template> <name>   Create New Project From Template
   {tool} download <user>/<repo>  Download latest GitHub Repo Release
   {tool} get <url>               Download remote file                     (-out <file|dir>)
+  {tool} stream <url>            Stream URL contents to console output
 
   {tool} <lang>                  Update all ServiceStack References in directory (recursive)
   {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
@@ -1540,9 +1557,9 @@ Usage:
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
   {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
   {indt}                         Language File Extensions:
-                                   .ss - #Script source file
-                                   .sc - #Script `code` source file
-                                   .l  - #Script `lisp` source file
+  {indt}                           .ss - #Script source file
+  {indt}                           .sc - #Script `code` source file
+  {indt}                           .l  - #Script `lisp` source file
   {tool} lisp                    Start Lisp REPL
 
   {tool} open                    List of available Sharp Apps
@@ -1560,6 +1577,7 @@ Usage:
   
   {tool} publish                 Publish Current Directory to Gist (requires token)
   
+  {tool} gist-open <gist>        Download and open Gist folder            (-out <dir>)
   {tool} gist-new <dir>          Create new Gist with Directory Files (requires token)
   {tool} gist-update <id> <dir>  Update Gist ID with Directory Files  (requires token)
   
@@ -1723,7 +1741,44 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             }
 
-            if (GistNew)
+            if (GistOpen)
+            {
+                if (Verbose) $"opening gist {string.Join(", ", args)}...".Print();
+
+                var gist = args.Length == 1 ? args[0] : null;
+                if (gist == null)
+                    throw new Exception($"Usage: {tool} gist-open <gist>");
+
+                var dir = !string.IsNullOrEmpty(OutDir)
+                    ? OutDir.Replace("\\", "/").LastRightPart("/").GetSafeFileName()
+                    : gist;
+                var to = GetGistsPath(dir);
+                
+                RegisterStat(tool, gist, "gist-open");
+                
+                if (Verbose) $"Writing gist {gist} to ${to}".Print();
+                WriteGistFile(gist, gistAlias:null, to:to, projectName:null, getUserApproval:null);
+
+                var launchCmd = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                    ? $"start"
+                    : RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+                        ? $"open"
+                        : $"xdg-open";
+                
+                var codePath = ProcessUtils.FindExePath("code");
+                if (!string.IsNullOrEmpty(codePath))
+                {
+                    ProcessUtils.Run(codePath, $"\"{to}\"");
+                }
+                else
+                {
+                    ProcessUtils.Run(launchCmd, $"\"{to}\"");
+                    // ProcessUtils.RunShell($"{launchCmd} \"{to}\"");
+                }
+                
+                return new Instruction { Command = "gist-open", Handled = true };
+            }
+            else if (GistNew)
             {
                 AssertGitHubToken();
 
@@ -1888,7 +1943,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     WriteGistFile(gist, gistAlias:null, to:".", projectName:null, getUserApproval:UserInputYesNo);
                     return new Instruction { Command = "gist", Handled = true };
                 }
-                if (arg == "get")
+                if (arg == "get" || arg == "stream")
                 {
                     var url = args[1];
                     if (!url.IsUrl())
@@ -1896,7 +1951,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                     string fileName = url.LastRightPart('/');
 
-                    RegisterStat(tool, fileName, "get");
+                    RegisterStat(tool, fileName, arg);
                     // checkUpdatesAndQuit = BeginCheckUpdates(tool);
 
                     var bytes = await url.GetBytesFromUrlAsync(requestFilter: req => {
@@ -1920,14 +1975,26 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         }
                     });
 
-                    if (!string.IsNullOrEmpty(OutDir))
+                    if (arg == "get")
                     {
-                        fileName = Directory.Exists(OutDir)
-                            ? Path.Combine(OutDir, fileName)
-                            : OutDir;
+                        if (!string.IsNullOrEmpty(OutDir))
+                        {
+                            fileName = Directory.Exists(OutDir)
+                                ? Path.Combine(OutDir, fileName)
+                                : OutDir;
+                        }
+
+                        await File.WriteAllBytesAsync(Path.GetFullPath(fileName), bytes);
                     }
-                    await File.WriteAllBytesAsync(Path.GetFullPath(fileName), bytes);
-                    return new Instruction { Command = "get", Handled = true };
+                    else if (arg == "stream")
+                    {
+#if !NETCOREAPP2_1
+                        await using var consoleOut = Console.OpenStandardOutput();
+                        await consoleOut.WriteAsync(bytes, 0, bytes.Length);
+#endif
+                    }
+
+                    return new Instruction { Command = arg, Handled = true };
                 }
             }
 
@@ -2219,7 +2286,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
             catch (WebException) // .NET HttpWebRequest doesn't support HTTP/2 yet, try with HttpClient/WinHttpHandler
             {
-#if !NETCORE3
+#if !NETCORE5
                 var handler = new Http2CustomHandler();
                 using var client = new HttpClient(handler);
                 var res = TaskExt.RunSync(async () => await client.GetAsync(typesUrl));
@@ -3372,14 +3439,17 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             "node_modules", //node
             ".dart_tool",   //dart
             "build",        //dart + gradle (.kt/.java)
+            ".build",       //swift
+            "Packages",     //swift
+            "xcuserdata",   //Xcode+swift
             ".gradle",      //gradle (.kt/.java)
             "flutter_build",//flutter
-            "xcuserdata",   //Xcode
             ".gistrun",     //gistrun
             "__pycache__",  //python
         };
         
         public static List<string> ExcludeFileExtensions = new() {
+            ".xcodeproj",
             ".log",
             ".publish",
             ".packages",    //dart pub
@@ -3504,10 +3574,15 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public static List<string> ConvertUrlSchemeToCommands(this string firstArg)
         {
+            var cmd = firstArg.IndexOf("://", StringComparison.Ordinal) >= 0 ? "open" : "run";
+            return ConvertUrlSchemeToCommands(firstArg, cmd);
+        }
+
+        public static List<string> ConvertUrlSchemeToCommands(this string firstArg, string cmd)
+        {
             var hasQs = firstArg.IndexOf('?') >= 0;
             var qs = hasQs ? firstArg.RightPart('?') : null;
-            var cmd = firstArg.IndexOf("://", StringComparison.Ordinal) >= 0 ? "open" : "run";
-            var cmds = new List<string> { cmd, firstArg.RightPart(':').LeftPart('?').Trim('/') };
+            var cmds = new List<string> {cmd, firstArg.RightPart(':').LeftPart('?').Trim('/')};
             if (!string.IsNullOrEmpty(qs))
             {
                 var kvps = QueryHelpers.ParseQuery(qs);
@@ -3519,7 +3594,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         cmds.Add(values);
                 }
             }
-
             return cmds;
         }
 
