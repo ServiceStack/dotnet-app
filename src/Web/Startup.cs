@@ -1065,6 +1065,7 @@ namespace Web
                     : gist.Html_Url;
 
                 $"published to: {htmlUrl}".Print();
+                $"\nview in: https://gist.cafe/{gist.Id}".Print();
 
                 await File.WriteAllTextAsync(".publish", $"gist {htmlUrl}");
 
@@ -1082,6 +1083,7 @@ namespace Web
                 var gistId = publishUrl.LastRightPart('/');
                 gateway.WriteGistFiles(gistId, files, Description, deleteMissing:true);
                 $"updated: {publishUrl}".Print();
+                $"\nview in: https://gist.cafe/{gistId}".Print();
 #endif
             }
 
@@ -1583,7 +1585,6 @@ Usage:
   {indt}                           .l  - #Script `lisp` source file
   {tool} lisp                    Start Lisp REPL
 {additional}
-
   dotnet tool update -g {tool}   Update to latest version
 
 Options:
@@ -1763,16 +1764,46 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     : RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
                         ? $"open"
                         : $"xdg-open";
-                
-                var codePath = ProcessUtils.FindExePath("code");
-                if (!string.IsNullOrEmpty(codePath))
+
+                var gistExe = Environment.GetEnvironmentVariable("GIST_EXE");
+                if (!string.IsNullOrEmpty(gistExe))
                 {
-                    ProcessUtils.Run(codePath, $"\"{to}\"");
+                    ProcessUtils.Run(gistExe, $"\"{to}\"");
                 }
                 else
                 {
-                    ProcessUtils.Run(launchCmd, $"\"{to}\"");
-                    // ProcessUtils.RunShell($"{launchCmd} \"{to}\"");
+                    var codePath = ProcessUtils.FindExePath("code");
+                    if (string.IsNullOrEmpty(codePath))
+                    {
+                        if (Env.IsWindows)
+                        {
+                            var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+                            var winPath = !string.IsNullOrEmpty(localAppData) 
+                                ? Path.Combine(localAppData, "Programs", "Microsoft VS Code", "Code.exe")
+                                : null;
+                            if (winPath != null && File.Exists(winPath))
+                                codePath = winPath;
+                        }
+                        else
+                        {
+                            if (string.IsNullOrEmpty(codePath) && File.Exists("/usr/local/bin/code")) //macOS
+                                codePath = "/usr/local/bin/code";
+                            if (string.IsNullOrEmpty(codePath) && File.Exists("/usr/bin/code")) //Ubuntu
+                                codePath = "/usr/bin/code";
+                            if (string.IsNullOrEmpty(codePath) && File.Exists("/snap/bin/code")) //Snap
+                                codePath = "/snap/bin/code";
+                        }
+                    }
+                    
+                    if (!string.IsNullOrEmpty(codePath))
+                    {
+                        ProcessUtils.Run(codePath, $"\"{to}\"");
+                    }
+                    else
+                    {
+                        ProcessUtils.Run(launchCmd, $"\"{to}\"");
+                        // ProcessUtils.RunShell($"{launchCmd} \"{to}\"");
+                    }
                 }
                 
                 return new Instruction { Command = "gist-open", Handled = true };
