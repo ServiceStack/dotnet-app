@@ -1554,11 +1554,6 @@ Usage:
   {tool} proto-<lang> <file|dir> Update gRPC .proto and re-gen language   (-out <dir>)
   {tool} proto-<lang>            Update all gRPC .proto's and re-gen lang (-out <dir>)
 
-  {tool} alias                   Show all local gist aliases (for usage in mix or app's)
-  {tool} alias <alias>           Print local alias value
-  {tool} alias <alias> <gist-id> Set local alias with Gist Id or Gist URL
-  {tool} unalias <alias>         Remove local alias
-
   {tool} open                    List of available Sharp Apps
   {tool} open <app>              Install and run Sharp App
 
@@ -1572,6 +1567,11 @@ Usage:
   {tool} uninstall               List Installed Sharp Apps
   {tool} uninstall <app>         Uninstall Sharp App
   
+  {tool} alias                   Show all local gist aliases (for usage in mix or app's)
+  {tool} alias <alias>           Print local alias value
+  {tool} alias <alias> <gist-id> Set local alias with Gist Id or Gist URL
+  {tool} unalias <alias>         Remove local alias
+
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
 
