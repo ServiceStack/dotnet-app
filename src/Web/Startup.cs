@@ -1519,7 +1519,19 @@ Usage:
   {tool} new <template> <name>   Create New Project From Template
   {tool} download <user>/<repo>  Download latest GitHub Repo Release
   {tool} get <url>               Download remote file                     (-out <file|dir>)
-  {tool} stream <url>            Stream URL contents to console output
+  {tool} stream <url>            Stream URL contents to console stdout
+  
+  {tool} mix                     Show available gists to mixin            (Alias '+')
+  {tool} mix <name>              Write gist files locally, e.g:           (Alias +init)
+  {tool} mix init                Create empty .NET Core ServiceStack App
+  {tool} mix [tag]               Search available gists
+  {tool} mix <gist-url>          Write all Gist text files to current directory
+  {tool} gist <gist-id>          Write all Gist text files to current directory
+
+  {tool} publish                 Publish Current Directory to Gist    (requires token)
+  {tool} gist-open <gist>        Download and open Gist folder            (-out <dir>)
+  {tool} gist-new <dir>          Create new Gist with Directory Files (requires token)
+  {tool} gist-update <id> <dir>  Update Gist ID with Directory Files  (requires token)
 
   {tool} <lang>                  Update all ServiceStack References in directory (recursive)
   {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
@@ -1542,25 +1554,10 @@ Usage:
   {tool} proto-<lang> <file|dir> Update gRPC .proto and re-gen language   (-out <dir>)
   {tool} proto-<lang>            Update all gRPC .proto's and re-gen lang (-out <dir>)
 
-  {tool} mix                     Show available gists to mixin            (Alias '+')
-  {tool} mix <name>              Write gist files locally, e.g:           (Alias +init)
-  {tool} mix init                Create empty .NET Core ServiceStack App
-  {tool} mix [tag]               Search available gists
-  {tool} mix <gist-url>          Write all Gist text files to current directory
-  {tool} gist <gist-id>          Write all Gist text files to current directory
-
   {tool} alias                   Show all local gist aliases (for usage in mix or app's)
   {tool} alias <alias>           Print local alias value
   {tool} alias <alias> <gist-id> Set local alias with Gist Id or Gist URL
   {tool} unalias <alias>         Remove local alias
-
-  {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
-  {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
-  {indt}                         Language File Extensions:
-  {indt}                           .ss - #Script source file
-  {indt}                           .sc - #Script `code` source file
-  {indt}                           .l  - #Script `lisp` source file
-  {tool} lisp                    Start Lisp REPL
 
   {tool} open                    List of available Sharp Apps
   {tool} open <app>              Install and run Sharp App
@@ -1575,14 +1572,16 @@ Usage:
   {tool} uninstall               List Installed Sharp Apps
   {tool} uninstall <app>         Uninstall Sharp App
   
-  {tool} publish                 Publish Current Directory to Gist (requires token)
-  
-  {tool} gist-open <gist>        Download and open Gist folder            (-out <dir>)
-  {tool} gist-new <dir>          Create new Gist with Directory Files (requires token)
-  {tool} gist-update <id> <dir>  Update Gist ID with Directory Files  (requires token)
-  
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
+
+  {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
+  {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
+  {indt}                         Language File Extensions:
+  {indt}                           .ss - #Script source file
+  {indt}                           .sc - #Script `code` source file
+  {indt}                           .l  - #Script `lisp` source file
+  {tool} lisp                    Start Lisp REPL
 {additional}
 
   dotnet tool update -g {tool}   Update to latest version
