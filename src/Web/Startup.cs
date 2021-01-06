@@ -1750,7 +1750,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     throw new Exception($"Usage: {tool} gist-open <gist>");
 
                 var dir = !string.IsNullOrEmpty(OutDir)
-                    ? OutDir.Replace("\\", "/").LastRightPart("/").GetSafeFileName()
+                    ? OutDir.Replace("\\", "/").LastRightPart("/").GetSafeFileName().SafeSubstring(0,100)
                     : gist;
                 var to = GetGistsPath(dir);
                 
