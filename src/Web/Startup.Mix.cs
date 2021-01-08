@@ -33,6 +33,7 @@ namespace Web
 
         public static bool ForceApproval { get; set; }
         static string[] ForceArgs = CreateArgs("force", withFlag:'f');
+        static string[] YesArgs = CreateArgs("yes", withFlag:'y');
 
         public static bool IgnoreSslErrors { get; set; }
         private static string[] IgnoreSslErrorsArgs = {"/ignore-ssl-errors", "--ignore-ssl-errors"};
@@ -1026,9 +1027,10 @@ namespace Web
                     GistLinksId = args[++i];
                     continue;
                 }
-                if (ForceArgs.Contains(arg))
+                if (ForceArgs.Contains(arg) || YesArgs.Contains(arg))
                 {
                     ForceApproval = true;
+                    Silent = true;
                     continue;
                 }
                 if (IgnoreSslErrorsArgs.Contains(arg))

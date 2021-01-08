@@ -1164,9 +1164,10 @@ namespace Web
                 return true;
             }
 
-            if (ForceArgs.Contains(arg))
+            if (ForceArgs.Contains(arg) || YesArgs.Contains(arg))
             {
                 ForceApproval = true;
+                Silent = true;
                 return true;
             }
 
@@ -1520,7 +1521,7 @@ Usage:
   {tool} new                     List available Project Templates
   {tool} new <template> <name>   Create New Project From Template
   {tool} download <user>/<repo>  Download latest GitHub Repo Release
-  {tool} get <url>               Download remote file                     (-out <file|dir>)
+  {tool} get <url>               Download URL to file                     (-out <file|dir>)
   {tool} stream <url>            Stream URL contents to console stdout
   
   {tool} mix                     Show available gists to mixin            (Alias '+')
@@ -1530,10 +1531,10 @@ Usage:
   {tool} mix <gist-url>          Write all Gist text files to current directory
   {tool} gist <gist-id>          Write all Gist text files to current directory
 
-  {tool} publish                 Publish Current Directory to Gist    (requires token)
+  {tool} publish                 Publish Current Directory to Gist        (requires token)
   {tool} gist-open <gist>        Download and open Gist folder            (-out <dir>)
-  {tool} gist-new <dir>          Create new Gist with Directory Files (requires token)
-  {tool} gist-update <id> <dir>  Update Gist ID with Directory Files  (requires token)
+  {tool} gist-new <dir>          Create new Gist with Directory Files     (requires token)
+  {tool} gist-update <id> <dir>  Update Gist ID with Directory Files      (requires token)
 
   {tool} <lang>                  Update all ServiceStack References in directory (recursive)
   {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
@@ -1593,7 +1594,7 @@ Options:
     -d, --debug               Run in Debug mode for Development
     -r, --release             Run in Release mode for Production
     -s, --source              Change GitHub Source for App Directory
-    -f, --force               Quiet mode, always approve, never prompt
+    -f, --force               Quiet mode, always approve, never prompt   (Alias 'y')
         --token               Use GitHub Auth Token 
         --clean               Delete downloaded caches
         --verbose             Display verbose logging
