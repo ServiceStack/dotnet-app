@@ -1532,9 +1532,9 @@ Usage:
   {tool} gist <gist-id>          Write all Gist text files to current directory
 
   {tool} publish                 Publish Current Directory to Gist        (requires token)
-  {tool} gist-open <gist>        Download and open Gist folder            (-out <dir>)
   {tool} gist-new <dir>          Create new Gist with Directory Files     (requires token)
   {tool} gist-update <id> <dir>  Update Gist ID with Directory Files      (requires token)
+  {tool} gist-open <gist>        Download and open Gist folder            (-out <dir>)
 
   {tool} <lang>                  Update all ServiceStack References in directory (recursive)
   {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
