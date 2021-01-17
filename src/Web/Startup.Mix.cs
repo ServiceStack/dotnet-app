@@ -134,31 +134,30 @@ namespace Web
 
             if (tool.EndsWith("mix"))
             {
-                $"   Usage:  mix <name> <name> ...".Print();
+                $"   Usage: {tool} <name> <name> ...".Print();
 
                 "".Print();
 
-                $"  Search:  mix [tag] Available tags: {string.Join(", ", tags)}".Print();
+                $"  Search: {tool} [tag] Available tags: {string.Join(", ", tags)}".Print();
 
                 "".Print();
 
-                $"Advanced:  mix ?".Print();
+                $"Advanced: {tool} ?".Print();
             }
             else
             {
-                $" Usage:  {tool} +<name>".Print();
-                $"         {tool} +<name> <UseName>".Print();
+                $" Usage: {tool} +<name>".Print();
+                $"        {tool} +<name> <UseName>".Print();
 
                 "".Print();
 
                 var tagSearch = "[tag]";
-                $"Search:  {tool} + {tagSearch.PadRight(Math.Max(padName - 9, 0), ' ')} Available tags: {string.Join(", ", tags)}"
+                $"Search: {tool} + {tagSearch.PadRight(Math.Max(padName - 9, 0), ' ')} Available tags: {string.Join(", ", tags)}"
                     .Print();
             }
         }
 
-        private static readonly ConcurrentDictionary<string, List<GistLink>> GistLinksCache =
-            new ConcurrentDictionary<string, List<GistLink>>();
+        private static readonly ConcurrentDictionary<string, List<GistLink>> GistLinksCache = new();
 
         private static List<GistLink> GetGistApplyLinks() => GetGistLinks(GistLinksId, "mix.md");
 
@@ -964,56 +963,56 @@ namespace Web
                     
                     "View all published gists:  ".Print();
                     
-                    $"   mix".Print();
+                    $"   {tool}".Print();
                     
                     "".Print();
                     
                     "Simple Usage:  ".Print();
                     
-                    $"   mix <name> <name> ...".Print();
+                    $"   {tool} <name> <name> ...".Print();
                     
                     "".Print();
 
                     "Mix using numbered list index instead:".Print();
                     
-                    $"   mix 1 3 5 ...".Print();
+                    $"   {tool} 1 3 5 ...".Print();
                     
                     "".Print();
 
                     "Mix file contents from gist URL:".Print();
                     
-                    $"   mix <gist-url>".Print();
+                    $"   {tool} <gist-url>".Print();
                     
                     "".Print();
 
                     "Delete previously mixed gists:".Print();
                     
-                    $"   mix -delete <name> <name> ...".Print();
+                    $"   {tool} -delete <name> <name> ...".Print();
                     
                     "".Print();
 
                     $"Use custom project name instead of current folder name (replaces MyApp):".Print();
 
-                    $"   mix -name ProjectName <name> <name> ...".Print();
+                    $"   {tool} -name ProjectName <name> <name> ...".Print();
                     
                     "".Print();
 
                     $"Replace additional tokens before mixing:".Print();
 
-                    $"   mix -replace term=with <name> <name> ...".Print();
+                    $"   {tool} -replace term=with <name> <name> ...".Print();
 
                     "".Print();
 
                     $"Multi replace with escaped string example:".Print();
 
-                    $"   mix -replace term=with -replace \"This Phrase\"=\"With This\" <name> <name> ...".Print();
+                    $"   {tool} -replace term=with -replace \"This Phrase\"=\"With This\" <name> <name> ...".Print();
                     
                     "".Print();
 
                     $"Only display available gists with a specific tag:".Print();
 
-                    $"  mix [tag]".Print();
-                    $"  mix [tag1,tag2]".Print();
+                    $"  {tool} [tag]".Print();
+                    $"  {tool} [tag1,tag2]".Print();
                     
                     return false;
                 }
