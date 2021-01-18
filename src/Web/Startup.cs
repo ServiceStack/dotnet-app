@@ -36,6 +36,7 @@ using ServiceStack.Azure.Storage;
 using ServiceStack.Desktop;
 using ServiceStack.Html;
 using ServiceStack.Logging;
+using ServiceStack.Pcl;
 using ServiceStack.Script;
 
 namespace Web
@@ -1750,13 +1751,41 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (gist == null)
                     throw new Exception($"Usage: {tool} gist-open <gist>");
 
+                RegisterStat(tool, gist, "gist-open");
+
+                var isEncodedUrl = gist.IndexOf('%') >= 0;
+                var isUrl = isEncodedUrl || gist.IndexOf('/') >= 0;
+                var url = !isUrl
+                    ? null
+                    : isEncodedUrl
+                        ? gist.UrlDecode()
+                        : gist.StartsWith("http.") || gist.StartsWith("https.")
+                            ? gist.LeftPart('.') + "://" + gist.RightPart('.')
+                            : "https://" + gist;
+
+                var qs = url != null && url.IndexOf('?') >= 0
+                    ? PclExportClient.Instance.ParseQueryString(url.RightPart('?'))
+                    : null;
+                
                 var dir = !string.IsNullOrEmpty(OutDir)
                     ? OutDir.Replace("\\", "/").LastRightPart("/").GetSafeFileName().SafeSubstring(0,100)
-                    : gist;
-                var to = GetGistsPath(dir);
-                
-                RegisterStat(tool, gist, "gist-open");
-                
+                    : !isUrl 
+                        ? gist
+                        : qs == null
+                            ? url.CountOccurrencesOf('/') >= 4
+                                ? string.Join(" ", url.RightPart("://").Split('/')
+                                    .Skip(2).Select(UnwrapTerm))
+                                : string.Join(" ", url.RightPart("://").Split('/')
+                                    .Select(UnwrapTerm))
+                            : (UnwrapTerm(qs["lang"]) + " " + UnwrapTerm(qs["baseurl"]) + " " + qs["request"]).Trim();
+
+                if (string.IsNullOrEmpty(dir))
+                    dir = string.Join(" ", url.RightPart("://").Split('/').Select(UnwrapTerm));
+
+                var to = GetGistsPath(dir.GetSafeFileName());
+
+                if (url != null)
+                    gist = url;
                 if (Verbose) $"Writing gist {gist} to ${to}".Print();
                 WriteGistFile(gist, gistAlias:null, to:to, projectName:null, getUserApproval:null);
 
@@ -2294,6 +2323,30 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"typescript.d", "dtos.d.ts"},
             {"proto", "services.proto"},
         };
+
+        private static readonly Dictionary<string,string> LangNames = new Dictionary<string, string>
+        {
+            {"csharp", "C#"},
+            {"typescript", "TypeScript"},
+            {"swift", "Swift"},
+            {"java", "Java"},
+            {"kotlin", "Kotlin"},
+            {"dart", "Dart"},
+            {"fsharp", "F#"},
+            {"vbnet", "VB"},
+            {"typescript.d", "TypeScript Definition"},
+            {"proto", "Proto"},
+        };
+
+        private static string UnwrapTerm(string term) => string.IsNullOrEmpty(term)
+            ? null
+            : LangNames.TryGetValue(term, out var name)
+                ? name
+                : term.IndexOf("://", StringComparison.Ordinal) >= 0
+                    ? term.RightPart("://")
+                    : term.StartsWith("http.") || term.StartsWith("https.")
+                        ? term.RightPart('.')
+                        : term;
 
         public class Http2CustomHandler : WinHttpHandler
         {
@@ -3477,6 +3530,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             "flutter_build",//flutter
             ".gistrun",     //gistrun
             "__pycache__",  //python
+            "target",       //clojure leiningen
         };
         
         public static List<string> ExcludeFileExtensions = new() {
@@ -3487,6 +3541,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             "pubspec.lock", //dart lock
             ".iml",         //IDEA IDE
             ".gradletasknamecache", //gradle
+            ".lein-repl-history",   //clojure leiningen repl
+            ".nrepl-port",          //clojure leiningen repl
         };
 
         public static List<string> GetExcludedFolderNames(string workingDir=null)

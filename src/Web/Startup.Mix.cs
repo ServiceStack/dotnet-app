@@ -686,14 +686,25 @@ namespace Web
         public static void WriteGistFile(string gistId, string gistAlias, string to, string projectName, Func<bool> getUserApproval = null)
         {
             projectName = SanitizeProjectName(projectName);
-            var gistLinkUrl = $"https://gist.github.com/{gistId}";
-            if (gistId.IsUrl())
+
+            Dictionary<string, string> gistFiles;
+            string gistLinkUrl;
+            if (!gistId.IsUrl() || gistId.IndexOf("github.com", StringComparison.Ordinal) >= 0)
+            {
+                gistLinkUrl = $"https://gist.github.com/{gistId}";
+                if (gistId.IsUrl())
+                {
+                    gistLinkUrl = gistId;
+                    gistId = gistId.LastRightPart('/');
+                }
+                gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
+            }
+            else
             {
                 gistLinkUrl = gistId;
-                gistId = gistId.LastRightPart('/');
+                gistFiles = GitHubUtils.Gateway.GetGistFilesFromUrl(gistId);
             }
             
-            var gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
             var resolvedFiles = new List<KeyValuePair<string,string>>();
             KeyValuePair<string, string>? initFile = null;
 
@@ -1291,40 +1302,52 @@ namespace Web
             return apiUrl.GetJsonFromUrl(req => req.ApplyRequestFilters());
         }
 
-        public static readonly ConcurrentDictionary<string, Dictionary<string, string>> GistFilesCache =
-            new ConcurrentDictionary<string, Dictionary<string, string>>();
+        public static readonly ConcurrentDictionary<string, Dictionary<string, string>> GistFilesCache = new();
 
         public static Dictionary<string, string> GetGistFiles(this GitHubGateway gateway, string gistId)
         {
             return GistFilesCache.GetOrAdd(gistId, gistKey => {
                 var json = gateway.GetJson($"/gists/{gistKey}");
-                var response = JSON.parse(json);
-                if (response is Dictionary<string, object> obj &&
-                    obj.TryGetValue("files", out var oFiles) &&
-                    oFiles is Dictionary<string, object> files)
-                {
-                    var to = new Dictionary<string, string>();
-                    foreach (var entry in files)
-                    {
-                        var meta = (Dictionary<string, object>) entry.Value;
-                        var contents = (string) meta["content"];
-                        var size = (int) meta["size"];
-                        if ((string.IsNullOrEmpty(contents) || contents.Length < size) &&
-                            meta["truncated"] is bool b && b)
-                        {
-                            contents = Startup.DownloadCachedStringFromUrl((string)meta["raw_url"]);
-                        }
-                        
-                        to[entry.Key] = contents;
-                    }
-
-                    return to;
-                }
-
-                throw new NotSupportedException($"Invalid gist response returned for '{gistKey}'");
+                return FromJsonGist(json, gistKey);
             });
         }
-        
+
+        public static Dictionary<string, string> GetGistFilesFromUrl(this GitHubGateway gateway, string gistUrl)
+        {
+            return GistFilesCache.GetOrAdd(gistUrl, gistKey => {
+                var json = gistUrl.GetJsonFromUrl(req => req.UserAgent = "ServiceStack");
+                return FromJsonGist(json, gistKey);
+            });
+        }
+
+        public static Dictionary<string, string> FromJsonGist(string json, string gistRef)
+        {
+            var response = JSON.parse(json);
+            if (response is Dictionary<string, object> obj &&
+                obj.TryGetValue("files", out var oFiles) &&
+                oFiles is Dictionary<string, object> files)
+            {
+                var to = new Dictionary<string, string>();
+                foreach (var entry in files)
+                {
+                    var meta = (Dictionary<string, object>) entry.Value;
+                    var contents = (string) meta["content"];
+                    var size = (int) meta["size"];
+                    if ((string.IsNullOrEmpty(contents) || contents.Length < size) &&
+                        meta["truncated"] is bool b && b)
+                    {
+                        contents = Startup.DownloadCachedStringFromUrl((string) meta["raw_url"]);
+                    }
+
+                    to[entry.Key] = contents;
+                }
+
+                return to;
+            }
+
+            throw new NotSupportedException($"Invalid gist response returned for '{gistRef}'");
+        }
+
         public static string ToGistId(this string url) => url?.LastRightPart('/');
 
         public static void DownloadFile(string downloadUrl, string fileName)
