@@ -3,7 +3,7 @@
     <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5</TargetFramework>
-    <Version>5.1.8</Version>
+    <Version>5.1.9</Version>
     <RuntimeIdentifiers>win-x64;ubuntu.16.10-x64</RuntimeIdentifiers>
     <Platforms>x64</Platforms>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
