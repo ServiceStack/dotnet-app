@@ -929,15 +929,47 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_mix_gist_version()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            var host = (await Startup.CreateWebHost("x", new[] {
+                "mix",
+                "c71b3f0123b3d9d08c1b11c98c2ff379/54e50e17bb9486eb23469c0bee77d9c518d32a37"
+            }))?.Build();
+        }
+
+        [Test]
+        public async Task Can_mix_gist_version_url()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            var host = (await Startup.CreateWebHost("x", new[] {
+                "mix",
+                "https://gist.github.com/gistlyn/c71b3f0123b3d9d08c1b11c98c2ff379/54e50e17bb9486eb23469c0bee77d9c518d32a37"
+            }))?.Build();
+        }
+
+        [Test]
         public async Task Can_open_alternative_gist()
         {
             //gist://localhost:5001/serviceref/csharp/GetTechnology/techstacks.io
             DeleteCreateAndSetDirectory("wip\\TestRepo");
-            // var url = "gist://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
+             // var url = "gist://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
             //var url = "gist://localhost:5001/serviceref/csharp/http.localhost:8000/GetTechnology";
-            var url = "https%3A%2F%2Flocalhost%3A5001%2Fserviceref%2Fcsharp%3Fbaseurl%3Dhttp%3A%2F%2Flocalhost%3A8000%26request%3DGetTechnology";
+            var url = "https%3A%2F%2Flocalhost%3A5001%2Fserviceref%2Fcsharp%3Fbaseurl%3Dhttp%3A%2F%2Ftechstacks.io%26request%3DGetTechnology";
             var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
             var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
+        public async Task Can_mix_alternative_gist_url()
+        {
+            //gist://localhost:5001/serviceref/csharp/GetTechnology/techstacks.io
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            var url = "https://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
+            var host = (await Startup.CreateWebHost("x", new[] {
+                "mix",
+                url
+            }))?.Build();
         }
     }
 }

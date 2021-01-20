@@ -280,14 +280,20 @@ namespace Web
         public static bool ApplyGists(string tool, string[] gistAliases, string projectName = null)
         {
             projectName ??= new DirectoryInfo(Environment.CurrentDirectory).Name;
-            var links = GetGistApplyLinks();
-            var localAliases = GetGistAliases();
-            
-            gistAliases = ResolveGistAliases(gistAliases, links);
 
+            var unhandledGistAliases = new List<string>();
+            
             foreach (var gistAlias in gistAliases)
             {
-                var isGistId = (gistAlias.Length == 20 || gistAlias.Length == 32) && gistAlias.IndexOf('-') < 0;
+                var testGistId = gistAlias.IndexOfAny(new[] {'-', '.', ':'}) >= 0
+                    ? null
+                    : gistAlias.IndexOf('/') >= 0
+                        ? gistAlias.RightPart('/').Length == 40
+                            ? gistAlias.LeftPart('/')
+                            : null
+                        : gistAlias;
+                
+                var isGistId = testGistId != null && (testGistId.Length == 20 || testGistId.Length == 32);
                 if (isGistId)
                 {
                     WriteGistFile($"https://gist.github.com/{gistAlias}", gistAlias, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
@@ -295,30 +301,41 @@ namespace Web
                     continue;
                 }
                 
-                if (gistAlias.StartsWith("https://gist.github.com/"))
+                if (gistAlias.StartsWith("https://") || gistAlias.StartsWith("http://"))
                 {
                     WriteGistFile(gistAlias, gistAlias, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
                     ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
                     continue;
                 }
-
-                if (localAliases.Exists(gistAlias))
-                {
-                    var aliasGistId = localAliases.GetRequiredString(gistAlias);
-                    WriteGistFile($"https://gist.github.com/{aliasGistId}", aliasGistId, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
-                    continue;
-                }
                 
-                var gistLink = GistLink.Get(links, gistAlias);
-                if (gistLink == null)
+                unhandledGistAliases.Add(gistAlias);
+            }
+
+            if (unhandledGistAliases.Count > 0)
+            {
+                var links = GetGistApplyLinks();
+                var localAliases = GetGistAliases();
+                var unhandledAliases = ResolveGistAliases(unhandledGistAliases.ToArray(), links);
+                foreach (var gistAlias in unhandledAliases)
                 {
-                    $"No match found for '{gistAlias}', available gists:".Print();
-                    PrintGistLinks(tool, links);
-                    return false;
-                }
+                    if (localAliases.Exists(gistAlias))
+                    {
+                        var aliasGistId = localAliases.GetRequiredString(gistAlias);
+                        WriteGistFile($"https://gist.github.com/{aliasGistId}", aliasGistId, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
+                        continue;
+                    }
+                
+                    var gistLink = GistLink.Get(links, gistAlias);
+                    if (gistLink == null)
+                    {
+                        $"No match found for '{gistAlias}', available gists:".Print();
+                        PrintGistLinks(tool, links);
+                        return false;
+                    }
                             
-                WriteGistFile(gistLink.Url, gistAlias, to: OutDir ?? gistLink.To, projectName: projectName, getUserApproval: UserInputYesNo);
-                ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
+                    WriteGistFile(gistLink.Url, gistAlias, to: OutDir ?? gistLink.To, projectName: projectName, getUserApproval: UserInputYesNo);
+                    ForceApproval = true; //If written once user didn't cancel, assume approval for remaining gists
+                }
             }
             return true;
         }
@@ -689,14 +706,24 @@ namespace Web
 
             Dictionary<string, string> gistFiles;
             string gistLinkUrl;
-            if (!gistId.IsUrl() || gistId.IndexOf("github.com", StringComparison.Ordinal) >= 0)
+            if (!gistId.IsUrl())
             {
                 gistLinkUrl = $"https://gist.github.com/{gistId}";
-                if (gistId.IsUrl())
-                {
-                    gistLinkUrl = gistId;
-                    gistId = gistId.LastRightPart('/');
-                }
+                gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
+            }
+            else if (gistId.StartsWith("https://gist.github.com/"))
+            {
+                gistLinkUrl = gistId;
+                var gistParts = gistId.Substring("https://gist.github.com/".Length).Split('/');
+                if (gistParts.Length == 3)
+                    gistId = string.Join("/", gistParts.Skip(1));
+                else if (gistParts.Length == 2)
+                    gistId = gistParts[0].Length == 20 || gistParts[0].Length == 32
+                        ? string.Join("/", gistParts)
+                        : string.Join("/", gistParts.Skip(1));
+                else if (gistParts.Length == 1)
+                    gistId = gistParts[0];
+                else throw new Exception($"Invalid Gist URL '{gistId}'");
                 gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
             }
             else
