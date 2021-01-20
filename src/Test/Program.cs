@@ -971,5 +971,18 @@ Content-Disposition: form-data; name=""EvaluateCode""
                 url
             }))?.Build();
         }
+
+        [Test]
+        public async Task Can_delete_mix_alternative_gist_url()
+        {
+            //gist://localhost:5001/serviceref/csharp/GetTechnology/techstacks.io
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            var url = "https://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
+            var host = (await Startup.CreateWebHost("x", new[] {
+                "mix",
+                "-delete",
+                url
+            }))?.Build();
+        }
     }
 }

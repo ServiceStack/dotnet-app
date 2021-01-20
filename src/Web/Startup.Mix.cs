@@ -285,15 +285,7 @@ namespace Web
             
             foreach (var gistAlias in gistAliases)
             {
-                var testGistId = gistAlias.IndexOfAny(new[] {'-', '.', ':'}) >= 0
-                    ? null
-                    : gistAlias.IndexOf('/') >= 0
-                        ? gistAlias.RightPart('/').Length == 40
-                            ? gistAlias.LeftPart('/')
-                            : null
-                        : gistAlias;
-                
-                var isGistId = testGistId != null && (testGistId.Length == 20 || testGistId.Length == 32);
+                var isGistId = IsGistId(gistAlias);
                 if (isGistId)
                 {
                     WriteGistFile($"https://gist.github.com/{gistAlias}", gistAlias, to: OutDir ?? ".", projectName: projectName, getUserApproval: UserInputYesNo);
@@ -340,6 +332,18 @@ namespace Web
             return true;
         }
 
+        private static bool IsGistId(string gistAlias)
+        {
+            var testGistId = gistAlias.IndexOfAny(new[] {'-', '.', ':'}) >= 0
+                ? null
+                : gistAlias.IndexOf('/') >= 0
+                    ? gistAlias.RightPart('/').Length == 40
+                        ? gistAlias.LeftPart('/')
+                        : null
+                    : gistAlias;
+            return testGistId != null && (testGistId.Length == 20 || testGistId.Length == 32);
+        }
+
         public static bool DeleteGists(string tool, string[] gistAliases, string projectName)
         {
             projectName ??= new DirectoryInfo(Environment.CurrentDirectory).Name;
@@ -350,52 +354,51 @@ namespace Web
 
             var sb = new StringBuilder();
             var allResolvedFiles = new List<string>();
-            string gistId;
-            string gistLinkUrl;
-            string to = ".";
             
             foreach (var gistAlias in gistAliases)
             {
-                if (!gistAlias.StartsWith("https://gist.github.com"))
-                {
-                    if (localAliases.Exists(gistAlias))
-                    {
-                        gistId = localAliases.GetRequiredString(gistAlias);
-                        gistLinkUrl = $"https://gist.github.com/{gistId}";
-                        to = ".";
-                    }
-                    else
-                    {
-                        var gistLink = GistLink.Get(links, gistAlias);
-                        if (gistLink == null)
-                        {
-                            $"No match found for '{gistAlias}', available gists:".Print();
-                            PrintGistLinks(tool, links);
-                            return false;
-                        }
+                string to = ".";
 
-                        gistId = gistLink.Url;
-                        gistLinkUrl = $"https://gist.github.com/{gistId}";
-                        if (gistId.IsUrl())
-                        {
-                            gistLinkUrl = gistId;
-                            gistId = gistLinkUrl.LastRightPart('/');
-                        }
-                        to = gistLink.To;
-                    }
+                string gistId = null;
+                string gistLinkUrl = null;
+                Dictionary<string, string> gistFiles = null;
+
+                var isGistId = IsGistId(gistAlias);
+                if (isGistId)
+                {
+                    gistFiles = GetGistFiles(gistAlias, out gistLinkUrl);
+                }
+                else if (gistAlias.StartsWith("https://") || gistAlias.StartsWith("http://"))
+                {
+                    gistFiles = GetGistFiles(gistAlias, out gistLinkUrl);
                 }
                 else
                 {
-                    gistLinkUrl = gistAlias;
-                    gistId = gistLinkUrl.LastRightPart('/');
+                    var gistLink = GistLink.Get(links, gistAlias);
+                    if (gistLink == null)
+                    {
+                        $"No match found for '{gistAlias}', available gists:".Print();
+                        PrintGistLinks(tool, links);
+                        return false;
+                    }
+
+                    gistId = gistLink.GistId;
+                    gistLinkUrl = gistLink.Url;
+                    if (gistId.IsUrl())
+                    {
+                        gistLinkUrl = gistId;
+                        gistId = gistLinkUrl.LastRightPart('/');
+                    }
+                    to = gistLink.To;
+
+                    gistFiles = GetGistFiles(gistLink.GistId, out gistLinkUrl);
                 }
 
                 var alias = !string.IsNullOrEmpty(gistAlias)
                     ? $"'{gistAlias}' "
                     : "";
-                var exSuffix = $" required by {alias}{gistLinkUrl}";
 
-                var gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
+                var exSuffix = $" required by {alias}{gistLinkUrl}";
                 var basePath = ResolveBasePath(to, exSuffix);
 
                 var resolvedFiles = new List<string>();
@@ -704,34 +707,8 @@ namespace Web
         {
             projectName = SanitizeProjectName(projectName);
 
-            Dictionary<string, string> gistFiles;
-            string gistLinkUrl;
-            if (!gistId.IsUrl())
-            {
-                gistLinkUrl = $"https://gist.github.com/{gistId}";
-                gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
-            }
-            else if (gistId.StartsWith("https://gist.github.com/"))
-            {
-                gistLinkUrl = gistId;
-                var gistParts = gistId.Substring("https://gist.github.com/".Length).Split('/');
-                if (gistParts.Length == 3)
-                    gistId = string.Join("/", gistParts.Skip(1));
-                else if (gistParts.Length == 2)
-                    gistId = gistParts[0].Length == 20 || gistParts[0].Length == 32
-                        ? string.Join("/", gistParts)
-                        : string.Join("/", gistParts.Skip(1));
-                else if (gistParts.Length == 1)
-                    gistId = gistParts[0];
-                else throw new Exception($"Invalid Gist URL '{gistId}'");
-                gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
-            }
-            else
-            {
-                gistLinkUrl = gistId;
-                gistFiles = GitHubUtils.Gateway.GetGistFilesFromUrl(gistId);
-            }
-            
+            var gistFiles = GetGistFiles(gistId, out var gistLinkUrl);
+
             var resolvedFiles = new List<KeyValuePair<string,string>>();
             KeyValuePair<string, string>? initFile = null;
 
@@ -901,6 +878,37 @@ namespace Web
             }
         }
 
+        public static Dictionary<string, string> GetGistFiles(string gistId, out string gistLinkUrl)
+        {
+            Dictionary<string, string> gistFiles;
+            if (!gistId.IsUrl())
+            {
+                gistLinkUrl = $"https://gist.github.com/{gistId}";
+                gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
+            }
+            else if (gistId.StartsWith("https://gist.github.com/"))
+            {
+                gistLinkUrl = gistId;
+                var gistParts = gistId.Substring("https://gist.github.com/".Length).Split('/');
+                if (gistParts.Length == 3)
+                    gistId = string.Join("/", gistParts.Skip(1));
+                else if (gistParts.Length == 2)
+                    gistId = gistParts[0].Length == 20 || gistParts[0].Length == 32
+                        ? string.Join("/", gistParts)
+                        : string.Join("/", gistParts.Skip(1));
+                else if (gistParts.Length == 1)
+                    gistId = gistParts[0];
+                else throw new Exception($"Invalid Gist URL '{gistId}'");
+                gistFiles = GitHubUtils.Gateway.GetGistFiles(gistId);
+            }
+            else
+            {
+                gistLinkUrl = gistId;
+                gistFiles = GitHubUtils.Gateway.GetGistFilesFromUrl(gistId);
+            }
+
+            return gistFiles;
+        }
 
         public static Process PipeProcess(string fileName, string arguments, string workDir = null, Action fn = null)
         {
