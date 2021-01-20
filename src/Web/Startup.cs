@@ -135,11 +135,14 @@ namespace Web
         
         static string[] PathArgs = CreateArgs("path");
 
+        public static string[] EvalArgs = CreateArgs("eval", withFlag:'e');
+
         public static string[] Includes = { };
         public static string PathArg { get; set; }
 
         public static string RunScript { get; set; }
         public static bool WatchScript { get; set; }
+        public static string EvalScript { get; set; }
 
         public static bool GistNew { get; set; }
         public static bool GistUpdate { get; set; }
@@ -227,6 +230,20 @@ namespace Web
                 if (arg == "lisp")
                 {
                     runLispRepl = runSharpApp = true;
+                    continue;
+                }
+                if (EvalArgs.Contains(arg))
+                {
+                    runSharpApp = true;
+                    if (i + 1 >= args.Length)
+                    {
+                        $"Usage: {tool} -e \"<expression>\"".Print();
+                        return null;
+                    }
+                    
+                    EvalScript = args[++i];
+                    if (EvalScript.StartsWith('"') && EvalScript.EndsWith('"'))
+                        EvalScript = (string) JSON.parse(EvalScript);
                     continue;
                 }
 
@@ -629,6 +646,63 @@ namespace Web
                     
                     return null;
                 }
+                if (arg == "scripts")
+                {
+                    var target = i + 1 >= args.Length
+                        ? null
+                        : args[i + 1];
+
+                    if (!File.Exists("package.json"))
+                    {
+                        $"{Path.Combine(Environment.CurrentDirectory,"package.json")} does not exist".Print();
+                        return null;
+                    }
+
+                    var json = await File.ReadAllTextAsync("package.json");
+                    if (!(JSON.parse(json) is Dictionary<string, object> packageJson))
+                    {
+                        $"{Path.Combine(Environment.CurrentDirectory,"package.json")} is invalid".Print();
+                        return null;
+                    }
+
+                    if (packageJson.TryGetValue("scripts", out var oScripts) &&
+                        oScripts is Dictionary<string, object> scripts)
+                    {
+                        if (target != null)
+                        {
+                            if (scripts.TryGetValue(target, out var oTargetSh) && 
+                                oTargetSh is string targetSh)
+                            {
+                                var procInfo = Env.IsWindows
+                                    ? new ProcessStartInfo("cmd.exe", "/C " + targetSh) {
+                                        WorkingDirectory = Environment.CurrentDirectory
+                                    }
+                                    : new ProcessStartInfo("/bin/bash", $"-c \"{targetSh.Replace("\"", "\\\"")}\"") {
+                                        WorkingDirectory = Environment.CurrentDirectory
+                                    };
+
+                                await ProcessUtils.RunAsync(procInfo, null, 
+                                    onOut:Console.WriteLine,
+                                    onError:Console.Error.WriteLine);
+                                return null;
+                            }
+                            else
+                            {
+                                $"Missing package.json script: {target}".Print();
+                                return null;
+                            }
+                        }
+                        else
+                        {
+                            $"Available package.json scripts:".Print();
+                            scripts.Keys.Each(x => $"  {x}".Print());
+                            return null;
+                        }
+                    }
+                    
+                    $"No package.json scripts are defined".Print();
+                    return null;
+                }
                 dotnetArgs.Add(arg);
             }
             
@@ -662,6 +736,8 @@ namespace Web
                     $"Command: run {RunScript} {RunScriptArgs.ToJsv()}".Print();
                 if (runLispRepl)
                     $"Command: LISP REPL".Print();
+                if (EvalScript != null)
+                    $"Command: eval".Print();
             }
 
             if (runProcess != null)
@@ -762,7 +838,7 @@ namespace Web
                 }
             }
 
-            if (appSettingsContent == null && (appSettingsPath == null && createShortcutFor == null && RunScript == null && !runLispRepl))
+            if (appSettingsContent == null && (appSettingsPath == null && createShortcutFor == null && RunScript == null && !runLispRepl && EvalScript == null))
             {
                 if (Directory.Exists(GetAppsPath("")) && Directory.GetDirectories(GetAppsPath("")).Length > 0)
                 {
@@ -857,16 +933,21 @@ namespace Web
                 return null;
             }
             
-            if (RunScript != null || runLispRepl)
+            if (RunScript != null || runLispRepl || EvalScript != null)
             {
                 void ExecScript(SharpPagesFeature feature)
                 {
                     var ErrorPrefix = $"FAILED run {RunScript} [{string.Join(' ', RunScriptArgV)}]:";
 
+                    var script = File.ReadAllText(RunScript);
+                    var scriptPage = OneTimePage(feature, script);
+                    EvaluateScript(feature, scriptPage, ErrorPrefix);
+                }
+                
+                void EvaluateScript(SharpPagesFeature feature, SharpPage page, string errorPrefix)
+                {
                     try
                     {
-                        var script = File.ReadAllText(RunScript);
-                        var page = OneTimePage(feature, script);
                         var pageResult = new PageResult(page) {
                             Args = {
                                 ["ARGV"] = RunScriptArgV.ToArray(),
@@ -878,7 +959,7 @@ namespace Web
 
                         if (!Silent && pageResult.LastFilterError != null)
                         {
-                            ErrorPrefix.Print();
+                            errorPrefix.Print();
                             pageResult.LastFilterStackTrace.Map(x => "   at " + x)
                                 .Join(Environment.NewLine).Print();
 
@@ -892,16 +973,16 @@ namespace Web
                         ex = ex.UnwrapIfSingleException();
                         if (ex is StopFilterExecutionException)
                         {
-                            $"{ErrorPrefix} {ex.InnerException?.Message}".Print();
+                            $"{errorPrefix} {ex.InnerException?.Message}".Print();
                             return;
                         }
 
                         Verbose = true;
-                        ErrorPrefix.Print();
+                        errorPrefix.Print();
                         throw;
                     }
                 }
-                
+
                 bool breakLoop = false;
 
                 try
@@ -947,6 +1028,11 @@ namespace Web
                     {
                         Console.WriteLine($"\nWelcome to #Script Lisp! The time now is: {DateTime.Now.ToShortTimeString()}");
                         Lisp.RunRepl(feature);
+                        return null;
+                    }
+                    if (EvalScript != null)
+                    {
+                        EvaluateScript(feature, feature.CodeSharpPage(EvalScript), "Eval failed:");
                         return null;
                     }
 
@@ -1579,6 +1665,9 @@ Usage:
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
 
+  {tool} scripts                 List all available package.json scripts
+  {tool} scripts <name>          Run package.json script
+
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
   {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
   {indt}                         Language File Extensions:
@@ -1596,6 +1685,7 @@ Options:
     -r, --release             Run in Release mode for Production
     -s, --source              Change GitHub Source for App Directory
     -f, --force               Quiet mode, always approve, never prompt   (Alias 'y')
+    -e, --eval                Evaluate #Script Code
         --token               Use GitHub Auth Token 
         --clean               Delete downloaded caches
         --verbose             Display verbose logging

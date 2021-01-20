@@ -984,5 +984,25 @@ Content-Disposition: form-data; name=""EvaluateCode""
                 url
             }))?.Build();
         }
+
+        [Test]
+        public async Task Can_run_packagejson_script()
+        {
+            var url = "https://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
+            var host = (await Startup.CreateWebHost("x", new[] {
+                "scripts",
+                "echo",
+                url
+            }))?.Build();
+        }
+
+        [Test]
+        public async Task Can_eval_expression()
+        {
+            var host = (await Startup.CreateWebHost("x", new[] {
+                "-e",
+                "\"now\"",
+            }))?.Build();
+        }
     }
 }
