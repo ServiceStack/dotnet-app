@@ -694,7 +694,7 @@ namespace Web
                         }
                         else
                         {
-                            $"Available package.json scripts:".Print();
+                            $"\nAvailable package.json scripts:\n".Print();
                             scripts.Keys.Each(x => $"  {x}".Print());
                             return null;
                         }
@@ -1418,7 +1418,7 @@ namespace Web
             if (appNames.Length > 0)
             {
                 "".Print();
-                "Installed Apps:".Print();
+                "Installed Apps:\n".Print();
                 appNames.Each(x => $"  {new DirectoryInfo(x).Name}".Print());
             }
         }
