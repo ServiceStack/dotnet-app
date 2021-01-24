@@ -949,11 +949,22 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_open_gist_version_url()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+
+            var url = "gist://c3d8523540a2ade806e156a3a8138c54/cbddc54dbea64c6f5845290693e6075cf010481e";
+            //var url = "gist://c3d8523540a2ade806e156a3a8138c54/cbddc54dbea64c6f5845290693e6075cf010481e?out=Node.js%20Hello%20World";
+            var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
+            var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
         public async Task Can_open_alternative_gist()
         {
             //gist://localhost:5001/serviceref/csharp/GetTechnology/techstacks.io
             DeleteCreateAndSetDirectory("wip\\TestRepo");
-             // var url = "gist://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
+            // var url = "gist://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
             //var url = "gist://localhost:5001/serviceref/csharp/http.localhost:8000/GetTechnology";
             var url = "https%3A%2F%2Flocalhost%3A5001%2Fserviceref%2Fcsharp%3Fbaseurl%3Dhttp%3A%2F%2Ftechstacks.io%26request%3DGetTechnology";
             var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
@@ -1001,7 +1012,7 @@ Content-Disposition: form-data; name=""EvaluateCode""
         {
             var host = (await Startup.CreateWebHost("x", new[] {
                 "-e",
-                "\"now\"",
+                "\"now; \n now\"",
             }))?.Build();
         }
     }

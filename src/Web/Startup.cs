@@ -1843,8 +1843,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 RegisterStat(tool, gist, "gist-open");
 
+                var isGistVersion = IsGistVersion(gist);
                 var isEncodedUrl = gist.IndexOf('%') >= 0;
-                var isUrl = isEncodedUrl || gist.IndexOf('/') >= 0;
+                var isUrl = isEncodedUrl || (gist.IndexOf('/') >= 0 && !isGistVersion);
                 var url = !isUrl
                     ? null
                     : isEncodedUrl
@@ -2309,6 +2310,17 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             
             return null;
+        }
+
+        private static char[] UrlAndNonGistChars = {'.', '%', ':', '-', '?', '=', '+', '#'};
+        private static bool IsGistVersion(string gist)
+        {
+            if (gist.IndexOfAny(UrlAndNonGistChars) >= 0)
+                return false;
+            var isGistVersion = gist.CountOccurrencesOf('/') == 1 &&
+                (gist.LeftPart('/').Length == 32 || gist.LeftPart('/').Length == 20) &&
+                gist.RightPart('/').Length == 40;
+            return isGistVersion;
         }
 
         private static void WriteGrpcFiles(string lang, IEnumerable<string> protoFiles, string outDir)
@@ -3727,17 +3739,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 try
                 {
-                    // if (newPath.EndsWith(".settings"))
-                    // {
-                    //     var text = File.ReadAllText(newPath);
-                    //     if (text.Contains("debug true"))
-                    //     {
-                    //         text = text.Replace("debug true", "debug false");
-                    //         to[VirtualPath(newPath)] = text;
-                    //         continue;
-                    //     }
-                    // }
-
                     to[VirtualPath(newPath)] = MimeTypes.IsBinary(MimeTypes.GetMimeType(newPath))
                         ? (object)File.ReadAllBytes(newPath)
                         : File.ReadAllText(newPath);
