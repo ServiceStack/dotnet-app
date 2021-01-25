@@ -1015,5 +1015,14 @@ Content-Disposition: form-data; name=""EvaluateCode""
                 "\"now; \n now\"",
             }))?.Build();
         }
+
+        [Test]
+        public async Task Does_list_repos()
+        {
+            var host = (await Startup.CreateWebHost("x", new[] {
+                "download",
+                "gistcafe",
+            }))?.Build();
+        }
     }
 }

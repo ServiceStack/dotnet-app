@@ -2193,6 +2193,23 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         ? Tuple.Create(repo.LeftPart('/'), repo.RightPart('/'))
                         : GitHubUtils.Gateway.FindRepo(orgs, repo);
 
+                    if (fullRepo == null)
+                    {
+                        try
+                        {
+                            var repos = await GitHubUtils.Gateway.GetUserAndOrgReposAsync(repo);
+                            foreach (var orgRepo in repos)
+                            {
+                                orgRepo.Full_Name.Print();
+                            }
+                            return new Instruction { Command = arg, Handled = true };
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception($"'{repo}' was not found in sources: {orgs.Join(", ")}", e);
+                        }
+                    }
+
                     if (isFullRepo)
                     {
                         repo = repo.RightPart('/');
@@ -3638,6 +3655,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public static List<string> ExcludeFileExtensions = new() {
             ".xcodeproj",
             ".log",
+            ".exe",
+            ".dll",
+            ".class",
+            ".o",
+            ".so",
             ".publish",
             ".packages",    //dart pub
             "pubspec.lock", //dart lock
