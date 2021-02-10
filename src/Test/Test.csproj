@@ -94,9 +94,6 @@
       <Content Include="script.ss" />
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="wwwroot\assets\svg" />
-    </ItemGroup>
-    <ItemGroup>
         <None Update="protos\**\*.proto">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

@@ -68,9 +68,6 @@
    
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="nupkg" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="timefix.ps1" />
   </ItemGroup>
 </Project>
