@@ -646,7 +646,7 @@ namespace Web
                     
                     return null;
                 }
-                if (arg == "scripts")
+                if (arg == "scripts" || arg == "s")
                 {
                     var target = i + 1 >= args.Length
                         ? null
@@ -658,50 +658,7 @@ namespace Web
                         return null;
                     }
 
-                    var json = await File.ReadAllTextAsync("package.json");
-                    if (!(JSON.parse(json) is Dictionary<string, object> packageJson))
-                    {
-                        $"{Path.Combine(Environment.CurrentDirectory,"package.json")} is invalid".Print();
-                        return null;
-                    }
-
-                    if (packageJson.TryGetValue("scripts", out var oScripts) &&
-                        oScripts is Dictionary<string, object> scripts)
-                    {
-                        if (target != null)
-                        {
-                            if (scripts.TryGetValue(target, out var oTargetSh) && 
-                                oTargetSh is string targetSh)
-                            {
-                                var procInfo = Env.IsWindows
-                                    ? new ProcessStartInfo("cmd.exe", "/C " + targetSh) {
-                                        WorkingDirectory = Environment.CurrentDirectory
-                                    }
-                                    : new ProcessStartInfo("/bin/bash", $"-c \"{targetSh.Replace("\"", "\\\"")}\"") {
-                                        WorkingDirectory = Environment.CurrentDirectory
-                                    };
-
-                                await ProcessUtils.RunAsync(procInfo, null, 
-                                    onOut:Console.WriteLine,
-                                    onError:Console.Error.WriteLine);
-                                return null;
-                            }
-                            else
-                            {
-                                $"Missing package.json script: {target}".Print();
-                                return null;
-                            }
-                        }
-                        else
-                        {
-                            $"\nAvailable package.json scripts:\n".Print();
-                            scripts.Keys.Each(x => $"  {x}".Print());
-                            return null;
-                        }
-                    }
-                    
-                    $"No package.json scripts are defined".Print();
-                    return null;
+                    return await RunPackageJsonScript(target);
                 }
                 dotnetArgs.Add(arg);
             }
@@ -1080,6 +1037,50 @@ namespace Web
             }
 
             return CreateWebAppContext(ctx);
+        }
+
+        private static async Task<WebAppContext> RunPackageJsonScript(string target)
+        {
+            var json = await File.ReadAllTextAsync("package.json");
+            if (!(JSON.parse(json) is Dictionary<string, object> packageJson))
+            {
+                $"{Path.Combine(Environment.CurrentDirectory, "package.json")} is invalid".Print();
+                return null;
+            }
+
+            if (packageJson.TryGetValue("scripts", out var oScripts) &&
+                oScripts is Dictionary<string, object> scripts)
+            {
+                if (target != null)
+                {
+                    if (scripts.TryGetValue(target, out var oTargetSh) &&
+                        oTargetSh is string targetSh)
+                    {
+                        var procInfo = Env.IsWindows
+                            ? new ProcessStartInfo("cmd.exe", "/C " + targetSh) {
+                                WorkingDirectory = Environment.CurrentDirectory
+                            }
+                            : new ProcessStartInfo("/bin/bash", $"-c \"{targetSh.Replace("\"", "\\\"")}\"") {
+                                WorkingDirectory = Environment.CurrentDirectory
+                            };
+
+                        await ProcessUtils.RunAsync(procInfo, null,
+                            onOut: Console.WriteLine,
+                            onError: Console.Error.WriteLine);
+                        return null;
+                    }
+
+                    $"Missing package.json script: {target}".Print();
+                    return null;
+                }
+
+                $"\nAvailable package.json scripts:\n".Print();
+                scripts.Keys.Each(x => $"  {x}".Print());
+                return null;
+            }
+
+            $"No package.json scripts are defined".Print();
+            return null;
         }
 
         private static async Task PublishToGist(string tool)
@@ -1665,8 +1666,8 @@ Usage:
   {tool} shortcut                Create Shortcut for Sharp App
   {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
 
-  {tool} scripts                 List all available package.json scripts
-  {tool} scripts <name>          Run package.json script
+  {tool} scripts                 List all available package.json scripts  (Alias 's')
+  {tool} scripts <name>          Run package.json script                  (Alias 's')
 
   {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
   {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
@@ -3649,18 +3650,26 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             "flutter_build",//flutter
             ".gistrun",     //gistrun
             "__pycache__",  //python
-            "target",       //clojure leiningen
+            "target",       //clojure leiningen, rust cargo, scala sbt
+            "vendor",       //PHP Composer
+            "_build",       //Elixir mix
+            ".elixir_ls",   //Elixir mix
+            "deps",         //Elixir mix
+            "out",          //scala IDEA
+            ".bsp",         //scala IDEA
         };
         
         public static List<string> ExcludeFileExtensions = new() {
             ".xcodeproj",
             ".log",
+            ".dump",
             ".exe",
             ".dll",
             ".class",
             ".o",
             ".so",
             ".publish",
+            ".beam",        //erlang
             ".packages",    //dart pub
             "pubspec.lock", //dart lock
             ".iml",         //IDEA IDE
