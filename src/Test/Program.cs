@@ -992,6 +992,14 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_open_http_gist_request_with_args()
+        {
+            var url = "https://localhost:5002/gists/techstacks.io/csharp/QueryPosts(Ids=[1001,6860,6848],Tier=Server,OrderBy=-Points,Take=3)";
+            var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
+            var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
         public async Task Can_open_http_gist_encoded()
         {
             //gist://localhost:5001/serviceref/csharp/GetTechnology/techstacks.io

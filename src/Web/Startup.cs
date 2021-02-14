@@ -1880,6 +1880,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (string.IsNullOrEmpty(dir))
                     dir = string.Join(" ", url.RightPart("://").Split('/').Select(UnwrapTerm));
 
+                if (dir.IndexOf('(') >= 0)
+                    dir = dir.LeftPart('(');
+
                 var to = GetGistsAppPath(dir.GetSafeFileName());
 
                 if (url != null)
@@ -1902,6 +1905,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else
                 {
                     var codePath = ProcessUtils.FindExePath("code");
+                    var codeInPath = codePath != null;
                     if (string.IsNullOrEmpty(codePath))
                     {
                         if (Env.IsWindows)
@@ -1926,8 +1930,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     
                     if (!string.IsNullOrEmpty(codePath))
                     {
-                        // ProcessUtils.Run(codePath, $"\"{to}\"");
-                        Process.Start(codePath, to);
+                        Process.Start(codePath, $"\"{to}\"");
                     }
                     else
                     {
