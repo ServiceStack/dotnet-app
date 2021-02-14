@@ -52,6 +52,7 @@ namespace Web
             : new [] {"/" + name, "-" + name, "--" + name};
 
         public static string OutDir { get; set; }
+        public static string Name { get; set; }
         
         public static string GitHubToken { get; set; } 
 
@@ -1098,7 +1099,7 @@ namespace Web
                 }
                 if (NameArgs.Contains(arg))
                 {
-                    projectName = i < arg.Length - 1
+                    Name = projectName = i < arg.Length - 1
                         ? args[i+1]
                         : throw new Exception("Missing -name value");
                     i++;

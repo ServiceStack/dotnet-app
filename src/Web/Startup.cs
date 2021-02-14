@@ -108,10 +108,10 @@ namespace Web
             return Path.Combine(homeDir, ".sharp-apps", gistAlias);
         }
 
-        public static string GetGistsPath(string gistDir)
+        public static string GetGistsAppPath(string gistDir)
         {
             var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            return Path.Combine(homeDir, "gists", gistDir);
+            return Path.Combine(homeDir, "apps", gistDir);
         }
 
         public static bool? DebugMode { get; set; }
@@ -171,20 +171,20 @@ namespace Web
             
             var dotnetArgs = new List<string>();
 
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE")))
-                GitHubSource = Environment.GetEnvironmentVariable("APP_SOURCE");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_TEMPLATES")))
-                GitHubSourceTemplates = Environment.GetEnvironmentVariable("APP_SOURCE_TEMPLATES");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_GISTS")))
-                GistLinksId = Environment.GetEnvironmentVariable("APP_SOURCE_GISTS");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_APPS")))
-                GistAppsId = Environment.GetEnvironmentVariable("APP_SOURCE_APPS");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN")))
-                GitHubToken = Environment.GetEnvironmentVariable("GITHUB_GIST_TOKEN");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_TOKEN")))
-                GitHubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SOURCE_GRPC")))
-                GrpcSource = Environment.GetEnvironmentVariable("APP_SOURCE_GRPC");
+            if (!string.IsNullOrEmpty("APP_SOURCE".ToolSetting()))
+                GitHubSource = "APP_SOURCE".ToolSetting();
+            if (!string.IsNullOrEmpty("APP_SOURCE_TEMPLATES".ToolSetting()))
+                GitHubSourceTemplates = "APP_SOURCE_TEMPLATES".ToolSetting();
+            if (!string.IsNullOrEmpty("APP_SOURCE_GISTS".ToolSetting()))
+                GistLinksId = "APP_SOURCE_GISTS".ToolSetting();
+            if (!string.IsNullOrEmpty("APP_SOURCE_APPS".ToolSetting()))
+                GistAppsId = "APP_SOURCE_APPS".ToolSetting();
+            if (!string.IsNullOrEmpty("GITHUB_GIST_TOKEN".ToolSetting()))
+                GitHubToken = "GITHUB_GIST_TOKEN".ToolSetting();
+            if (!string.IsNullOrEmpty("GITHUB_TOKEN".ToolSetting()))
+                GitHubToken = "GITHUB_TOKEN".ToolSetting();
+            if (!string.IsNullOrEmpty("APP_SOURCE_GRPC".ToolSetting()))
+                GrpcSource = "APP_SOURCE_GRPC".ToolSetting();
             
             InitMix();
 
@@ -842,7 +842,7 @@ namespace Web
                 port = HostContext.FindFreeTcpPort(startPort, endPort).ToString();
             }
             var scheme = ssl ? "https" : "http";
-            var useUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? $"{scheme}://{bind}:{port}/";
+            var useUrls = "ASPNETCORE_URLS".ToolSetting() ?? $"{scheme}://{bind}:{port}/";
             ctx.UseUrls = useUrls;
             ctx.StartUrl = useUrls.Replace("://*", "://localhost");
             ctx.DebugMode = GetDebugMode();
@@ -1304,6 +1304,12 @@ namespace Web
             if (OutArgs.Contains(arg))
             {
                 OutDir = NextArg(ref i);
+                return true;
+            }
+
+            if (NameArgs.Contains(arg))
+            {
+                Name = NextArg(ref i);
                 return true;
             }
 
@@ -1845,23 +1851,23 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 RegisterStat(tool, gist, "gist-open");
 
                 var isGistVersion = IsGistVersion(gist);
-                var isEncodedUrl = gist.IndexOf('%') >= 0;
-                var isUrl = isEncodedUrl || (gist.IndexOf('/') >= 0 && !isGistVersion);
-                var url = !isUrl
+                var encoded = gist.IndexOf('%') >= 0;
+                if (encoded)
+                    gist = gist.UrlDecode();
+                var isUrlOrSlug = encoded || gist.IndexOfAny(new[]{'.',':','/'}) >= 0 && !isGistVersion;
+                var url = !isUrlOrSlug
                     ? null
-                    : isEncodedUrl
-                        ? gist.UrlDecode()
-                        : gist.StartsWith("http.") || gist.StartsWith("https.")
-                            ? gist.LeftPart('.') + "://" + gist.RightPart('.')
-                            : "https://" + gist;
+                    : SiteUtils.UrlFromSlug(gist);
 
                 var qs = url != null && url.IndexOf('?') >= 0
                     ? PclExportClient.Instance.ParseQueryString(url.RightPart('?'))
                     : null;
+
+                var outDir = OutDir ?? Name;
                 
-                var dir = !string.IsNullOrEmpty(OutDir)
-                    ? OutDir.Replace("\\", "/").LastRightPart("/").GetSafeFileName().SafeSubstring(0,100)
-                    : !isUrl 
+                var dir = !string.IsNullOrEmpty(outDir)
+                    ? outDir.Replace("\\", "/").LastRightPart("/").GetSafeFileName().SafeSubstring(0,100)
+                    : !isUrlOrSlug 
                         ? gist
                         : qs == null
                             ? url.CountOccurrencesOf('/') >= 4
@@ -1874,12 +1880,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (string.IsNullOrEmpty(dir))
                     dir = string.Join(" ", url.RightPart("://").Split('/').Select(UnwrapTerm));
 
-                var to = GetGistsPath(dir.GetSafeFileName());
+                var to = GetGistsAppPath(dir.GetSafeFileName());
 
                 if (url != null)
                     gist = url;
                 if (Verbose) $"Writing gist {gist} to ${to}".Print();
-                WriteGistFile(gist, gistAlias:null, to:to, projectName:null, getUserApproval:null);
+                WriteGistFile(gist, gistAlias:null, to:to, projectName:Name, getUserApproval:null);
 
                 var launchCmd = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                     ? $"start"
@@ -1887,10 +1893,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         ? $"open"
                         : $"xdg-open";
 
-                var gistExe = Environment.GetEnvironmentVariable("GIST_EXE");
+                var gistExe = "GIST_EXE".ToolSetting();
                 if (!string.IsNullOrEmpty(gistExe))
                 {
-                    ProcessUtils.Run(gistExe, $"\"{to}\"");
+                    // ProcessUtils.Run(gistExe, $"\"{to}\"");
+                    Process.Start(gistExe, to);
                 }
                 else
                 {
@@ -1919,12 +1926,24 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     
                     if (!string.IsNullOrEmpty(codePath))
                     {
-                        ProcessUtils.Run(codePath, $"\"{to}\"");
+                        // ProcessUtils.Run(codePath, $"\"{to}\"");
+                        Process.Start(codePath, to);
                     }
                     else
                     {
-                        ProcessUtils.Run(launchCmd, $"\"{to}\"");
-                        // ProcessUtils.RunShell($"{launchCmd} \"{to}\"");
+                        try
+                        {
+                            Process.Start(to);
+                        }
+                        catch (Exception e)
+                        {
+                            if (Verbose) $"ERROR Process.Start(to): {e.Message}".Print();
+
+                            if (Env.IsWindows)
+                                Process.Start("explorer.exe", to);
+                            else
+                                ProcessUtils.Run(launchCmd, $"\"{to}\"");
+                        }
                     }
                 }
                 
@@ -2330,7 +2349,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             return null;
         }
 
-        private static char[] UrlAndNonGistChars = {'.', '%', ':', '-', '?', '=', '+', '#'};
+        private static readonly char[] UrlAndNonGistChars = {'.', '%', ':', '-', '?', '=', '+', '#'};
         private static bool IsGistVersion(string gist)
         {
             if (gist.IndexOfAny(UrlAndNonGistChars) >= 0)
@@ -2464,8 +2483,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 ? name
                 : term.IndexOf("://", StringComparison.Ordinal) >= 0
                     ? term.RightPart("://")
-                    : term.StartsWith("http.") || term.StartsWith("https.")
-                        ? term.RightPart('.')
+                    : term.StartsWith("http:") || term.StartsWith("https:")
+                        ? term.RightPart(':')
                         : term;
 
         public class Http2CustomHandler : WinHttpHandler
@@ -3333,11 +3352,30 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             return filePath;
         }
 
+        public static string GetToolsSettingsPath()
+        {
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return Path.Combine(Path.Combine(homeDir, "servicestack"), ".settings");
+        }
+
+        private static DictionarySettings toolSettings;
+        public static string ToolSetting(this string name)
+        {
+            if (toolSettings == null)
+            {
+                var toolSettingsPath = GetToolsSettingsPath();
+                toolSettings = File.Exists(toolSettingsPath) 
+                    ? new TextFileSettings(toolSettingsPath) 
+                    : new DictionarySettings();
+            }
+            return toolSettings.Get(name, Environment.GetEnvironmentVariable(name));
+        }
+
         public static string ResolveValue(this string value)
         {
             if (value?.StartsWith("$") == true)
             {
-                var envValue = Environment.GetEnvironmentVariable(value.Substring(1));
+                var envValue = value.Substring(1).ToolSetting();
                 if (!string.IsNullOrEmpty(envValue)) 
                     return envValue;
                 if (value.StartsWith("$HOME"))

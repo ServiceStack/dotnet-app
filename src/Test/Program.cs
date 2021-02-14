@@ -960,13 +960,45 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
-        public async Task Can_open_alternative_gist()
+        public async Task Can_open_http_gist()
+        {
+            var url = "https://localhost:5002/gists/techstacks.io/csharp/GetTechnology";
+            var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
+            var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
+        public async Task Can_open_http_gist_out()
+        {
+            var url = "https://localhost:5002/gists/techstacks.io/csharp/GetTechnology?out=Acme";
+            var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
+            var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
+        public async Task Can_open_http_gist_name()
+        {
+            var url = "https://localhost:5002/gists/techstacks.io/csharp/GetTechnology?name=Acme";
+            var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
+            var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
+        public async Task Can_open_http_gist_name_out()
+        {
+            var url = "https://localhost:5002/gists/techstacks.io/csharp/GetTechnology?name=TheProject&out=Acme";
+            var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
+            var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
+        public async Task Can_open_http_gist_encoded()
         {
             //gist://localhost:5001/serviceref/csharp/GetTechnology/techstacks.io
             DeleteCreateAndSetDirectory("wip\\TestRepo");
             // var url = "gist://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
             //var url = "gist://localhost:5001/serviceref/csharp/http.localhost:8000/GetTechnology";
-            var url = "https%3A%2F%2Flocalhost%3A5001%2Fserviceref%2Fcsharp%3Fbaseurl%3Dhttp%3A%2F%2Ftechstacks.io%26request%3DGetTechnology";
+            var url = "https%3A%2F%2Flocalhost%3A5002%2Fgists%2Ftechstacks.io%2Fcsharp%2FGetTechnology";
             var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
             var host = (await Startup.CreateWebHost("x", args))?.Build();
         }
@@ -974,9 +1006,9 @@ Content-Disposition: form-data; name=""EvaluateCode""
         [Test]
         public async Task Can_mix_alternative_gist_url()
         {
-            //gist://localhost:5001/serviceref/csharp/GetTechnology/techstacks.io
+            //gist://localhost:5002/gists/techstacks.io/csharp/GetTechnology
             DeleteCreateAndSetDirectory("wip\\TestRepo");
-            var url = "https://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
+            var url = "https://localhost:5002/gists/techstacks.io/csharp/GetTechnology";
             var host = (await Startup.CreateWebHost("x", new[] {
                 "mix",
                 url
@@ -999,7 +1031,7 @@ Content-Disposition: form-data; name=""EvaluateCode""
         [Test]
         public async Task Can_run_packagejson_script()
         {
-            var url = "https://localhost:5001/serviceref/csharp/techstacks.io/GetTechnology";
+            var url = "https://localhost:5002/gists/techstacks.io/csharp/GetTechnology";
             var host = (await Startup.CreateWebHost("x", new[] {
                 "scripts",
                 "echo",
