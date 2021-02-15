@@ -1313,6 +1313,12 @@ namespace Web
                 return true;
             }
 
+            if (UseArgs.Contains(arg))
+            {
+                Use = NextArg(ref i);
+                return true;
+            }
+
             if (PathArgs.Contains(arg))
             {
                 PathArg = NextArg(ref i);
@@ -1896,15 +1902,37 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         ? $"open"
                         : $"xdg-open";
 
-                var gistExe = "GIST_EXE".ToolSetting();
-                if (!string.IsNullOrEmpty(gistExe))
+                string resolveProjectFile(string projectDir)
                 {
-                    // ProcessUtils.Run(gistExe, $"\"{to}\"");
-                    Process.Start(gistExe, to);
+                    var sln = Directory.EnumerateFiles(projectDir, "*.sln", SearchOption.AllDirectories).FirstOrDefault();
+                    if (sln != null)
+                        return sln;
+                    //Better for JetBrains IDEs to folder container .iml project file
+                    var iml = Directory.EnumerateFiles(projectDir, "*.iml", SearchOption.AllDirectories).FirstOrDefault();
+                    if (iml != null)
+                        return Path.GetDirectoryName(iml);
+                    
+                    var exts = new[] { "csproj", "fsproj", "vbproj" }.ToList();
+                    foreach (var file in Directory.EnumerateFiles(projectDir, "*.*", SearchOption.AllDirectories))
+                    {
+                        var ext = file.LastRightPart('.');
+                        if (exts.Contains(ext))
+                            return file;
+                    }
+                    return projectDir;
+                }
+                var target = resolveProjectFile(to);
+                var ret = new Instruction { Command = "gist-open", Handled = true };
+
+                var exePath = "OPEN_EXE".ToolSetting();
+                var useCode = Use == null || Use == "code";
+                if (Use == null && !string.IsNullOrEmpty(exePath))
+                {
+                    Process.Start(exePath, $"\"{target}\"");
                 }
                 else
                 {
-                    var codePath = ProcessUtils.FindExePath("code");
+                    var codePath = useCode ? ProcessUtils.FindExePath("code") : null;
                     var codeInPath = codePath != null;
                     if (string.IsNullOrEmpty(codePath))
                     {
@@ -1928,29 +1956,85 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         }
                     }
                     
-                    if (!string.IsNullOrEmpty(codePath))
+                    try
                     {
-                        Process.Start(codePath, $"\"{to}\"");
-                    }
-                    else
-                    {
-                        try
+                        if (useCode && !string.IsNullOrEmpty(codePath))
+                        {
+                            Process.Start(codePath, $"\"{to}\"");
+                            return ret;
+                        }
+                        if (Use == "folder")
                         {
                             Process.Start(to);
+                            return ret;
                         }
-                        catch (Exception e)
+                        if (Env.IsWindows)
                         {
-                            if (Verbose) $"ERROR Process.Start(to): {e.Message}".Print();
-
-                            if (Env.IsWindows)
-                                Process.Start("explorer.exe", to);
-                            else
-                                ProcessUtils.Run(launchCmd, $"\"{to}\"");
+                            if (Use == "vs" || Use == "devenv")
+                            {
+                                ProcessUtils.RunShell($"start devenv \"{target}\"");
+                                return ret;
+                            }
                         }
+                        
+                        var allowedApps = new List<string> {
+                            "idea",
+                            "rider",
+                            "studio", //Android Studio
+                            "idea",
+                            "webstorm",
+                            "clion",
+                            "rubymine",
+                            "phpstorm",
+                            "pycharm",
+                            "goland",
+                        };
+                        if (allowedApps.Contains(Use))
+                        {
+                            exePath = ProcessUtils.FindExePath(Use);
+                            if (exePath != null)
+                            {
+                                Process.Start(exePath, $"\"{target}\"");
+                                return ret;
+                            }
+                            if (Env.IsOSX)
+                            {
+                                //open -na "*.app" --args "$@"
+                                var macApps = new Dictionary<string,string> {
+                                    ["appcode"] = "AppCode.app",
+                                    ["idea"] = "IntelliJ IDEA.app",
+                                    ["webstorm"] = "WebStorm.app",
+                                    ["pycharm"] = "PyCharm.app",
+                                    ["clion"] = "CLion.app",
+                                    ["rider"] = "Rider.app",
+                                    ["studio"] = "Android Studio.app",
+                                    ["phpstorm"] = "PhpStorm.app",
+                                    ["rubymine"] = "RubyMine.app",
+                                    ["goland"] = "GoLand.app",
+                                };
+                                if (macApps.TryGetValue(Use, out var appName))
+                                {
+                                    ProcessUtils.Run(launchCmd, $"-na \"{appName}\" --args \"{to}\"");
+                                    return ret;
+                                }
+                            }
+                        }
+
+                        Process.Start(to);
+                        return ret;
+                    }
+                    catch (Exception e)
+                    {
+                        if (Verbose) $"ERROR Process.Start(to): {e.Message}".Print();
+
+                        if (Env.IsWindows)
+                            Process.Start("explorer.exe", to);
+                        else
+                            ProcessUtils.Run(launchCmd, $"\"{to}\"");
                     }
                 }
-                
-                return new Instruction { Command = "gist-open", Handled = true };
+
+                return ret;
             }
             else if (GistNew)
             {
@@ -3358,7 +3442,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public static string GetToolsSettingsPath()
         {
             var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            return Path.Combine(Path.Combine(homeDir, "servicestack"), ".settings");
+            return Path.Combine(Path.Combine(homeDir, ".servicestack"), ".settings");
         }
 
         private static DictionarySettings toolSettings;

@@ -39,6 +39,7 @@ namespace Web
         private static string[] IgnoreSslErrorsArgs = {"/ignore-ssl-errors", "--ignore-ssl-errors"};
 
         static string[] NameArgs = CreateArgs("name");
+        static string[] UseArgs = CreateArgs("use");
 
         static string[] DeleteArgs = CreateArgs("delete");
         static string[] ReplaceArgs = CreateArgs("replace");
@@ -53,6 +54,7 @@ namespace Web
 
         public static string OutDir { get; set; }
         public static string Name { get; set; }
+        public static string Use { get; set; }
         
         public static string GitHubToken { get; set; } 
 
@@ -1102,6 +1104,14 @@ namespace Web
                     Name = projectName = i < arg.Length - 1
                         ? args[i+1]
                         : throw new Exception("Missing -name value");
+                    i++;
+                    continue;
+                }
+                if (UseArgs.Contains(arg))
+                {
+                    Use = i < arg.Length - 1
+                        ? args[i+1]
+                        : throw new Exception("Missing -use value");
                     i++;
                     continue;
                 }

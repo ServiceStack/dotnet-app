@@ -1000,6 +1000,19 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_open_http_gist_request_with_args_with_use()
+        {
+            // var use = "code";
+            // var use = "folder";
+            // var use = "vs";
+            //var use = "rider";
+            var use = "webstorm";
+            var url = $"https://localhost:5002/gists/techstacks.io/typescript/QueryPosts(Ids=[1001,6860,6848],Tier=Server,OrderBy=-Points,Take=3)?name=Acme&use={use}";
+            var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
+            var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
         public async Task Can_open_http_gist_encoded()
         {
             //gist://localhost:5001/serviceref/csharp/GetTechnology/techstacks.io
