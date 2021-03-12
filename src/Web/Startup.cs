@@ -1259,6 +1259,12 @@ namespace Web
                 return true;
             }
 
+            if (PreserveArgs.Contains(arg))
+            {
+                Preserve = true;
+                return true;
+            }
+
             if (TokenArgs.Contains(arg))
             {
                 GitHubToken = NextArg(ref i);
@@ -1698,6 +1704,7 @@ Options:
     -r, --release             Run in Release mode for Production
     -s, --source              Change GitHub Source for App Directory
     -f, --force               Quiet mode, always approve, never prompt   (Alias 'y')
+    -p, --preserve            Don't overwrite existing files
     -e, --eval                Evaluate #Script Code
         --token               Use GitHub Auth Token 
         --clean               Delete downloaded caches
@@ -2522,11 +2529,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             return cachesDir.AssertDirectory();
         }
 
-        private static readonly Dictionary<string,string> RefAlias = new Dictionary<string, string>
-        {
+        private static readonly Dictionary<string,string> RefAlias = new() {
             {"cs", "csharp"},
             {"ts", "typescript"},
             {"sw", "swift"},
+            {"sw4", "swift4"},
             {"ja", "java"},
             {"kt", "kotlin"},
             {"da", "dart"},
@@ -2536,11 +2543,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"po", "proto"},
         };
         
-        private static readonly Dictionary<string,string> RefExt = new Dictionary<string, string>
-        {
+        private static readonly Dictionary<string,string> RefExt = new() {
             {"csharp", "dtos.cs"},
             {"typescript", "dtos.ts"},
             {"swift", "dtos.swift"},
+            {"swift4", "dtos.swift"},
             {"java", "dtos.java"},
             {"kotlin", "dtos.kt"},
             {"dart", "dtos.dart"},
@@ -2550,11 +2557,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"proto", "services.proto"},
         };
 
-        private static readonly Dictionary<string,string> LangNames = new Dictionary<string, string>
-        {
+        private static readonly Dictionary<string,string> LangNames = new() {
             {"csharp", "C#"},
             {"typescript", "TypeScript"},
             {"swift", "Swift"},
+            {"swift4", "Swift"},
             {"java", "Java"},
             {"kotlin", "Kotlin"},
             {"dart", "Dart"},

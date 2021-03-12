@@ -1077,5 +1077,21 @@ Content-Disposition: form-data; name=""EvaluateCode""
                 "gistcafe",
             }))?.Build();
         }
+
+        [Test]
+        public void Adhoc()
+        {
+            try
+            {
+                var dir = @"C:\src\gistcafe\gistcafe\src\GistRun\App_Data\scratch\localhost_5002_gists_test.servicestack.net_csharp_AllTypes(Id_1,NullableId_2,Byte_3,Short_4,Int_5,Long_6,UShort_7,UInt_8,ULong_9,Float_10,Double_11,Decimal_12,String_String,DateTime_2021-12-31T11_59,TimeSpan_01_02_03,Guid_bc525c18-ac21-4a60-a2be-6187c9af2716,Char_a,StringList_[A,C,C],StringArray_[a,2,3])";
+                Directory.CreateDirectory(dir);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
     }
 }

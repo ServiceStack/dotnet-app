@@ -34,6 +34,7 @@ namespace Web
         public static bool ForceApproval { get; set; }
         static string[] ForceArgs = CreateArgs("force", withFlag:'f');
         static string[] YesArgs = CreateArgs("yes", withFlag:'y');
+        static string[] PreserveArgs = CreateArgs("preserve", withFlag:'p');
 
         public static bool IgnoreSslErrors { get; set; }
         private static string[] IgnoreSslErrorsArgs = {"/ignore-ssl-errors", "--ignore-ssl-errors"};
@@ -55,6 +56,7 @@ namespace Web
         public static string OutDir { get; set; }
         public static string Name { get; set; }
         public static string Use { get; set; }
+        public static bool Preserve { get; set; }
         
         public static string GitHubToken { get; set; } 
 
@@ -734,7 +736,7 @@ namespace Web
                     }
 
                     var resolvedFile = ResolveFilePath(gistFile.Key, basePath, projectName, to);
-                    var noOverride = gistFile.Key.EndsWith("?");
+                    var noOverride = Preserve || gistFile.Key.EndsWith("?");
                     if (noOverride && File.Exists(resolvedFile))
                     {
                         if (Verbose) $"Skipping existing optional file: {resolvedFile}".Print();
@@ -749,7 +751,7 @@ namespace Web
                 }
             }
 
-            var label = !string.IsNullOrEmpty(gistAlias)
+            var label = !string.IsNullOrEmpty(gistAlias) && !gistAlias.IsUrl()
                 ? $"'{gistAlias}' "
                 : "";
             
@@ -762,12 +764,12 @@ namespace Web
             var silentMode = Silent || getUserApproval == null;
             if (!silentMode)
             {
+                var nl = Environment.NewLine;
                 if (!ForceApproval)
                 {
-                    var nl = Environment.NewLine;
-                    sb.Insert(0, $"{nl}Write files from {label}{gistLinkUrl} to:{nl}{nl}");
+                    sb.Insert(0, $"{nl}Write files from {label}{gistLinkUrl.UrlDecode()} to:{nl}{nl}");
                     sb.AppendLine()
-                        .AppendLine("Proceed? (n/Y):");
+                      .AppendLine("Proceed? (n/Y):");
     
                     sb.ToString().Print();
     
@@ -776,7 +778,7 @@ namespace Web
                 }
                 else
                 {
-                    sb.Insert(0, $"Writing files from {label}{gistLinkUrl} to:{Environment.NewLine}");
+                    sb.Insert(0, $"Writing files from {label}{gistLinkUrl} to:{nl}{nl}");
                     sb.ToString().Print();                
                 }
             }
@@ -1079,6 +1081,11 @@ namespace Web
                 {
                     ForceApproval = true;
                     Silent = true;
+                    continue;
+                }
+                if (PreserveArgs.Contains(arg))
+                {
+                    Preserve = true;
                     continue;
                 }
                 if (IgnoreSslErrorsArgs.Contains(arg))
