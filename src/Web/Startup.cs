@@ -1898,6 +1898,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 var to = GetGistsAppPath(dir.GetSafeFileName());
 
+                if (Directory.Exists(to))
+                    DeleteDirectory(to);
+
                 if (url != null)
                     gist = url;
                 if (Verbose) $"Writing gist {gist} to ${to}".Print();
