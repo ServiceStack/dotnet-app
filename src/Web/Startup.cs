@@ -2006,6 +2006,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             }
                             if (Env.IsOSX)
                             {
+                                if (Use == "xcode")
+                                {
+                                    ProcessUtils.Run(launchCmd, $"-a Xcode.app \"{to}\"");
+                                    return ret;
+                                }
+                                
                                 //open -na "*.app" --args "$@"
                                 var macApps = new Dictionary<string,string> {
                                     ["appcode"] = "AppCode.app",
