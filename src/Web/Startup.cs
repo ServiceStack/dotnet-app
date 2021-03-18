@@ -1998,6 +1998,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             "phpstorm",
                             "pycharm",
                             "goland",
+                            "xcode",
+                            "appcode",
                         };
                         if (allowedApps.Contains(Use))
                         {
