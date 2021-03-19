@@ -960,6 +960,14 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_open_gist_apps_url()
+        {
+            var url = "gist://apps.servicestack.net/gists/techstacks.io/swift/FindTechnologies(VendorName:Google,Take:5,OrderByDesc:ViewCount,Fields:%22Name,ProductUrl,Tier,VendorName%22)?use=xcode&name=MyApp";
+            var args = url.ConvertUrlSchemeToCommands("gist-open").ToArray();
+            var host = (await Startup.CreateWebHost("x", args))?.Build();
+        }
+
+        [Test]
         public async Task Can_open_http_gist()
         {
             var url = "https://localhost:5002/gists/techstacks.io/csharp/GetTechnology";
