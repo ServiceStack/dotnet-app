@@ -1087,6 +1087,20 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Does_create_project_template_into_current_dir_by_default()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "new", "web", "Chinook" });
+        }
+
+        [Test]
+        public async Task Does_create_project_template_into_out_dir()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "new", "web", "Chinook", "-out", "src" });
+        }
+
+        [Test]
         public void Adhoc()
         {
             try

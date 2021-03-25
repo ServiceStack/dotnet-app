@@ -2358,8 +2358,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 ZipFile.ExtractToDirectory(cachedVersionPath, tmpDir);
                 var installDir = Path.GetFullPath(repo);
 
-                var projectDir = new DirectoryInfo(Path.Combine(new DirectoryInfo(installDir).Parent!.FullName, projectName));
-                DeleteDirectory(projectDir.FullName);
+                var projectPath = OutDir != null
+                    ? Path.Combine(new DirectoryInfo(installDir).Parent!.FullName, OutDir)
+                    : new DirectoryInfo(installDir).Parent!.FullName;
+                var projectDir = new DirectoryInfo(projectPath);
+                if (OutDir != null) 
+                    DeleteDirectory(projectDir.FullName);
                 MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
 
                 RenameProject(str => ReplaceMyApp(str, projectName), projectDir);
