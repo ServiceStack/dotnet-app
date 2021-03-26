@@ -2066,7 +2066,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var dirInfo = new DirectoryInfo(dirArg);
                 var files = new Dictionary<string, object>();
                 dirInfo.FullName.CopyAllToDictionary(files, 
-                    excludePaths:WebTemplateUtils.GetExcludedFolderNames(dirInfo.FullName).ToArray(),
+                    excludePaths:WebTemplateUtils.GetExcludedFolderNames(dirInfo).ToArray(),
                     excludeExtensions:WebTemplateUtils.ExcludeFileExtensions.ToArray());
 
                 if (files.Count == 0)
@@ -2366,7 +2366,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     DeleteDirectory(projectDir.FullName);
                 MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
 
-                RenameProject(str => ReplaceMyApp(str, projectName), projectDir);
+                RenameProject(str => ReplaceMyApp(str, projectName), projectDir, 
+                    excludedFolders:WebTemplateUtils.GetExcludedFolderNames(projectDir));
 
                 // Restore Solution
                 var slns = Directory.GetFiles(projectDir.FullName, "*.sln", SearchOption.AllDirectories);
@@ -2774,9 +2775,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
 
         private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes:true);
-
-        private static void RenameProject(Func<string,string> replaceFn, DirectoryInfo projectDir)
+        
+        private static void RenameProject(Func<string,string> replaceFn, DirectoryInfo projectDir, List<string> excludedFolders)
         {
+            if (excludedFolders != null && excludedFolders.Contains(projectDir.Name))
+                return;
+            
             foreach (var file in projectDir.GetFiles())
             {
                 var fileName = file.Name;
@@ -2813,7 +2817,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             
             foreach (var dir in projectDir.GetDirectories())
             {
-                RenameProject(replaceFn, dir);
+                RenameProject(replaceFn, dir, excludedFolders);
             }
 
             var newDirName = replaceFn(projectDir.Name);
@@ -3826,6 +3830,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             ".nrepl-port",          //clojure leiningen repl
         };
 
+        public static List<string> GetExcludedFolderNames(DirectoryInfo dir) => GetExcludedFolderNames(dir.FullName);
         public static List<string> GetExcludedFolderNames(string workingDir=null)
         {
             var includes = new List<string>(Startup.Includes);
