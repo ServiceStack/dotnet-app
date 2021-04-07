@@ -2,7 +2,7 @@
 
     <PropertyGroup>
     <TargetFramework>net5</TargetFramework>
-    <Version>5.1.17</Version>
+    <Version>5.1.18</Version>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <AssemblyName>app</AssemblyName>
     <IsPackable>true</IsPackable>
