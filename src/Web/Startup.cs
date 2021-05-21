@@ -2298,10 +2298,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         }
                     }
                 }
-                
+
+                var specifiedProjectName = !isDownload && args.Length > 2 ? args[2] : null;
                 var projectName = isDownload
                     ? args[1].LastRightPart('/')
-                    : args.Length > 2 ? args[2] : new DirectoryInfo(Environment.CurrentDirectory).Name.SafeVarRef();
+                    : specifiedProjectName ?? new DirectoryInfo(Environment.CurrentDirectory).Name.SafeVarRef();
                 if (!isDownload)
                     AssertValidProjectName(projectName, tool);
 
@@ -2361,7 +2362,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var projectPath = OutDir != null
                     ? Path.Combine(new DirectoryInfo(installDir).Parent!.FullName, OutDir)
                     : new DirectoryInfo(installDir).Parent!.FullName;
-                var projectDir = new DirectoryInfo(projectPath);
+                var projectDir = specifiedProjectName != null
+                    ? new DirectoryInfo(projectPath.CombineWith(specifiedProjectName).AssertDirectory())
+                    : new DirectoryInfo(projectPath);
+                
                 if (OutDir != null) 
                     DeleteDirectory(projectDir.FullName);
                 MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, projectDir.FullName);
