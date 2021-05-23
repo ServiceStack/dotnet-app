@@ -2,7 +2,7 @@
 
     <PropertyGroup>
     <TargetFramework>net5</TargetFramework>
-    <Version>5.1.21</Version>
+    <Version>5.1.22</Version>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <Platforms>x64</Platforms>
