@@ -94,7 +94,7 @@ namespace Web
                 return;
             try
             {
-                $"https://servicestack.net/stats/{type}/record?name={name}&source={tool}&version={GetVersion()}"
+                $"https://account.servicestack.net/stats/{type}/record?name={name}&source={tool}&version={GetVersion()}"
                     .GetBytesFromUrlAsync(requestFilter:req => req.ApplyRequestFilters());
             }
             catch { }
