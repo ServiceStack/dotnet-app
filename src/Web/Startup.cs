@@ -1467,7 +1467,7 @@ namespace Web
         private static string DownloadCachedZipUrl(string zipUrl)
         {
             var noCache = zipUrl.IndexOf("master.zip", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               zipUrl.IndexOf("main.zip", StringComparison.OrdinalIgnoreCase) >= 0;
+                          zipUrl.IndexOf("main.zip", StringComparison.OrdinalIgnoreCase) >= 0;
             if (noCache)
             {
                 var tempFile = Path.GetTempFileName();
@@ -1491,7 +1491,6 @@ namespace Web
 
             return cachedVersionPath;
         }
-
 
         public static void MoveDirectory(string fromPath, string toPath)
         {
@@ -2560,6 +2559,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"da", "dart"},
             {"fs", "fsharp"},
             {"vb", "vbnet"},
+            {"py", "python"},
             {"tsd", "typescript.d"},
             {"po", "proto"},
         };
@@ -2574,6 +2574,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"dart", "dtos.dart"},
             {"fsharp", "dtos.fs"},
             {"vbnet", "dtos.vb"},
+            {"python", "dtos.py"},
+            {"php", "dtos.php"},
+            {"go", "dtos.go"},
             {"typescript.d", "dtos.d.ts"},
             {"proto", "services.proto"},
         };
@@ -2588,6 +2591,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"dart", "Dart"},
             {"fsharp", "F#"},
             {"vbnet", "VB"},
+            {"python", "Python"},
+            {"php", "PHP"},
+            {"go", "Go"},
             {"typescript.d", "TypeScript Definition"},
             {"proto", "Proto"},
         };
@@ -2702,7 +2708,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             foreach (var l in lines) 
             {
                 var line = l;
-                if (line.StartsWith("*/") || line.StartsWith("*)"))
+                if (line.StartsWith("*/") || line.StartsWith("*)") || line.StartsWith("\"\"\""))
                     break;
                 if (lang == "vbnet")
                 {
@@ -2722,7 +2728,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 } 
                 else if (!string.IsNullOrEmpty(baseUrl)) 
                 {
-                    if (!line.StartsWith("//") && !line.StartsWith("'")) 
+                    if (!line.StartsWith("//") && !line.StartsWith("'") && !line.StartsWith("#")) 
                     {
                         var parts = line.SplitOnFirst(":");
                         if (parts.Length == 2) {

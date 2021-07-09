@@ -368,6 +368,13 @@ namespace Run
         }
 
         [Test]
+        public async Task Mix_gist()
+        {
+            DeleteCreateAndSetDirectory("wip\\MixText");
+            await Startup.Mix("mix", new[] { "redis" });
+        }
+
+        [Test]
         public async Task Mix_gist_with_name()
         {
             DeleteCreateAndSetDirectory("wip\\MixText");

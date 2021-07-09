@@ -620,7 +620,7 @@ namespace Web
             return sb.ToString();
         }
 
-        public static List<string> HostFiles = new List<string> {
+        public static List<string> HostFiles = new() {
                "appsettings.json",
                "Web.config",
                "App.config",
