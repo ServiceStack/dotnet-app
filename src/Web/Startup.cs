@@ -2533,7 +2533,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             if (!fileName.EndsWith(dtosExt))
             {
-                fileName = $"{fileName}.{dtosExt}";
+                fileName = dtosExt.EndsWith("py") 
+                    ? $"{fileName}_{dtosExt}"
+                    : $"{fileName}.{dtosExt}";
             }
 
             if (OutDir != null)
