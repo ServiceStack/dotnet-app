@@ -1876,6 +1876,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     writeTo += ".ipynb";
                 var json = notebook.ToJson();
                 await File.WriteAllTextAsync(writeTo, json);
+
+                "".Print();
                 $"Saved to: {writeTo}".Print();
 
                 return new Instruction { Handled = true };
