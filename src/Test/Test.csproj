@@ -79,6 +79,9 @@
       <Compile Include="..\App\Shortcut.cs">
         <Link>Shortcut.cs</Link>
       </Compile>
+      <Compile Include="..\Web\Sites.cs">
+        <Link>Sites.cs</Link>
+      </Compile>
       <Compile Include="..\Web\Startup.cs" Link="Startup.cs" />
       <Compile Include="..\Web\Startup.Mix.cs" Link="Startup.Mix.cs" />
     </ItemGroup>

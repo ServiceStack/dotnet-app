@@ -1108,6 +1108,34 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_generate_jupyter_notebook()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io" });
+        }
+
+        [Test]
+        public async Task Can_generate_jupyter_notebook_with_API()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "AppOverview" });
+        }
+
+        [Test]
+        public async Task Can_generate_jupyter_notebook_with_API_and_out()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "AppOverview", "-out", "techstacks-custom" });
+        }
+
+        [Test]
+        public async Task Can_generate_jupyter_notebook_with_complex_API()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "FindTechnologies(ids=[1,2,3],vendor_name=\"Google\")" });
+        }
+
+        [Test]
         public void Adhoc()
         {
             try

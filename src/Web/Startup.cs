@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -10,6 +11,7 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,6 +23,7 @@ using Funq;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NUglify;
@@ -1848,6 +1851,32 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     WriteGrpcFiles(lang, protoFilePaths, GetOutDir(target));
                 }
                 else throw new Exception($"Could not find valid *.services.proto from '{target}'");
+
+                return new Instruction { Handled = true };
+            }
+
+            if (arg.StartsWith("jupyter"))
+            {
+                var target = args.Length > 1 ? args[1] : null;
+                var InvalidDomainCharsRegex = new Regex(@"[^A-Za-z0-9._-]");
+
+                if (target == null || (!target.IsUrl() && InvalidDomainCharsRegex.Replace(target, "_") != target))
+                {
+                    $"Usage: {tool} jupyter <base-url>".Print();
+                    $"       {tool} jupyter <base-url> <request>".Print();
+                    $"       {tool} jupyter <base-url> <request> -out <file>".Print();
+                    return new Instruction { Handled = true };
+                }
+
+                var request = args.Length > 2 ? args[2] : null;
+                var notebook = await Apps.ServiceInterface.Sites.Instance.CreateNotebookAsync(target, request);
+                var writeTo = OutDir ?? target.RightPart("://").LeftPart('/').SafeVarRef() +
+                    (request != null ? "-" + request.LeftPart('(') : "");
+                if (!writeTo.EndsWith(".ipynb"))
+                    writeTo += ".ipynb";
+                var json = notebook.ToJson();
+                await File.WriteAllTextAsync(writeTo, json);
+                $"Saved to: {writeTo}".Print();
 
                 return new Instruction { Handled = true };
             }
@@ -4062,5 +4091,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public virtual string ArchiveUrl { get; set; }
         public virtual ResponseStatus ResponseStatus { get; set; }
     }
+
 }
 
