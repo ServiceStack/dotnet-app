@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net5</TargetFramework>
-    <Version>5.1.23</Version>
+    <Version>5.1.24</Version>
     <AssemblyName>x</AssemblyName>
     <IsPackable>true</IsPackable>
     <PackageId>x</PackageId>
@@ -75,6 +75,12 @@
     <Folder Include="nupkg" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Web\LangInfo.cs">
+      <Link>LangInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Web\PythonLangInfo.cs">
+      <Link>PythonLangInfo.cs</Link>
+    </Compile>
     <Compile Include="..\Web\Sites.cs">
       <Link>Sites.cs</Link>
     </Compile>

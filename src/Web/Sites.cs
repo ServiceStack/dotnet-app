@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using Apps.ServiceInterface.Langs;
 using ServiceStack;
+using ServiceStack.Text;
 
 namespace Apps.ServiceInterface
 {
@@ -199,9 +201,23 @@ namespace Apps.ServiceInterface
 
             if (api != null)
             {
-                var apiInstance = api.IndexOf('(') >= 0
-                    ? api
-                    : api + "()";
+                var requestBody = "";
+                var argsBody = api.IndexOf('(') >= 0
+                    ? api.RightPart('(').LastLeftPart(')')
+                    : null;
+                if (!string.IsNullOrEmpty(argsBody))
+                {
+                    var python = new PythonLangInfo();
+                    try
+                    {
+                        var requestArgs = ("{" + argsBody + "}").FromJsv<Dictionary<string, string>>();
+                        requestBody = python.RequestBody(requestDto, requestArgs, site.Metadata.Api);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new Exception("Request args should be in JSV Format. Please use https://apps.servicestack.net to generate Request Body");
+                    }
+                }
                 var requestOp = requestDto != null 
                     ? site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto)
                     : null;
@@ -212,7 +228,7 @@ namespace Apps.ServiceInterface
                     : null) ?? "send";
                 to.Cells.Add(new() {
                         Source = {
-                            $"response = client.{clientMethod}({apiInstance})"
+                            $"response = client.{clientMethod}({requestDto}({requestBody}))"
                         }
                     }
                 );

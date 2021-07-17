@@ -79,6 +79,12 @@
       <Compile Include="..\App\Shortcut.cs">
         <Link>Shortcut.cs</Link>
       </Compile>
+      <Compile Include="..\Web\LangInfo.cs">
+        <Link>LangInfo.cs</Link>
+      </Compile>
+      <Compile Include="..\Web\PythonLangInfo.cs">
+        <Link>PythonLangInfo.cs</Link>
+      </Compile>
       <Compile Include="..\Web\Sites.cs">
         <Link>Sites.cs</Link>
       </Compile>

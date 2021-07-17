@@ -1256,6 +1256,8 @@ namespace Web
 
     public static class MixUtils
     {
+        public static Regex ValidDomainCharsRegex = new(@"^[A-Za-z0-9._\\/-].+$");
+
         public static string GetSafeFileName(this string path)
         {
             var invalidFileNameChars = new HashSet<char>(Path.GetInvalidFileNameChars()) {':'};
@@ -1271,6 +1273,8 @@ namespace Web
         public static List<string> GetAllKeys(this Dictionary<string, string> map) => map.Keys.ToList();
         
         public static bool IsUrl(this string gistId) => gistId.IndexOf("://", StringComparison.Ordinal) >= 0;
+        
+        public static bool IsBaseUrl(this string url) => url.IsUrl() && ValidDomainCharsRegex.Matches(url.RightPart("://")).Count > 0;
         
         public static string SplitPascalCase(this string input) 
         {

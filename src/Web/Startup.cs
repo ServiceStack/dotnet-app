@@ -39,6 +39,7 @@ using ServiceStack.Azure.Storage;
 using ServiceStack.Desktop;
 using ServiceStack.Html;
 using ServiceStack.Logging;
+using ServiceStack.NativeTypes.CSharp;
 using ServiceStack.Pcl;
 using ServiceStack.Script;
 
@@ -161,7 +162,7 @@ namespace Web
         public static GistVirtualFiles GistVfs;
         public static Task<Gist> GistVfsTask;
         public static Task GistVfsLoadTask;
-
+        
         public static async Task<WebAppContext> CreateWebHost(string tool, string[] args, WebAppEvents events = null)
         {
             Events = events;
@@ -1855,16 +1856,140 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             }
 
+            if (arg.StartsWith("info"))
+            {
+                var target = args.Length > 1 ? args[1] : null;
+
+                if (target == null || !target.IsBaseUrl())
+                {
+                    $"Usage: {tool} info <base-url>".Print();
+                    $"       {tool} info <base-url> <request>".Print();
+                    return new Instruction { Handled = true };
+                }
+                
+                var request = args.Length > 2 ? args[2] : null;
+                var site = await Apps.ServiceInterface.Sites.Instance.AssertSiteAsync(target);
+                var csharp = new CSharpGenerator(new MetadataTypesConfig());
+                var sb = StringBuilderCache.Allocate();
+                "".Print();
+                $"Base URL:           {site.BaseUrl}".Print();
+                if (site.Metadata.App != null)
+                {
+                    $"Name:               {site.Metadata.App.ServiceName}".Print();
+                    $"Version:            {site.Metadata.App.ServiceStackVersion}".Print();
+                }
+
+                "".Print();
+                if (site.Metadata.ContentTypeFormats?.Count > 0)
+                    $"Content Types:      {string.Join(", ", site.Metadata.ContentTypeFormats.Values)}".Print();
+                if (site.Metadata.Plugins?.Loaded?.Count > 0)
+                    $"Plugins:            {string.Join(", ", site.Metadata.Plugins.Loaded)}".Print();
+                if (site.Metadata.Plugins?.Auth != null)
+                    $"Auth Providers:     {string.Join(", ", site.Metadata.Plugins.Auth.AuthProviders.Map(x => $"{x.Name} ({x.Type})"))}".Print();
+                "".Print();
+
+                if (request == null)
+                {
+                    var apis = new List<ApiInfo>();
+                    foreach (var op in site.Metadata.Api.Operations.Safe())
+                    {
+                        var aqBaseTypes = new[] { "QueryDb`1", "QueryDb`2", "QueryData`1", "QueryData`2" }.ToList();
+                        var isAutoQuery = op.Request.Inherits != null && aqBaseTypes.Contains(op.Request.Inherits.Name);
+                        var api = new ApiInfo { 
+                            Api = op.Request.Name,
+                            Routes = op.Response != null
+                                ? $"/json/reply/{op.Request.Name}"
+                                : $"/json/oneway/{op.Request.Name}",
+                            Response = op.Response != null
+                                ? csharp.Type(op.Response.Name, isAutoQuery ? new[]{ op.Request.Inherits.GenericArgs.Last() } : op.Response.GenericArgs)
+                                : null
+                        };
+                        apis.Add(api);
+                        if (op.Routes?.Count > 0)
+                        {
+                            for (var i = 0; i < op.Routes.Count; i++)
+                            {
+                                var route = op.Routes[i];
+                                if (i > 0)
+                                    sb.Append(" ");
+                                if (string.IsNullOrEmpty(route.Verbs) || route.Verbs == "ANY")
+                                {
+                                    sb.Append(route.Path);
+                                }
+                                else
+                                {
+                                    sb.Append(route.Verbs.Replace(" ",",")).Append(':').Append(route.Path);
+                                }
+                            }
+                            api.Routes = sb.ToString();
+                            sb.Clear();
+                        }
+                    }
+
+                    apis.PrintDumpTable();
+                }
+                else
+                {
+                    var op = site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == request);
+                    if (op == null)
+                        throw new Exception($"'{request}' does not exist");
+
+                    $"# {op.Request.Name}".Print();
+                    if (op.Tags?.Count > 0)
+                    {
+                        foreach (var tag in op.Tags)
+                        {
+                            if (sb.Length > 0)
+                                sb.Append(" ");
+                            sb.Append($"[{tag}]");
+                        }
+                        $"Tags:               {sb}".Print();
+                        sb.Clear();
+                    }
+                    if (op.RequiresAuth)
+                    {
+                        "".Print();
+                        $"# Requires Auth".Print();
+                        var roles = new List<string>(op.RequiredRoles ?? new List<string>());
+                        if (op.RequiresAnyRole?.Count > 0)
+                            roles.AddRange(op.RequiresAnyRole);
+                        if (roles.Count > 0)
+                            $"Roles:              {string.Join(", ", roles)}".Print();
+                        var perms = new List<string>(op.RequiredPermissions ?? new List<string>());
+                        if (op.RequiresAnyPermission?.Count > 0)
+                            perms.AddRange(op.RequiresAnyPermission);
+                        if (perms.Count > 0)
+                            $"Permissions:        {string.Join(", ", perms)}".Print();
+                        "".Print();
+                    }
+
+                    try
+                    {
+                        "".Print();
+                        $"# C# DTOs:".Print();
+                        var csharpDtos = await site.Languages.GetLangContentAsync("csharp", request);
+                        csharpDtos.Content.RightPart("*/").Print();
+                    }
+                    catch (Exception e)
+                    {
+                        $"Could not retrieve {request} DTOs: {e.Message}".Print();
+                    }
+                }
+                return new Instruction { Handled = true };
+            }
+
             if (arg.StartsWith("jupyter"))
             {
                 var target = args.Length > 1 ? args[1] : null;
-                var InvalidDomainCharsRegex = new Regex(@"[^A-Za-z0-9._-]");
 
-                if (target == null || (!target.IsUrl() && InvalidDomainCharsRegex.Replace(target, "_") != target))
+                if (target == null || !target.IsBaseUrl())
                 {
                     $"Usage: {tool} jupyter <base-url>".Print();
                     $"       {tool} jupyter <base-url> <request>".Print();
                     $"       {tool} jupyter <base-url> <request> -out <file>".Print();
+                    $"       {tool} jupyter <base-url> <request>({{JSV-Format Args}})".Print();
+                    $"".Print();
+                    $"Create Jupyter Notebook API Requests at: https://apps.servicestack.net".Print();
                     return new Instruction { Handled = true };
                 }
 
@@ -4092,6 +4217,13 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public virtual Dictionary<string, string> GeneratedFiles { get; set; }
         public virtual string ArchiveUrl { get; set; }
         public virtual ResponseStatus ResponseStatus { get; set; }
+    }
+
+    public class ApiInfo
+    {
+        public string Api { get; set; }
+        public string Routes { get; set; }
+        public string Response { get; set; }
     }
 
 }
