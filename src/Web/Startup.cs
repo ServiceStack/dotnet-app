@@ -1666,6 +1666,9 @@ Usage:
   {tool} proto-<lang> <file|dir> Update gRPC .proto and re-gen language   (-out <dir>)
   {tool} proto-<lang>            Update all gRPC .proto's and re-gen lang (-out <dir>)
 
+  {tool} info <url>              Show info about a ServiceStack App
+  {tool} info <url> <request>    Show info about a ServiceStack API Request
+
   {tool} open                    List of available Sharp Apps
   {tool} open <app>              Install and run Sharp App
 
@@ -1856,40 +1859,83 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             }
 
-            if (arg.StartsWith("info"))
+            var verbs = new[] { "GET", "POST", "PUT", "DELETE", "PATCH" }.ToList();
+            if (verbs.Contains(arg))
             {
                 var target = args.Length > 1 ? args[1] : null;
 
                 if (target == null || !target.IsBaseUrl())
                 {
+                    $"Usage: {tool} [SEND|GET|POST|PUT|DELETE|PATCH] <base-url> <request>".Print();
+                    $"       {tool} [SEND|GET|POST|PUT|DELETE|PATCH] <base-url> <request>({{JSV-Format Args}})".Print();
+                    "".Print();
+                    $"Options:".Print();
+                    " -http                    Show HTTP Headers".Print();
+                    " -out <format>            View response in Content Format".Print();
+                    " -token <token>           Use JWT or API Key Bearer Token".Print();
+                    " -credentials <user:pass> Use JWT or API Key Bearer Token".Print();
+                    return new Instruction { Handled = true };
+                }
+
+                return new Instruction { Handled = true };
+            }
+
+            if (arg.StartsWith("info"))
+            {
+                string GetRoutes(MetadataOperationType op)
+                {
+                    var sb = StringBuilderCache.Allocate();
+                    for (var i = 0; i < op.Routes.Count; i++)
+                    {
+                        var route = op.Routes[i];
+                        if (i > 0)
+                            sb.Append(" ");
+                        if (string.IsNullOrEmpty(route.Verbs) || route.Verbs == "ANY")
+                        {
+                            sb.Append(route.Path);
+                        }
+                        else
+                        {
+                            sb.Append(route.Verbs.Replace(" ", ",")).Append(':').Append(route.Path);
+                        }
+                    }
+
+                    var routes = StringBuilderCache.ReturnAndFree(sb);
+                    return routes;
+                }
+
+                var target = args.Length > 1 ? args[1] : null;
+
+                if (target == null || !target.IsBaseUrl())
+                {
                     $"Usage: {tool} info <base-url>".Print();
-                    $"       {tool} info <base-url> <request>".Print();
+                    $"       {tool} info <base-url> <request>({{JSV-Format Args}})".Print();
                     return new Instruction { Handled = true };
                 }
                 
                 var request = args.Length > 2 ? args[2] : null;
                 var site = await Apps.ServiceInterface.Sites.Instance.AssertSiteAsync(target);
                 var csharp = new CSharpGenerator(new MetadataTypesConfig());
-                var sb = StringBuilderCache.Allocate();
-                "".Print();
-                $"Base URL:           {site.BaseUrl}".Print();
-                if (site.Metadata.App != null)
-                {
-                    $"Name:               {site.Metadata.App.ServiceName}".Print();
-                    $"Version:            {site.Metadata.App.ServiceStackVersion}".Print();
-                }
-
-                "".Print();
-                if (site.Metadata.ContentTypeFormats?.Count > 0)
-                    $"Content Types:      {string.Join(", ", site.Metadata.ContentTypeFormats.Values)}".Print();
-                if (site.Metadata.Plugins?.Loaded?.Count > 0)
-                    $"Plugins:            {string.Join(", ", site.Metadata.Plugins.Loaded)}".Print();
-                if (site.Metadata.Plugins?.Auth != null)
-                    $"Auth Providers:     {string.Join(", ", site.Metadata.Plugins.Auth.AuthProviders.Map(x => $"{x.Name} ({x.Type})"))}".Print();
                 "".Print();
 
                 if (request == null)
                 {
+                    $"Base URL:           {site.BaseUrl}".Print();
+                    if (site.Metadata.App != null)
+                    {
+                        $"Name:               {site.Metadata.App.ServiceName}".Print();
+                        $"Version:            {site.Metadata.App.ServiceStackVersion}".Print();
+                    }
+
+                    "".Print();
+                    if (site.Metadata.ContentTypeFormats?.Count > 0)
+                        $"Content Types:      {string.Join(", ", site.Metadata.ContentTypeFormats.Values)}".Print();
+                    if (site.Metadata.Plugins?.Loaded?.Count > 0)
+                        $"Plugins:            {string.Join(", ", site.Metadata.Plugins.Loaded)}".Print();
+                    if (site.Metadata.Plugins?.Auth != null)
+                        $"Auth Providers:     {string.Join(", ", site.Metadata.Plugins.Auth.AuthProviders.Map(x => $"{x.Name} ({x.Type})"))}".Print();
+                    "".Print();
+
                     var apis = new List<ApiInfo>();
                     foreach (var op in site.Metadata.Api.Operations.Safe())
                     {
@@ -1906,24 +1952,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         };
                         apis.Add(api);
                         if (op.Routes?.Count > 0)
-                        {
-                            for (var i = 0; i < op.Routes.Count; i++)
-                            {
-                                var route = op.Routes[i];
-                                if (i > 0)
-                                    sb.Append(" ");
-                                if (string.IsNullOrEmpty(route.Verbs) || route.Verbs == "ANY")
-                                {
-                                    sb.Append(route.Path);
-                                }
-                                else
-                                {
-                                    sb.Append(route.Verbs.Replace(" ",",")).Append(':').Append(route.Path);
-                                }
-                            }
-                            api.Routes = sb.ToString();
-                            sb.Clear();
-                        }
+                            api.Routes = GetRoutes(op);
                     }
 
                     apis.PrintDumpTable();
@@ -1935,21 +1964,30 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         throw new Exception($"'{request}' does not exist");
 
                     $"# {op.Request.Name}".Print();
+                    if (!string.IsNullOrEmpty(op.Request.Description))
+                    {
+                        op.Request.Description.Print();
+                        "".Print();
+                    }
                     if (op.Tags?.Count > 0)
                     {
+                        var sb = StringBuilderCache.Allocate();
                         foreach (var tag in op.Tags)
                         {
                             if (sb.Length > 0)
                                 sb.Append(" ");
                             sb.Append($"[{tag}]");
                         }
-                        $"Tags:               {sb}".Print();
-                        sb.Clear();
+                        $"Tags:               {StringBuilderCache.ReturnAndFree(sb)}".Print();
+                        if (op.Routes?.Count > 0)
+                            $"Routes:             {GetRoutes(op)}".Print();
                     }
                     if (op.RequiresAuth)
                     {
                         "".Print();
                         $"# Requires Auth".Print();
+                        if (site.Metadata.Plugins?.Auth != null)
+                            $"Auth Providers:     {string.Join(", ", site.Metadata.Plugins.Auth.AuthProviders.Map(x => $"{x.Name} ({x.Type})"))}".Print();
                         var roles = new List<string>(op.RequiredRoles ?? new List<string>());
                         if (op.RequiresAnyRole?.Count > 0)
                             roles.AddRange(op.RequiresAnyRole);
