@@ -2028,14 +2028,18 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             $"{header}: {value}".Print();
                         }
                     }
-                    var sb = StringBuilderCache.Allocate();
-                    foreach (Cookie cookie in webReq.CookieContainer.GetCookies(baseUri))
+                    var cookies = webReq.CookieContainer.GetCookies(baseUri);
+                    if (cookies.Count > 0)
                     {
-                        if (sb.Length > 0)
-                            sb.Append("; ");
-                        sb.Append(cookie.Name).Append('=').Append(cookie.Value);
+                        var sb = StringBuilderCache.Allocate();
+                        foreach (Cookie cookie in cookies)
+                        {
+                            if (sb.Length > 0)
+                                sb.Append("; ");
+                            sb.Append(cookie.Name).Append('=').Append(cookie.Value);
+                        }
+                        $"Cookie: {StringBuilderCache.ReturnAndFree(sb)}".Print();
                     }
-                    $"Cookie: {StringBuilderCache.ReturnAndFree(sb)}".Print();
                 }
 
                 void PrintBytes(byte[] bytes)
