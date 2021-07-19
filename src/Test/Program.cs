@@ -1126,13 +1126,14 @@ Content-Disposition: form-data; name=""EvaluateCode""
         {
             Directory.SetCurrentDirectory("wip");
             await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "AppOverview", "-out", "techstacks-custom" });
+            // await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "FindTechnologies", "{Ids:[1,2,3],VendorName:'Google'}", "-out", "techstacks-custom-find" });
         }
 
         [Test]
         public async Task Can_generate_jupyter_notebook_with_complex_API()
         {
             Directory.SetCurrentDirectory("wip");
-            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "FindTechnologies(Ids:[1,2,3],VendorName:Google)" });
+            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "FindTechnologies", "{Ids:[1,2,3],VendorName:'Google'}" });
         }
 
         [Test]

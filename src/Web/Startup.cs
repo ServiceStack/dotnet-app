@@ -141,6 +141,9 @@ namespace Web
 
         public static string[] EvalArgs = CreateArgs("eval", withFlag:'e');
 
+        public static string[] LangArgs = CreateArgs("lang");
+        public static string Lang { get; set; }
+        
         public static string[] Includes = { };
         public static string PathArg { get; set; }
 
@@ -152,8 +155,8 @@ namespace Web
         public static bool GistUpdate { get; set; }
         public static bool GistOpen { get; set; }
 
-        public static Dictionary<string, object> RunScriptArgs = new Dictionary<string, object>();
-        public static List<string> RunScriptArgV = new List<string>();
+        public static Dictionary<string, object> RunScriptArgs = new();
+        public static List<string> RunScriptArgV = new();
 
         public static bool Open { get; set; }
         
@@ -1271,7 +1274,13 @@ namespace Web
 
             if (TokenArgs.Contains(arg))
             {
-                GitHubToken = NextArg(ref i);
+                Token = GitHubToken = NextArg(ref i);
+                return true;
+            }
+
+            if (LangArgs.Contains(arg))
+            {
+                Lang = NextArg(ref i);
                 return true;
             }
 
@@ -1314,6 +1323,46 @@ namespace Web
             if (OutArgs.Contains(arg))
             {
                 OutDir = NextArg(ref i);
+                return true;
+            }
+
+            if (RawArgs.Contains(arg))
+            {
+                Raw = true;
+                return true;
+            }
+
+            if (BasicAuthArgs.Contains(arg))
+            {
+                BasicAuth = NextArg(ref i);
+                return true;
+            }
+            
+            if (AuthSecretArgs.Contains(arg))
+            {
+                AuthSecret = NextArg(ref i);
+                return true;
+            }
+            
+            if (SsIdArgs.Contains(arg))
+            {
+                SsId = NextArg(ref i);
+                return true;
+            }
+            if (SsPidArgs.Contains(arg))
+            {
+                SsPid = NextArg(ref i);
+                return true;
+            }
+
+            if (SaveCookiesArgs.Contains(arg))
+            {
+                SaveCookies = NextArg(ref i);
+                return true;
+            }
+            if (CookiesArgs.Contains(arg))
+            {
+                Cookies = NextArg(ref i);
                 return true;
             }
 
@@ -1700,6 +1749,9 @@ Usage:
   {indt}                           .sc - #Script `code` source file
   {indt}                           .l  - #Script `lisp` source file
   {tool} lisp                    Start Lisp REPL
+
+  {tool} base64 <text>           Convert text to Base64
+  {tool} base64 < file           Convert redirected input to Base64
 {additional}
   dotnet tool update -g {tool}   Update to latest version
 
@@ -1859,24 +1911,252 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             }
 
-            var verbs = new[] { "GET", "POST", "PUT", "DELETE", "PATCH" }.ToList();
+            if (arg == "base64")
+            {
+                if (Console.IsInputRedirected)
+                {
+                    await using var s = Console.OpenStandardInput();
+                    var bytes = await s.ReadFullyAsync();
+                    Convert.ToBase64String(bytes).Print();
+                    return new Instruction { Handled = true };
+                }
+                var target = args.Length > 1 ? args[1] : null;
+                if (target != null)
+                {
+                    Convert.ToBase64String(target.ToUtf8Bytes()).Print();
+                }
+                else
+                {
+                    $"Usage: {tool} base64 <text>".Print();
+                    $"       {tool} base64 < file.txt".Print();
+                }
+                return new Instruction { Handled = true };
+            }
+
+            var verbs = new[] { "send", "SEND", "GET", "POST", "PUT", "DELETE", "PATCH" }.ToList();
             if (verbs.Contains(arg))
             {
                 var target = args.Length > 1 ? args[1] : null;
+                var requestDto = args.Length > 2 ? args[2] : null;
+                var requestArgs = args.Length > 3 ? args[3].UrlDecode() : null;
 
-                if (target == null || !target.IsBaseUrl())
+                if (target == null || requestDto == null || !target.IsBaseUrl())
                 {
-                    $"Usage: {tool} [SEND|GET|POST|PUT|DELETE|PATCH] <base-url> <request>".Print();
-                    $"       {tool} [SEND|GET|POST|PUT|DELETE|PATCH] <base-url> <request>({{JSV-Format Args}})".Print();
+                    $"Usage: {tool} <send|GET|POST|PUT|DELETE|PATCH> <base-url> <request>".Print();
+                    $"       {tool} <send|GET|POST|PUT|DELETE|PATCH> <base-url> <request> {{js-object}}".Print();
+                    $"       {tool} <send|GET|POST|PUT|DELETE|PATCH> <base-url> <request> < body.json".Print();
                     "".Print();
                     $"Options:".Print();
-                    " -http                    Show HTTP Headers".Print();
-                    " -out <format>            View response in Content Format".Print();
-                    " -token <token>           Use JWT or API Key Bearer Token".Print();
-                    " -credentials <user:pass> Use JWT or API Key Bearer Token".Print();
+                    $" -raw                   Show raw HTTP Headers and Body".Print();
+                    $" -token <token>         Use JWT or API Key Bearer Token".Print();
+                    $" -basic <user:pass>     Use HTTP Basic Auth".Print();
+                    $" -authsecret <secret>   Use Admin Auth Secret".Print();
+                    $" -ss-id <session-id>    Use ss-id Session Id Cookie".Print();
+                    $" -save-cookies <file>   Save Response Set-Cookies to file".Print();
+                    $" -cookies <file>        Load Cookies from file".Print();
                     return new Instruction { Handled = true };
                 }
 
+                var site = await Apps.ServiceInterface.Sites.Instance.AssertSiteAsync(target);
+                byte[] redirectedInput = null;
+                if (requestArgs == null && Console.IsInputRedirected)
+                {
+                    await using var s = Console.OpenStandardInput();
+                    redirectedInput = await s.ReadFullyAsync();
+                    requestArgs = redirectedInput.FromUtf8Bytes();
+                }
+                var jsRequestArgs = Apps.ServiceInterface.Sites.ParseJsRequest(requestArgs);
+                var op = site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto);
+                if (op == null)
+                    throw new Exception($"'{requestDto}' does not exist");
+                
+                var useMethod = (arg.EqualsIgnoreCase("send")
+                    ? Apps.ServiceInterface.Sites.InferRequestMethod(op)
+                    : arg) ?? "POST";
+
+                byte[] requestBody = null;
+                var contentType = MimeTypes.Json;
+                var baseUri = new Uri(target);
+                var url = target.CombineWith("json", "reply", requestDto);
+
+                if (!HttpUtils.HasRequestBody(useMethod))
+                {
+                    var urlParams = ToUrlParams(jsRequestArgs);
+                    if (urlParams != null)
+                        url += "?" + urlParams;
+                }
+                else if (redirectedInput != null || jsRequestArgs != null)
+                {
+                    requestBody = redirectedInput ?? JSON.stringify(jsRequestArgs).ToUtf8Bytes();
+                }
+
+                var webReq = WebRequest.CreateHttp(url);
+                webReq.CookieContainer ??= new CookieContainer();
+                webReq.Method = useMethod;
+                webReq.Accept = MimeTypes.Json;
+
+                if (Token != null)
+                {
+                    webReq.Headers[HttpRequestHeader.Authorization] = $"Bearer {Token}";
+                }
+                else if (AuthSecret != null)
+                {
+                    webReq.Headers[HttpHeaders.XParamOverridePrefix + "authsecret"] = AuthSecret;
+                }
+                else if (BasicAuth != null)
+                {
+                    webReq.Headers[HttpRequestHeader.Authorization] = $"Basic {Convert.ToBase64String(BasicAuth.ToUtf8Bytes())}";
+                }
+                else if (SsId != null)
+                {
+                    webReq.CookieContainer.Add(baseUri, new Cookie("ss-id", SsId, "/"));
+                }
+                else if (SsPid != null)
+                {
+                    webReq.CookieContainer.Add(baseUri, new Cookie("ss-pid", SsPid, "/"));
+                    webReq.CookieContainer.Add(baseUri, new Cookie("ss-opt", "perm", "/"));
+                }
+
+                if (Raw)
+                {
+                    $"{webReq.Method} {url} HTTP/{webReq.ProtocolVersion}".Print();
+                    for(var i = 0; i < webReq.Headers.Count; ++i)
+                    {
+                        var header = webReq.Headers.GetKey(i);
+                        foreach(var value in webReq.Headers.GetValues(i))
+                        {
+                            $"{header}: {value}".Print();
+                        }
+                    }
+                    var sb = StringBuilderCache.Allocate();
+                    foreach (Cookie cookie in webReq.CookieContainer.GetCookies(baseUri))
+                    {
+                        if (sb.Length > 0)
+                            sb.Append("; ");
+                        sb.Append(cookie.Name).Append('=').Append(cookie.Value);
+                    }
+                    $"Cookie: {StringBuilderCache.ReturnAndFree(sb)}".Print();
+                }
+
+                void PrintBytes(byte[] bytes)
+                {
+                    try
+                    {
+                        bytes.FromUtf8Bytes().Print();
+                    }
+                    catch (Exception e)
+                    {
+                        var base64 = Convert.ToBase64String(bytes);
+                        Console.Write("(Base64) ");
+                        Console.WriteLine(base64);
+                    }
+                }
+
+                if (requestBody != null)
+                {
+                    webReq.ContentType = contentType;
+                    await using var req = webReq.GetRequestStream();
+                    await req.WriteAsync(requestBody);
+
+                    if (Raw)
+                    {
+                        $"{HttpHeaders.ContentType}: {webReq.ContentType}".Print();
+                        $"{HttpHeaders.ContentLength}: {requestBody.LongLength}".Print();
+                        "".Print();
+                        PrintBytes(requestBody);
+                    }
+                }
+                "".Print();
+
+                var webRes = webReq.GetResponse();
+                if (Raw)
+                {
+                    for(var i = 0; i < webRes.Headers.Count; ++i)
+                    {
+                        var header = webRes.Headers.GetKey(i);
+                        foreach(var value in webRes.Headers.GetValues(i))
+                        {
+                            $"{header}: {value}".Print();
+                        }
+                    }
+                    "".Print();
+                }
+                
+                await using var res = webRes.GetResponseStream();
+                var resBytes = await res.ReadFullyAsync();
+
+                if (Raw || !webRes.ContentType.MatchesContentType(MimeTypes.Json))
+                {
+                    PrintBytes(resBytes);
+                }
+                else
+                {
+                    var json = resBytes.FromUtf8Bytes();
+                    var jsonObj = JSON.parse(json);
+                    if (jsonObj is Dictionary<string, object> obj)
+                    {
+                        var keyLen = obj.Keys.Map(x => x.Length).Max() + 2;
+                        foreach (var entry in obj)
+                        {
+                            var key = entry.Key + ":";
+                            
+                            if (entry.Value is Dictionary<string, object> nestedObj)
+                            {
+                                if (nestedObj.Count > 0)
+                                {
+                                    $"{key}".Print();
+                                    $"{JSON.stringify(nestedObj)}".Print();
+                                }
+                            }
+                            else if (entry.Value is List<object> nestedList)
+                            {
+                                if (nestedList.Count > 0)
+                                {
+                                    key.Print();
+                                    var firstArg = nestedList[0];
+                                    if (firstArg is Dictionary<string, object>)
+                                    {
+                                        try
+                                        {
+                                            nestedList.PrintDumpTable();
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            Console.WriteLine(e);
+                                            throw;
+                                        }
+                                    }
+                                    else if (firstArg is List<object>)
+                                    {
+                                        $"{JSON.stringify(nestedList)}".Print();
+                                    }
+                                    else
+                                    {
+                                        foreach (var item in nestedList)
+                                        {
+                                            $"  {item}".Print();
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                $"{key.PadRight(keyLen, ' ')} {entry.Value}".Print();
+                            }
+                            "".Print();
+                        }
+                    }
+                    else if (jsonObj is List<object> list)
+                    {
+                        list.PrintDumpTable();
+                    }
+                    else
+                    {
+                        json.Print();
+                    }
+                }
+                "".Print();
+                
                 return new Instruction { Handled = true };
             }
 
@@ -1909,7 +2189,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 if (target == null || !target.IsBaseUrl())
                 {
                     $"Usage: {tool} info <base-url>".Print();
-                    $"       {tool} info <base-url> <request>({{JSV-Format Args}})".Print();
+                    $"       {tool} info <base-url> <request>".Print();
+                    $"       {tool} info <base-url> <request> -lang <csharp|python|typescript|dart|java|kotlin|swift|fsharp|vbnet>".Print();
+                    $"       {tool} info <base-url> <request> -lang <cs|py|ts|da|ja|kt|sw|fs|vb>".Print();
                     return new Instruction { Handled = true };
                 }
                 
@@ -1939,8 +2221,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     var apis = new List<ApiInfo>();
                     foreach (var op in site.Metadata.Api.Operations.Safe())
                     {
-                        var aqBaseTypes = new[] { "QueryDb`1", "QueryDb`2", "QueryData`1", "QueryData`2" }.ToList();
-                        var isAutoQuery = op.Request.Inherits != null && aqBaseTypes.Contains(op.Request.Inherits.Name);
+                        var isAutoQuery = Apps.ServiceInterface.Sites.IsAutoQuery(op);
                         var api = new ApiInfo { 
                             Api = op.Request.Name,
                             Routes = op.Response != null
@@ -1975,7 +2256,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         foreach (var tag in op.Tags)
                         {
                             if (sb.Length > 0)
-                                sb.Append(" ");
+                                sb.Append(' ');
                             sb.Append($"[{tag}]");
                         }
                         $"Tags:               {StringBuilderCache.ReturnAndFree(sb)}".Print();
@@ -2004,9 +2285,25 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     try
                     {
                         "".Print();
-                        $"# C# DTOs:".Print();
-                        var csharpDtos = await site.Languages.GetLangContentAsync("csharp", request);
-                        csharpDtos.Content.RightPart("*/").Print();
+                        var lang = Lang ?? "csharp";
+                        if (RefAlias.TryGetValue(lang, out var langAlias))
+                            lang = langAlias;
+                        if (!LangNames.TryGetValue(lang, out var langName))
+                        {
+                            $"Unknown language {lang}, valid languages: <csharp|python|typescript|dart|java|kotlin|swift|fsharp|vbnet>".Print();
+                            return new Instruction { Handled = true };
+                        }
+
+                        $"# {langName} DTOs:".Print();
+                        var langDtos = await site.Languages.GetLangContentAsync(lang, request);
+                        var dtosOnly = langName == "Python"
+                            ? langDtos.Content.Substring(20).RightPart("\"\"\"")
+                            : langName == "F#"
+                                ? langDtos.Content.RightPart("*)")
+                                : langName == "VB"
+                                    ? langDtos.Content.RightPart("\n\n")
+                                    : langDtos.Content.RightPart("*/");
+                        dtosOnly.Print();
                     }
                     catch (Exception e)
                     {
@@ -2025,16 +2322,18 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     $"Usage: {tool} jupyter <base-url>".Print();
                     $"       {tool} jupyter <base-url> <request>".Print();
                     $"       {tool} jupyter <base-url> <request> -out <file>".Print();
-                    $"       {tool} jupyter <base-url> <request>({{JSV-Format Args}})".Print();
+                    $"       {tool} jupyter <base-url> <request> {{js-object}}".Print();
                     $"".Print();
                     $"Create Jupyter Notebook API Requests at: https://apps.servicestack.net".Print();
                     return new Instruction { Handled = true };
                 }
 
-                var request = args.Length > 2 ? args[2] : null;
-                var notebook = await Apps.ServiceInterface.Sites.Instance.CreateNotebookAsync(target, request);
+                var requestDto = args.Length > 2 ? args[2] : null;
+                var requestArgs = args.Length > 3 ? args[3].UrlDecode() : null;
+                
+                var notebook = await Apps.ServiceInterface.Sites.Instance.CreateNotebookAsync(target, requestDto, requestArgs);
                 var writeTo = OutDir ?? target.RightPart("://").LeftPart('/').SafeVarRef() +
-                    (request != null ? "-" + request.LeftPart('(') : "");
+                    (requestDto != null ? "-" + requestDto.LeftPart('(') : "");
                 if (!writeTo.EndsWith(".ipynb"))
                     writeTo += ".ipynb";
                 var json = notebook.ToJson();
@@ -2654,6 +2953,22 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             if (await CheckForUpdates(tool, checkUpdatesAndQuit))
                 return new Instruction { Handled = true };
             
+            return null;
+        }
+
+        private static string ToUrlParams(Dictionary<string,object> requestArgs)
+        {
+            if (requestArgs != null)
+            {
+                var sb = StringBuilderCache.Allocate();
+                foreach (var entry in requestArgs)
+                {
+                    if (sb.Length > 0)
+                        sb.Append('&');
+                    sb.Append(entry.Key).Append('=').Append(entry.Value.ToJsv().UrlEncode());
+                }
+                return StringBuilderCache.ReturnAndFree(sb);
+            }
             return null;
         }
 

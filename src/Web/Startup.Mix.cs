@@ -48,17 +48,32 @@ namespace Web
         static string[] HelpArgs = { "/help", "--help", "-help", "?" };
 
         static string[] OutArgs = CreateArgs("out");
+        static string[] RawArgs = CreateArgs("raw");
+        static string[] BasicAuthArgs = CreateArgs("basic");
+        static string[] AuthSecretArgs = CreateArgs("authsecret");
+        static string[] SsIdArgs = CreateArgs("ss-id");
+        static string[] SsPidArgs = CreateArgs("ss-pid");
+        static string[] SaveCookiesArgs = CreateArgs("save-cookies");
+        static string[] CookiesArgs = CreateArgs("cookies");
 
         public static string[] CreateArgs(string name, char? withFlag = null) => withFlag != null
             ? new [] {"/" + withFlag, "-" + withFlag, "/" + name, "-" + name, "--" + name}
             : new [] {"/" + name, "-" + name, "--" + name};
 
         public static string OutDir { get; set; }
+        public static string BasicAuth { get; set; }
+        public static string AuthSecret { get; set; }
+        public static string SsId { get; set; }
+        public static string SsPid { get; set; }
+        public static string SaveCookies { get; set; }
+        public static string Cookies { get; set; }
         public static string Name { get; set; }
         public static string Use { get; set; }
         public static bool Preserve { get; set; }
+        public static bool Raw { get; set; }
         
         public static string GitHubToken { get; set; } 
+        public static string Token { get; set; } // only set from -token cmd line argument
 
         public static List<KeyValuePair<string,string>> ReplaceTokens { get; set; } = new List<KeyValuePair<string, string>>();
         

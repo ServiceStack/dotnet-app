@@ -170,17 +170,15 @@ namespace Apps.ServiceInterface
         private static char[] WildcardChars = {'*', ',', '{'};
         private static HashSet<string> AutoQueryDtoNames = new() {"QueryDb`1", "QueryDb`2", "QueryData`1", "QueryData`2"};
 
-        public async Task<JupyterNotebook> CreateNotebookAsync(string slug, string api = null)
+        public async Task<JupyterNotebook> CreateNotebookAsync(string slug, string requestDto = null, string requestArgs = null)
         {
             var site = await AssertSiteAsync(slug);
 
-            var includeApi = api?.LeftPart('(');
-            var requestDto = includeApi?.LastRightPart(',');
-            var includeTypes = includeApi == null
+            var includeTypes = requestDto == null
                 ? null
-                : includeApi.IndexOfAny(WildcardChars) >= 0
-                    ? includeApi
-                    : includeApi + ".*";
+                : requestDto.IndexOfAny(WildcardChars) >= 0
+                    ? requestDto
+                    : requestDto + ".*";
 
             var baseUrl = SiteUtils.UrlFromSlug(slug);
             var lang = await site.Languages.GetLangContentAsync("python", includeTypes);
@@ -199,28 +197,17 @@ namespace Apps.ServiceInterface
                 }
             };
 
-            if (api != null)
+            if (requestDto != null)
             {
                 var requestBody = "";
-                var argsBody = api.IndexOf('(') >= 0
-                    ? api.RightPart('(').LastLeftPart(')')
-                    : null;
-                if (!string.IsNullOrEmpty(argsBody))
+                var args = ParseJsRequest(requestArgs);
+                if (args != null)
                 {
                     var python = new PythonLangInfo();
-                    try
-                    {
-                        var requestArgs = ("{" + argsBody + "}").FromJsv<Dictionary<string, string>>();
-                        requestBody = python.RequestBody(requestDto, requestArgs, site.Metadata.Api);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new Exception("Request args should be in JSV Format. Please use https://apps.servicestack.net to generate Request Body");
-                    }
+                    var argsStringMap = args.ToStringDictionary();
+                    requestBody = python.RequestBody(requestDto, argsStringMap, site.Metadata.Api);
                 }
-                var requestOp = requestDto != null 
-                    ? site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto)
-                    : null;
+                var requestOp = site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto);
                 var clientMethod = (requestOp?.Actions?.FirstOrDefault() != null
                         ? (requestOp.Actions.First().EqualsIgnoreCase("ANY")
                             ? null
@@ -289,6 +276,43 @@ namespace Apps.ServiceInterface
             
             return to;
         }
+
+        public static Dictionary<string, object> ParseJsRequest(string requestArgs)
+        {
+            if (!string.IsNullOrEmpty(requestArgs))
+            {
+                try
+                {
+                    var ret = JS.eval(requestArgs);
+                    return (Dictionary<string, object>)ret;
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("Request args should be a valid JavaScript Object literal");
+                }
+            }
+            return null;
+        }
+
+        public static readonly List<string> VerbMarkers = new[]{ nameof(IGet), nameof(IPost), nameof(IPut), nameof(IDelete), nameof(IPatch) }.ToList();
+        public static string InferRequestMethod(MetadataOperationType op)
+        {
+            var method = op.Request.Implements?.FirstOrDefault(x => VerbMarkers.Contains(x.Name))?.Name.Substring(1).ToUpper();
+            if (method == null)
+            {
+                if (IsAutoQuery(op))
+                    return HttpMethods.Get;
+            }
+            return method;
+        }
+        
+        public static readonly List<string> AutoQueryBaseTypes = new[] { "QueryDb`1", "QueryDb`2", "QueryData`1", "QueryData`2" }.ToList();
+
+        public static bool IsAutoQuery(MetadataOperationType op)
+        {
+            return op.Request.Inherits != null && AutoQueryBaseTypes.Contains(op.Request.Inherits.Name);            
+        }
+
     }
 
 
