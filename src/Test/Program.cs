@@ -1140,7 +1140,25 @@ Content-Disposition: form-data; name=""EvaluateCode""
         public async Task Can_get_info_from_baseurl()
         {
             Directory.SetCurrentDirectory("wip");
-            await Startup.CreateWebHost("x", new[]{ "info", "https://techstacks.io" });
+            // await Startup.CreateWebHost("x", new[]{ "info", "https://techstacks.io" });
+            await Startup.CreateWebHost("x", new[]{ "info", "https://covid-vac-watch.netcore.io", "GetLocations" });
+        }
+
+        [Test]
+        public async Task Can_call_API_with_spaces()
+        {
+            Directory.SetCurrentDirectory("wip");
+            // await Startup.CreateWebHost("x", new[]{ "send", "https://covid-vac-watch.netcore.io", "QueryVaccinationRates", "{Location:'New Jersey'}" });
+            await Startup.CreateWebHost("x", new[]{ "send", "https://covid-vac-watch.netcore.io", "QueryVaccinationRates", "{Location:'New", "Jersey'}", "-raw" });
+        }
+
+        [Test]
+        public async Task Can_call_complex_StoreLogs_API()
+        {
+            Directory.SetCurrentDirectory("wip");
+            // await Startup.CreateWebHost("x", new[]{ "send", "https://covid-vac-watch.netcore.io", "QueryVaccinationRates", "{Location:'New Jersey'}" });
+            await Startup.CreateWebHost("x", new[]{ "GET", "http://test.servicestack.net", "StoreLogs", 
+                "{Loggers:[{Id:786,Devices:[{Id:5955,Type:Panel,Channels:[{Name:Temperature,Value:58},{Name:Status,Value:On}]}]}]}", "-raw" });
         }
 
         [Test]

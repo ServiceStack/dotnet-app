@@ -1355,11 +1355,6 @@ namespace Web
                 return true;
             }
 
-            if (SaveCookiesArgs.Contains(arg))
-            {
-                SaveCookies = NextArg(ref i);
-                return true;
-            }
             if (CookiesArgs.Contains(arg))
             {
                 Cookies = NextArg(ref i);
@@ -1742,16 +1737,19 @@ Usage:
   {tool} scripts                 List all available package.json scripts  (Alias 's')
   {tool} scripts <name>          Run package.json script                  (Alias 's')
 
-  {tool} run <name>.ss           Run #Script within context of AppHost   (or <name>.html)
-  {tool} watch <name>.ss         Watch #Script within context of AppHost (or <name>.html)
+  {tool} run <name>.ss           Run #Script within context of AppHost    (or <name>.html)
+  {tool} watch <name>.ss         Watch #Script within context of AppHost  (or <name>.html)
   {indt}                         Language File Extensions:
   {indt}                           .ss - #Script source file
   {indt}                           .sc - #Script `code` source file
   {indt}                           .l  - #Script `lisp` source file
   {tool} lisp                    Start Lisp REPL
 
-  {tool} base64 <text>           Convert text to Base64
-  {tool} base64 < file           Convert redirected input to Base64
+  {tool} base64 <text>           Convert text to Base64                   (or base64url)
+  {tool} base64 < file           Convert redirected input to Base64       (or base64url)
+  {tool} unbase64 <base64>       Convert from Base64 to text              (or unbase64url)
+  {tool} unbase64 < file         Convert redirected Base64 input to text  (or unbase64url)
+  {tool} inspect-jwt             Show decoded JWT 
 {additional}
   dotnet tool update -g {tool}   Update to latest version
 
@@ -1913,22 +1911,91 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             if (arg == "base64")
             {
-                if (Console.IsInputRedirected)
-                {
-                    await using var s = Console.OpenStandardInput();
-                    var bytes = await s.ReadFullyAsync();
-                    Convert.ToBase64String(bytes).Print();
-                    return new Instruction { Handled = true };
-                }
-                var target = args.Length > 1 ? args[1] : null;
-                if (target != null)
-                {
-                    Convert.ToBase64String(target.ToUtf8Bytes()).Print();
-                }
-                else
+                var (redirectedInput, text) = await args.CaptureRemainingArgsOrRedirectedInputAsync(1);
+                if (text == null)
                 {
                     $"Usage: {tool} base64 <text>".Print();
                     $"       {tool} base64 < file.txt".Print();
+                    $"       {tool} base64url <text>".Print();
+                    $"       {tool} base64url < file.txt".Print();
+                }
+                else
+                {
+                    Convert.ToBase64String(text.ToUtf8Bytes()).Print();
+                }
+                return new Instruction { Handled = true };
+            }
+            if (arg == "base64url")
+            {
+                var (redirectedInput, text) = await args.CaptureRemainingArgsOrRedirectedInputAsync(1);
+                if (text == null)
+                {
+                    $"Usage: {tool} base64 <text>".Print();
+                    $"       {tool} base64 < file.txt".Print();
+                    $"       {tool} base64url <text>".Print();
+                    $"       {tool} base64url < file.txt".Print();
+                }
+                else
+                {
+                    text.ToUtf8Bytes().ToBase64UrlSafe().Print();
+                }
+                return new Instruction { Handled = true };
+            }
+            if (arg == "unbase64")
+            {
+                var (redirectedInput, base64) = await args.CaptureRemainingArgsOrRedirectedInputAsync(1);
+                if (base64 == null)
+                {
+                    $"Usage: {tool} unbase64 <text>".Print();
+                    $"       {tool} unbase64 < file.txt".Print();
+                    $"       {tool} unbase64url <text>".Print();
+                    $"       {tool} unbase64url < file.txt".Print();
+                }
+                else
+                {
+                    Convert.FromBase64String(base64).FromUtf8Bytes().Print();
+                }
+                return new Instruction { Handled = true };
+            }
+            if (arg == "unbase64url")
+            {
+                var (redirectedInput, base64) = await args.CaptureRemainingArgsOrRedirectedInputAsync(1);
+                if (base64 == null)
+                {
+                    $"Usage: {tool} unbase64 <text>".Print();
+                    $"       {tool} unbase64 < file.txt".Print();
+                    $"       {tool} unbase64url <text>".Print();
+                    $"       {tool} unbase64url < file.txt".Print();
+                }
+                else
+                {
+                    base64.FromBase64UrlSafe().FromUtf8Bytes().Print();
+                }
+                return new Instruction { Handled = true };
+            }
+
+            if (arg == "inspect-jwt")
+            {
+                var (redirectedInput, jwt) = await args.CaptureRemainingArgsOrRedirectedInputAsync(1);
+                if (jwt == null)
+                {
+                    $"Usage: {tool} inspect-jwt <jwt>".Print();
+                    $"       {tool} inspect-jwt < file.txt".Print();
+                }
+                else
+                {
+                    var header = JwtAuthProviderReader.ExtractHeader(jwt);
+                    "".Print();
+                    "[JWT Header]".Print();
+                    header.PrintFriendlyObject();
+                    var payload = JwtAuthProviderReader.ExtractPayload(jwt);
+                    if (payload.TryGetValue("iat", out var iatObj) && iatObj is int iatEpoch)
+                        payload["iat"] = $"{iatEpoch} ({iatEpoch.FromUnixTime():R})";
+                    if (payload.TryGetValue("exp", out var expObj) && expObj is int expEpoch)
+                        payload["exp"] = $"{expEpoch} ({expEpoch.FromUnixTime():R})";
+                    "".Print();
+                    "[JWT Payload]".Print();
+                    payload.PrintFriendlyObject();
                 }
                 return new Instruction { Handled = true };
             }
@@ -1938,7 +2005,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {
                 var target = args.Length > 1 ? args[1] : null;
                 var requestDto = args.Length > 2 ? args[2] : null;
-                var requestArgs = args.Length > 3 ? args[3].UrlDecode() : null;
+                var (redirectedInput, requestArgs) = await args.CaptureRemainingArgsOrRedirectedInputAsync(3);
 
                 if (target == null || requestDto == null || !target.IsBaseUrl())
                 {
@@ -1952,19 +2019,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     $" -basic <user:pass>     Use HTTP Basic Auth".Print();
                     $" -authsecret <secret>   Use Admin Auth Secret".Print();
                     $" -ss-id <session-id>    Use ss-id Session Id Cookie".Print();
-                    $" -save-cookies <file>   Save Response Set-Cookies to file".Print();
-                    $" -cookies <file>        Load Cookies from file".Print();
+                    $" -cookies <file>        Store and Load Cookies from file".Print();
                     return new Instruction { Handled = true };
                 }
-
+                
                 var site = await Apps.ServiceInterface.Sites.Instance.AssertSiteAsync(target);
-                byte[] redirectedInput = null;
-                if (requestArgs == null && Console.IsInputRedirected)
-                {
-                    await using var s = Console.OpenStandardInput();
-                    redirectedInput = await s.ReadFullyAsync();
-                    requestArgs = redirectedInput.FromUtf8Bytes();
-                }
                 var jsRequestArgs = Apps.ServiceInterface.Sites.ParseJsRequest(requestArgs);
                 var op = site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto);
                 if (op == null)
@@ -1991,7 +2050,22 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
 
                 var webReq = WebRequest.CreateHttp(url);
-                webReq.CookieContainer ??= new CookieContainer();
+                webReq.CookieContainer = new CookieContainer();
+                if (Cookies != null && File.Exists(Cookies))
+                {
+                    await using var fs = new FileInfo(Cookies).OpenRead();
+                    var container = new CookieContainer();
+                    var formatter = new DataContractSerializer(typeof(List<Cookie>));
+                    var cookies = (List<Cookie>)formatter.ReadObject(fs);
+                    var cookieCollection = new CookieCollection();
+                    foreach (var cookie in cookies)
+                    {
+                        cookieCollection.Add(cookie);
+                    }
+                    container.Add(baseUri, cookieCollection);
+                    webReq.CookieContainer = container;
+                }
+                
                 webReq.Method = useMethod;
                 webReq.Accept = MimeTypes.Json;
 
@@ -2005,7 +2079,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
                 else if (BasicAuth != null)
                 {
-                    webReq.Headers[HttpRequestHeader.Authorization] = $"Basic {Convert.ToBase64String(BasicAuth.ToUtf8Bytes())}";
+                    var basicBase64 = BasicAuth.IndexOf(':') >= 0
+                        ? Convert.ToBase64String(BasicAuth.ToUtf8Bytes())
+                        : BasicAuth;
+                    webReq.Headers[HttpRequestHeader.Authorization] = $"Basic {basicBase64}";
                 }
                 else if (SsId != null)
                 {
@@ -2019,7 +2096,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 if (Raw)
                 {
-                    $"{webReq.Method} {url} HTTP/{webReq.ProtocolVersion}".Print();
+                    var uri = new Uri(url);
+                    $"{webReq.Method} {uri.PathAndQuery} HTTP/{webReq.ProtocolVersion}".Print();
+                    var port = uri.Port != 80 && uri.Port != 443 ? $":{uri.Port}" : "";
+                    $"Host: {uri.Host}{port}".Print();
                     for(var i = 0; i < webReq.Headers.Count; ++i)
                     {
                         var header = webReq.Headers.GetKey(i);
@@ -2073,6 +2153,21 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 "".Print();
 
                 var webRes = webReq.GetResponse();
+                if (Cookies != null)
+                {
+                    await using var fs = new FileInfo(Cookies).OpenWrite();
+                    var cookies = webReq.CookieContainer.GetCookies(baseUri);
+                    var formatter = new DataContractSerializer(typeof(List<Cookie>));
+                    var cookieList = new List<Cookie>();
+                    for (var enumerator = cookies.GetEnumerator(); enumerator.MoveNext(); )
+                    {
+                        var cookie = enumerator.Current as Cookie;
+                        if (cookie == null) continue;
+                        cookieList.Add(cookie);
+                    }
+                    formatter.WriteObject(fs, cookieList);
+                }
+                
                 if (Raw)
                 {
                     for(var i = 0; i < webRes.Headers.Count; ++i)
@@ -2096,68 +2191,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else
                 {
                     var json = resBytes.FromUtf8Bytes();
-                    var jsonObj = JSON.parse(json);
-                    if (jsonObj is Dictionary<string, object> obj)
-                    {
-                        var keyLen = obj.Keys.Map(x => x.Length).Max() + 2;
-                        foreach (var entry in obj)
-                        {
-                            var key = entry.Key + ":";
-                            
-                            if (entry.Value is Dictionary<string, object> nestedObj)
-                            {
-                                if (nestedObj.Count > 0)
-                                {
-                                    $"{key}".Print();
-                                    $"{JSON.stringify(nestedObj)}".Print();
-                                }
-                            }
-                            else if (entry.Value is List<object> nestedList)
-                            {
-                                if (nestedList.Count > 0)
-                                {
-                                    key.Print();
-                                    var firstArg = nestedList[0];
-                                    if (firstArg is Dictionary<string, object>)
-                                    {
-                                        try
-                                        {
-                                            nestedList.PrintDumpTable();
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            Console.WriteLine(e);
-                                            throw;
-                                        }
-                                    }
-                                    else if (firstArg is List<object>)
-                                    {
-                                        $"{JSON.stringify(nestedList)}".Print();
-                                    }
-                                    else
-                                    {
-                                        foreach (var item in nestedList)
-                                        {
-                                            $"  {item}".Print();
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                $"{key.PadRight(keyLen, ' ')} {entry.Value}".Print();
-                            }
-                            "".Print();
-                        }
-                    }
-                    else if (jsonObj is List<object> list)
-                    {
-                        list.PrintDumpTable();
-                    }
-                    else
-                    {
-                        json.Print();
-                    }
+                    json.PrintFriendlyJson();
                 }
                 "".Print();
                 
@@ -2264,9 +2298,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             sb.Append($"[{tag}]");
                         }
                         $"Tags:               {StringBuilderCache.ReturnAndFree(sb)}".Print();
-                        if (op.Routes?.Count > 0)
-                            $"Routes:             {GetRoutes(op)}".Print();
                     }
+                    if (op.Routes?.Count > 0)
+                        $"Routes:             {GetRoutes(op)}".Print();
                     if (op.RequiresAuth)
                     {
                         "".Print();
@@ -2969,7 +3003,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 {
                     if (sb.Length > 0)
                         sb.Append('&');
-                    sb.Append(entry.Key).Append('=').Append(entry.Value.ToJsv().UrlEncode());
+                    var qsStrVal = entry.Value is string str
+                        ? str
+                        : entry.Value.ToJsv();
+                    sb.Append(entry.Key).Append('=').Append(qsStrVal.UrlEncode());
                 }
                 return StringBuilderCache.ReturnAndFree(sb);
             }
@@ -4531,6 +4568,105 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             to.Body = body.Slice(0, bodyEndPos - 2).ToString(); // /r/n
 
             return to;
+        }
+        
+        public static async Task<(byte[], string)> CaptureRemainingArgsOrRedirectedInputAsync(this string[] args, int index)
+        {
+            if (Console.IsInputRedirected)
+            {
+                await using var s = Console.OpenStandardInput();
+                var redirectedInput = await s.ReadFullyAsync();
+                return (redirectedInput, redirectedInput.FromUtf8Bytes());
+            }
+            if (args.Length > index)
+            {
+                var sb = StringBuilderCache.Allocate();
+                for (var i = index; i < args.Length; i++)
+                {
+                    if (sb.Length > 0)
+                        sb.Append(' ');
+                    sb.Append(args[i]);
+                }
+                var requestArgs = StringBuilderCache.ReturnAndFree(sb).UrlDecode();
+                return (null, requestArgs);
+            }
+            return (null, null);
+        }
+
+        public static void PrintFriendlyJson(this string json)
+        {
+            var jsonObj = JSON.parse(json);
+            PrintFriendlyObject(jsonObj);
+        }
+
+        public static void PrintFriendlyObject(this object jsonObj)
+        {
+            if (jsonObj is Dictionary<string, object> obj)
+            {
+                var keyLen = obj.Keys.Map(x => x.Length).Max() + 2;
+                foreach (var (k, value) in obj)
+                {
+                    var key = k + ":";
+                    if (value is Dictionary<string, object> nestedObj)
+                    {
+                        if (nestedObj.Count > 0)
+                        {
+                            $"{key}".Print();
+                            nestedObj.PrintDump();
+                        }
+                    }
+                    else if (value is List<object> nestedList)
+                    {
+                        if (nestedList.Count > 0)
+                        {
+                            key.Print();
+                            var showNakedList = nestedList
+                                .All(x => x is not Dictionary<string, object> and not List<object>);
+                            var showTable = nestedList
+                                .All(x => x is Dictionary<string, object> nestedItem && nestedItem.Values
+                                    .All(y => y is not Dictionary<string, object> and not List<object>));
+
+                            if (showNakedList)
+                            {
+                                foreach (var item in nestedList)
+                                {
+                                    $"  {item}".Print();
+                                }
+                            }
+                            else if (showTable)
+                            {
+                                try
+                                {
+                                    nestedList.PrintDumpTable();
+                                }
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine(e);
+                                    throw;
+                                }
+                            }
+                            else
+                            {
+                                nestedList.PrintDump();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        $"{key.PadRight(keyLen, ' ')} {value}".Print();
+                    }
+
+                    "".Print();
+                }
+            }
+            else if (jsonObj is List<object> list)
+            {
+                list.PrintDumpTable();
+            }
+            else
+            {
+                jsonObj.PrintDump();
+            }
         }
     }
 

@@ -53,7 +53,6 @@ namespace Web
         static string[] AuthSecretArgs = CreateArgs("authsecret");
         static string[] SsIdArgs = CreateArgs("ss-id");
         static string[] SsPidArgs = CreateArgs("ss-pid");
-        static string[] SaveCookiesArgs = CreateArgs("save-cookies");
         static string[] CookiesArgs = CreateArgs("cookies");
 
         public static string[] CreateArgs(string name, char? withFlag = null) => withFlag != null
@@ -65,7 +64,6 @@ namespace Web
         public static string AuthSecret { get; set; }
         public static string SsId { get; set; }
         public static string SsPid { get; set; }
-        public static string SaveCookies { get; set; }
         public static string Cookies { get; set; }
         public static string Name { get; set; }
         public static string Use { get; set; }
