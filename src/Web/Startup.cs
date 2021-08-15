@@ -1710,8 +1710,14 @@ Usage:
   {tool} proto-<lang> <file|dir> Update gRPC .proto and re-gen language   (-out <dir>)
   {tool} proto-<lang>            Update all gRPC .proto's and re-gen lang (-out <dir>)
 
-  {tool} info <url>              Show info about a ServiceStack App
-  {tool} info <url> <request>    Show info about a ServiceStack API Request
+  {tool} inspect <url>           Show info about a ServiceStack App
+  {tool} inspect <url> <request> Show info about a ServiceStack API Request
+  {tool} inspect-jwt             Show info about a decoded JWT
+
+  {tool} send                    Show usage info info for Post Command
+  {tool} jupyter-python          Show usage info for generating Python Jupyter Notebooks
+  {tool} jupyter-csharp          Show usage info for generating C# Jupyter Notebooks
+  {tool} jupyter-fsharp          Show usage info for generating F# Jupyter Notebooks
 
   {tool} open                    List of available Sharp Apps
   {tool} open <app>              Install and run Sharp App
@@ -1749,7 +1755,6 @@ Usage:
   {tool} base64 < file           Convert redirected input to Base64       (or base64url)
   {tool} unbase64 <base64>       Convert from Base64 to text              (or unbase64url)
   {tool} unbase64 < file         Convert redirected Base64 input to text  (or unbase64url)
-  {tool} inspect-jwt             Show decoded JWT 
 {additional}
   dotnet tool update -g {tool}   Update to latest version
 
@@ -2024,7 +2029,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
                 
                 var site = await Apps.ServiceInterface.Sites.Instance.AssertSiteAsync(target);
-                var jsRequestArgs = Apps.ServiceInterface.Sites.ParseJsRequest(requestArgs);
+                var jsRequestArgs = ParseJsRequest(requestArgs);
                 var op = site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto);
                 if (op == null)
                     throw new Exception($"'{requestDto}' does not exist");
@@ -2103,7 +2108,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     for(var i = 0; i < webReq.Headers.Count; ++i)
                     {
                         var header = webReq.Headers.GetKey(i);
-                        foreach(var value in webReq.Headers.GetValues(i))
+                        var values = webReq.Headers.GetValues(i);
+                        if (values == null) continue;
+                        foreach(var value in values)
                         {
                             $"{header}: {value}".Print();
                         }
@@ -2122,17 +2129,18 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     }
                 }
 
-                void PrintBytes(byte[] bytes)
+                void PrintBytes(byte[] bytes, string contentType)
                 {
-                    try
+                    if (bytes == null || bytes.Length == 0)
+                        return;
+                    if (contentType.IsBinary())
+                    {
+                        Console.Write("(Base64) ");
+                        Console.WriteLine(Convert.ToBase64String(bytes));
+                    }
+                    else
                     {
                         bytes.FromUtf8Bytes().Print();
-                    }
-                    catch (Exception e)
-                    {
-                        var base64 = Convert.ToBase64String(bytes);
-                        Console.Write("(Base64) ");
-                        Console.WriteLine(base64);
                     }
                 }
 
@@ -2147,12 +2155,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         $"{HttpHeaders.ContentType}: {webReq.ContentType}".Print();
                         $"{HttpHeaders.ContentLength}: {requestBody.LongLength}".Print();
                         "".Print();
-                        PrintBytes(requestBody);
+                        PrintBytes(requestBody, webReq.ContentType);
                     }
                 }
                 "".Print();
 
-                var webRes = webReq.GetResponse();
+                var webRes = (HttpWebResponse)webReq.GetResponse();
                 if (Cookies != null)
                 {
                     await using var fs = new FileInfo(Cookies).OpenWrite();
@@ -2170,6 +2178,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 
                 if (Raw)
                 {
+                    $"HTTP/{webRes.ProtocolVersion} {(int)webRes.StatusCode} {webRes.StatusDescription}".Print();
                     for(var i = 0; i < webRes.Headers.Count; ++i)
                     {
                         var header = webRes.Headers.GetKey(i);
@@ -2184,9 +2193,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 await using var res = webRes.GetResponseStream();
                 var resBytes = await res.ReadFullyAsync();
 
-                if (Raw || !webRes.ContentType.MatchesContentType(MimeTypes.Json))
+                if (Raw)
                 {
-                    PrintBytes(resBytes);
+                    PrintBytes(resBytes, webRes.ContentType);
                 }
                 else
                 {
@@ -2198,7 +2207,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return new Instruction { Handled = true };
             }
 
-            if (arg.StartsWith("info"))
+            if (arg.StartsWith("inspect"))
             {
                 string GetRoutes(MetadataOperationType op)
                 {
@@ -2226,10 +2235,10 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 if (target == null || !target.IsBaseUrl())
                 {
-                    $"Usage: {tool} info <base-url>".Print();
-                    $"       {tool} info <base-url> <request>".Print();
-                    $"       {tool} info <base-url> <request> -lang <csharp|python|typescript|dart|java|kotlin|swift|fsharp|vbnet>".Print();
-                    $"       {tool} info <base-url> <request> -lang <cs|py|ts|da|ja|kt|sw|fs|vb>".Print();
+                    $"Usage: {tool} inspect <base-url>".Print();
+                    $"       {tool} inspect <base-url> <request>".Print();
+                    $"       {tool} inspect <base-url> <request> -lang <csharp|python|typescript|dart|java|kotlin|swift|fsharp|vbnet>".Print();
+                    $"       {tool} inspect <base-url> <request> -lang <cs|py|ts|da|ja|kt|sw|fs|vb>".Print();
                     return new Instruction { Handled = true };
                 }
                 
@@ -2333,14 +2342,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         }
 
                         $"# {langName} DTOs:".Print();
-                        var langDtos = await site.Languages.GetLangContentAsync(lang, request);
-                        var dtosOnly = langName == "Python"
-                            ? langDtos.Content.Substring(20).RightPart("\"\"\"")
-                            : langName == "F#"
-                                ? langDtos.Content.RightPart("*)")
-                                : langName == "VB"
-                                    ? langDtos.Content.RightPart("\n\n")
-                                    : langDtos.Content.RightPart("*/");
+                        var langDtos = await site.Languages.GetLangContentAsync(lang, request, excludeNamespace:true);
+                        var dtosOnly = Apps.ServiceInterface.LanguageInfo.RemoveHeaderCommentsFromDtos(lang, langDtos.Content);
                         dtosOnly.Print();
                     }
                     catch (Exception e)
@@ -2353,28 +2356,48 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             if (arg.StartsWith("jupyter"))
             {
-                var target = args.Length > 1 ? args[1] : null;
+                Apps.ServiceInterface.Langs.LangInfo lang = arg switch {
+                    "jupyter" => new Apps.ServiceInterface.Langs.PythonLangInfo(),
+                    "jupyter-python" => new Apps.ServiceInterface.Langs.PythonLangInfo(),
+                    "jupyter-csharp" => new Apps.ServiceInterface.Langs.CSharpLangInfo(),
+                    "jupyter-fsharp" => new Apps.ServiceInterface.Langs.FSharpLangInfo(),
+                    _ => throw new NotSupportedException($"'{arg}' is not a supported language for generating Jupyter Notebooks")
+                };
 
-                if (target == null || !target.IsBaseUrl())
+                var baseUrl = args.Length > 1 ? args[1] : null;
+
+                if (baseUrl == null || !baseUrl.IsBaseUrl())
                 {
-                    $"Usage: {tool} jupyter <base-url>".Print();
-                    $"       {tool} jupyter <base-url> <request>".Print();
-                    $"       {tool} jupyter <base-url> <request> -out <file>".Print();
-                    $"       {tool} jupyter <base-url> <request> {{js-object}}".Print();
+                    $"Usage: {tool} jupyter-{lang.Code} <base-url>".Print();
+                    $"       {tool} jupyter-{lang.Code} <base-url> <request>".Print();
+                    $"       {tool} jupyter-{lang.Code} <base-url> <request> {{js-object}}".Print();
+                    $"       {tool} jupyter-{lang.Code} <base-url> <request> < body.json".Print();
                     $"".Print();
-                    $"Create Jupyter Notebook API Requests at: https://apps.servicestack.net".Print();
+                    $"Options:".Print();
+                    $" -out <file>            Save notebook to file".Print();
+                    $" -include <pattern>     Include Types DTOs pattern".Print();
+                    "".Print();
+                    $"UI for generating custom Jupyter Notebooks: https://apps.servicestack.net".Print();
                     return new Instruction { Handled = true };
                 }
 
                 var requestDto = args.Length > 2 ? args[2] : null;
-                var requestArgs = args.Length > 3 ? args[3].UrlDecode() : null;
-                
-                var notebook = await Apps.ServiceInterface.Sites.Instance.CreateNotebookAsync(target, requestDto, requestArgs);
-                var writeTo = OutDir ?? target.RightPart("://").LeftPart('/').SafeVarRef() +
-                    (requestDto != null ? "-" + requestDto.LeftPart('(') : "");
+                var (redirectedInput, requestArgs) = await args.CaptureRemainingArgsOrRedirectedInputAsync(3);
+
+                var includeTypes = Includes?.FirstOrDefault();
+                if (includeTypes == null && requestDto == null)
+                    includeTypes = "*";
+                var notebook = await Apps.ServiceInterface.Sites.Instance.CreateNotebookAsync(lang, baseUrl, includeTypes, requestDto, requestArgs);
+
+                var suffix = requestDto ?? (includeTypes.Replace("{", "").Replace("}", "").Replace(".", "").Replace("*", "").Replace(",", "-"));
+                var writeTo = OutDir ?? 
+                              baseUrl.RightPart("://").LeftPart('/').SafeVarRef() +
+                              (string.IsNullOrEmpty(suffix) ? "" : "-" + suffix);
                 if (!writeTo.EndsWith(".ipynb"))
                     writeTo += ".ipynb";
-                var json = notebook.ToJson();
+
+                var json = notebook.ToJson().IndentJson();
+                
                 await File.WriteAllTextAsync(writeTo, json);
 
                 "".Print();
@@ -3011,6 +3034,13 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 return StringBuilderCache.ReturnAndFree(sb);
             }
             return null;
+        }
+
+        public static Dictionary<string, object> ParseJsRequest(string requestArgs)
+        {
+            var jsRequestArgs = Apps.ServiceInterface.Langs.LangInfo.ParseJsRequest(requestArgs);
+            if (Verbose) $"JS Request: {jsRequestArgs?.ToJson()}".Print();
+            return jsRequestArgs;
         }
 
         private static readonly char[] UrlAndNonGistChars = {'.', '%', ':', '-', '?', '=', '+', '#'};
@@ -4558,12 +4588,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
             var bodyStartPos = dataElement.IndexOf("\r\n\r\n");
             if (bodyStartPos == -1)
-                throw new ArgumentException("Invalid Body Start", nameof(dataElement));
+                throw new ArgumentException(@"Invalid Body Start", nameof(dataElement));
 
             var body = dataElement.Advance(bodyStartPos + 4);
             var bodyEndPos = body.IndexOf(boundary);
             if (bodyEndPos == -1)
-                throw new ArgumentException("Invalid Body End", nameof(dataElement));
+                throw new ArgumentException(@"Invalid Body End", nameof(dataElement));
 
             to.Body = body.Slice(0, bodyEndPos - 2).ToString(); // /r/n
 
@@ -4576,6 +4606,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {
                 await using var s = Console.OpenStandardInput();
                 var redirectedInput = await s.ReadFullyAsync();
+                if (Startup.Verbose) $"Captured Input: {redirectedInput.FromUtf8Bytes()}".Print();
                 return (redirectedInput, redirectedInput.FromUtf8Bytes());
             }
             if (args.Length > index)
@@ -4587,9 +4618,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         sb.Append(' ');
                     sb.Append(args[i]);
                 }
-                var requestArgs = StringBuilderCache.ReturnAndFree(sb).UrlDecode();
+                var requestArgs = StringBuilderCache.ReturnAndFree(sb);
+                if (Startup.Verbose) $"Captured Input: {requestArgs}".Print();
                 return (null, requestArgs);
             }
+            if (Startup.Verbose) $"Captured Input: null".Print();
             return (null, null);
         }
 
@@ -4601,72 +4634,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public static void PrintFriendlyObject(this object jsonObj)
         {
-            if (jsonObj is Dictionary<string, object> obj)
-            {
-                var keyLen = obj.Keys.Map(x => x.Length).Max() + 2;
-                foreach (var (k, value) in obj)
-                {
-                    var key = k + ":";
-                    if (value is Dictionary<string, object> nestedObj)
-                    {
-                        if (nestedObj.Count > 0)
-                        {
-                            $"{key}".Print();
-                            nestedObj.PrintDump();
-                        }
-                    }
-                    else if (value is List<object> nestedList)
-                    {
-                        if (nestedList.Count > 0)
-                        {
-                            key.Print();
-                            var showNakedList = nestedList
-                                .All(x => x is not Dictionary<string, object> and not List<object>);
-                            var showTable = nestedList
-                                .All(x => x is Dictionary<string, object> nestedItem && nestedItem.Values
-                                    .All(y => y is not Dictionary<string, object> and not List<object>));
-
-                            if (showNakedList)
-                            {
-                                foreach (var item in nestedList)
-                                {
-                                    $"  {item}".Print();
-                                }
-                            }
-                            else if (showTable)
-                            {
-                                try
-                                {
-                                    nestedList.PrintDumpTable();
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine(e);
-                                    throw;
-                                }
-                            }
-                            else
-                            {
-                                nestedList.PrintDump();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        $"{key.PadRight(keyLen, ' ')} {value}".Print();
-                    }
-
-                    "".Print();
-                }
-            }
-            else if (jsonObj is List<object> list)
-            {
-                list.PrintDumpTable();
-            }
-            else
-            {
-                jsonObj.PrintDump();
-            }
+            Inspect.printDump(jsonObj);
         }
     }
 

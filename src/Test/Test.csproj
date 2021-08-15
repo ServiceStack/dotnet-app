@@ -28,17 +28,17 @@
         <PackageReference Include="NUnit" Version="3.12.0" />
         <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
 
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.3" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.9" />
         <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
-        <PackageReference Include="Mysql.Data" Version="8.0.21" />
-        <PackageReference Include="Npgsql" Version="4.1.5" />
-        <PackageReference Include="Markdig" Version="0.20.0" />
-        <PackageReference Include="NUglify" Version="1.5.14" />
-        <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.7.0" />
+        <PackageReference Include="Mysql.Data" Version="8.0.26" />
+        <PackageReference Include="Npgsql" Version="4.1.9" />
+        <PackageReference Include="Markdig" Version="0.25.0" />
+        <PackageReference Include="NUglify" Version="1.14.0" />
+        <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.7.2" />
 
         <PackageReference Include="WinApi" Version="4.*" />
-        <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
-        
+        <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+
         <!--<PackageReference Include="ServiceStack.Text" Version="5.*" />-->
         <!--<PackageReference Include="ServiceStack.Interfaces" Version="5.*" />-->
         <!--<PackageReference Include="ServiceStack.Client" Version="5.*" />-->
@@ -73,11 +73,16 @@
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.Source.csproj" />
         <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.Source.csproj" />
 
-        <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     </ItemGroup>
     <ItemGroup>
       <Compile Include="..\App\Shortcut.cs">
         <Link>Shortcut.cs</Link>
+      </Compile>
+      <Compile Include="..\Web\CSharpLangInfo.cs">
+        <Link>CSharpLangInfo.cs</Link>
+      </Compile>
+      <Compile Include="..\Web\FSharpLangInfo.cs">
+        <Link>FSharpLangInfo.cs</Link>
       </Compile>
       <Compile Include="..\Web\LangInfo.cs">
         <Link>LangInfo.cs</Link>

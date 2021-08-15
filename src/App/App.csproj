@@ -2,7 +2,7 @@
 
     <PropertyGroup>
     <TargetFramework>net5</TargetFramework>
-    <Version>5.1.26</Version>
+    <Version>5.1.29</Version>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <Platforms>x64</Platforms>
@@ -29,6 +29,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Web\CSharpLangInfo.cs">
+      <Link>CSharpLangInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Web\FSharpLangInfo.cs">
+      <Link>FSharpLangInfo.cs</Link>
+    </Compile>
     <Compile Include="..\Web\LangInfo.cs">
       <Link>LangInfo.cs</Link>
     </Compile>
@@ -62,10 +68,10 @@
     <ItemGroup>
         <!--    <FrameworkReference Include="Microsoft.AspNetCore.App" />-->
 
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.5" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.9" />
         <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
         <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
-        <PackageReference Include="Mysql.Data" Version="8.0.21" />
+        <PackageReference Include="Mysql.Data" Version="8.0.26" />
         <PackageReference Include="Npgsql" Version="4.1.9" />
         <PackageReference Include="Markdig" Version="0.24.0" />
         <PackageReference Include="NUglify" Version="1.13.8" />
@@ -73,28 +79,28 @@
         <PackageReference Include="WinApi" Version="4.*" />
         <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
 
-        <PackageReference Include="PInvoke.AdvApi32" Version="0.7.78" />
-        <PackageReference Include="PInvoke.BCrypt" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Crypt32" Version="0.7.78" />
-        <PackageReference Include="PInvoke.DwmApi" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Gdi32" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Hid" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Kernel32" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Magnification" Version="0.7.78" />
-        <PackageReference Include="PInvoke.MSCorEE" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Msi" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Fusion" Version="0.7.78" />
-        <PackageReference Include="PInvoke.NCrypt" Version="0.7.78" />
-        <PackageReference Include="PInvoke.NetApi32" Version="0.7.78" />
-        <PackageReference Include="PInvoke.NTDll" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Psapi" Version="0.7.78" />
-        <PackageReference Include="PInvoke.SetupApi" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Shell32" Version="0.7.78" />
-        <PackageReference Include="PInvoke.SHCore" Version="0.7.78" />
-        <PackageReference Include="PInvoke.User32" Version="0.7.78" />
-        <PackageReference Include="PInvoke.Userenv" Version="0.7.78" />
-        <PackageReference Include="PInvoke.UxTheme" Version="0.7.78" />
-        <PackageReference Include="PInvoke.WtsApi32" Version="0.7.78" />
+        <PackageReference Include="PInvoke.AdvApi32" Version="0.7.104" />
+        <PackageReference Include="PInvoke.BCrypt" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Crypt32" Version="0.7.104" />
+        <PackageReference Include="PInvoke.DwmApi" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Gdi32" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Hid" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Kernel32" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Magnification" Version="0.7.104" />
+        <PackageReference Include="PInvoke.MSCorEE" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Msi" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Fusion" Version="0.7.104" />
+        <PackageReference Include="PInvoke.NCrypt" Version="0.7.104" />
+        <PackageReference Include="PInvoke.NetApi32" Version="0.7.104" />
+        <PackageReference Include="PInvoke.NTDll" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Psapi" Version="0.7.104" />
+        <PackageReference Include="PInvoke.SetupApi" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Shell32" Version="0.7.104" />
+        <PackageReference Include="PInvoke.SHCore" Version="0.7.104" />
+        <PackageReference Include="PInvoke.User32" Version="0.7.104" />
+        <PackageReference Include="PInvoke.Userenv" Version="0.7.104" />
+        <PackageReference Include="PInvoke.UxTheme" Version="0.7.104" />
+        <PackageReference Include="PInvoke.WtsApi32" Version="0.7.104" />
         
         <!-- 
         <PackageReference Include="ServiceStack.CefGlue" Version="5.*" />

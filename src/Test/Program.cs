@@ -1111,21 +1111,28 @@ Content-Disposition: form-data; name=""EvaluateCode""
         public async Task Can_generate_jupyter_notebook()
         {
             Directory.SetCurrentDirectory("wip");
-            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io" });
+            await Startup.CreateWebHost("x", new[]{ "jupyter-python", "https://techstacks.io" });
+        }
+
+        [Test]
+        public async Task Can_generate_jupyter_notebook_with_tagged_DTOs()
+        {
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "jupyter-csharp", "https://techstacks.io", "-include", "{AutoQuery}" });
         }
 
         [Test]
         public async Task Can_generate_jupyter_notebook_with_API()
         {
             Directory.SetCurrentDirectory("wip");
-            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "AppOverview" });
+            await Startup.CreateWebHost("x", new[]{ "jupyter-python", "https://techstacks.io", "AppOverview" });
         }
 
         [Test]
         public async Task Can_generate_jupyter_notebook_with_API_and_out()
         {
             Directory.SetCurrentDirectory("wip");
-            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "AppOverview", "-out", "techstacks-custom" });
+            await Startup.CreateWebHost("x", new[]{ "jupyter-python", "https://techstacks.io", "AppOverview", "-out", "techstacks-custom" });
             // await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "FindTechnologies", "{Ids:[1,2,3],VendorName:'Google'}", "-out", "techstacks-custom-find" });
         }
 
@@ -1133,7 +1140,7 @@ Content-Disposition: form-data; name=""EvaluateCode""
         public async Task Can_generate_jupyter_notebook_with_complex_API()
         {
             Directory.SetCurrentDirectory("wip");
-            await Startup.CreateWebHost("x", new[]{ "jupyter", "https://techstacks.io", "FindTechnologies", "{Ids:[1,2,3],VendorName:'Google'}" });
+            await Startup.CreateWebHost("x", new[]{ "jupyter-python", "https://techstacks.io", "FindTechnologies", "{Ids:[1,2,3],VendorName:'Google'}" });
         }
 
         [Test]
@@ -1160,7 +1167,7 @@ Content-Disposition: form-data; name=""EvaluateCode""
             await Startup.CreateWebHost("x", new[]{ "GET", "http://test.servicestack.net", "StoreLogs", 
                 "{Loggers:[{Id:786,Devices:[{Id:5955,Type:Panel,Channels:[{Name:Temperature,Value:58},{Name:Status,Value:On}]}]}]}", "-raw" });
         }
-
+        
         [Test]
         public void Adhoc()
         {
