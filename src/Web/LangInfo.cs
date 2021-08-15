@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using ServiceStack;
 using ServiceStack.Host;
 using ServiceStack.NativeTypes;
@@ -235,6 +236,42 @@ namespace Apps.ServiceInterface.Langs
 
         public virtual string GetCharLiteral(string value) => $"'{value.ConvertTo<Char>()}'";
         public virtual string GetGuidLiteral(string value) => New($"Guid(\"{value.ConvertTo<Guid>():D}\")");
+
+        public virtual JupyterNotebook CreateNotebook(SiteInfo site, string langContent, string requestDto, string requestArgs)
+        {
+            throw new Exception($"{Name} does not support Jupyter Notebooks");
+        }
+        
+        public static JupyterCell CreateCodeCell(string src) => new() {
+            CellType = "code",
+            Source = ConvertToSourceLines(src),
+            Metadata = new Dictionary<string, string>(),
+            Outputs = new List<JupyterOutput>(),
+            ExecutionCount = 0,
+        };
+
+        public static List<string> ConvertToSourceLines(string src) => string.IsNullOrEmpty(src) 
+            ? new List<string>() 
+            : src.ReadLines().Map(x => x + "\n");
+        
+        public static Dictionary<string, object> ParseJsRequest(string requestArgs)
+        {
+            if (!string.IsNullOrEmpty(requestArgs))
+            {
+                try
+                {
+                    var ret = JS.eval(requestArgs);
+                    return (Dictionary<string, object>)ret;
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("Request args should be a valid JavaScript Object literal");
+                }
+            }
+            return null;
+        }
+
+        public static readonly HashSet<string> AutoQueryDtoNames = new() {"QueryDb`1", "QueryDb`2", "QueryData`1", "QueryData`2"};
     }
     
     public static class LangInfoExtensions
@@ -292,5 +329,210 @@ namespace Apps.ServiceInterface.Langs
             nameof(Decimal) => true,
             _ => false,
         };
-    }    
+    }
+    
+    [DataContract]
+    public class JupyterNotebook
+    {
+        [DataMember(Name = "cells")]
+        public List<JupyterCell> Cells { get; set; }
+
+        [DataMember(Name = "metadata")]
+        public JupyterMetadata Metadata { get; set; }
+
+        [DataMember(Name = "nbformat")]
+        public int Nbformat { get; set; }
+
+        [DataMember(Name = "nbformat_minor")]
+        public int NbformatMinor { get; set; }
+
+        public static JupyterNotebook CreateForPython2() => new() {
+            Metadata = new JupyterMetadata {
+                Kernelspec = new() {
+                    DisplayName = "Python 3",
+                    Language = "python",
+                    Name = "python3",
+                },
+                LanguageInfo = new JupyterLanguageInfo {
+                    CodemirrorMode = new JupyterCodemirrorMode {
+                        Name = "ipython",
+                        Version = 2,
+                    },
+                    FileExtension = ".py",
+                    Mimetype = "text/x-python",
+                    Name = "python",
+                    NbconvertExporter = "python",
+                    PygmentsLexer = "ipython2",
+                    Version = "2.7.6",
+                }
+            },
+            Nbformat = 4,
+            NbformatMinor = 0,
+        };
+        
+        public static JupyterNotebook CreateForPython3() => new() {
+            Metadata = new JupyterMetadata {
+                Kernelspec = new() {
+                    DisplayName = "Python 3",
+                    Language = "python",
+                    Name = "python3",
+                },
+                LanguageInfo = new JupyterLanguageInfo {
+                    CodemirrorMode = new JupyterCodemirrorMode {
+                        Name = "ipython",
+                        Version = 3,
+                    },
+                    FileExtension = ".py",
+                    Mimetype = "text/x-python",
+                    Name = "python",
+                    NbconvertExporter = "python",
+                    PygmentsLexer = "ipython3",
+                    Version = "3.9.6",
+                }
+            },
+            Nbformat = 4,
+            NbformatMinor = 0,
+        };
+        
+        public static JupyterNotebook CreateForCSharp() => new() {
+            Metadata = new JupyterMetadata {
+                OrigNbformat = 4,
+                LanguageInfo = new JupyterLanguageInfo {
+                    Name = "C#"
+                },
+                Kernelspec = new() {
+                    Name = ".net-csharp",
+                    DisplayName = ".NET (C#)",
+                },
+            },
+            Nbformat = 4,
+            NbformatMinor = 2,
+        };
+        
+        public static JupyterNotebook CreateForFSharp() => new() {
+            Metadata = new JupyterMetadata {
+                OrigNbformat = 4,
+                LanguageInfo = new JupyterLanguageInfo {
+                    Name = "F#"
+                },
+                Kernelspec = new() {
+                    Name = ".net-fsharp",
+                    DisplayName = ".NET (F#)",
+                },
+            },
+            Nbformat = 4,
+            NbformatMinor = 2,
+        };
+    }
+
+    [DataContract]
+    public class JupyterOutput
+    {
+        [DataMember(Name = "name")]
+        public string Name { get; set; }// = "stdout";
+
+        [DataMember(Name = "output_type")]
+        public string OutputType { get; set; }// = "stream"; // display_data
+
+        [DataMember(Name = "text")]
+        public List<string> Text { get; set; }
+
+        [DataMember(Name = "data")]
+        public Dictionary<string, List<string>>
+            Data { get; set; } //= text/html => [src_lines], text/plain => [src_lines]
+
+        [DataMember(Name = "metadata")]
+        public Dictionary<string, string> Metadata { get; set; }
+    }
+
+    [DataContract]
+    public class JupyterMetadata
+    {
+        [DataMember(Name = "interpreter")]
+        public JupyterInterpreter Interpreter { get; set; }
+
+        [DataMember(Name = "kernelspec")]
+        public JupyterKernel Kernelspec { get; set; }
+
+        [DataMember(Name = "language_info")]
+        public JupyterLanguageInfo LanguageInfo { get; set; }
+
+        [DataMember(Name = "orig_nbformat")]
+        public int? OrigNbformat { get; set; }
+    }
+
+    [DataContract]
+    public class JupyterInterpreter
+    {
+        [DataMember(Name = "hash")]
+        public string Hash { get; set; }
+    }
+
+    [DataContract]
+    public class JupyterKernel
+    {
+        [DataMember(Name = "display_name")]
+        public string DisplayName { get; set; }
+
+        [DataMember(Name = "language")]
+        public string Language { get; set; }
+
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+    }
+
+    [DataContract]
+    public class JupyterLanguageInfo
+    {
+        [DataMember(Name = "codemirror_mode")]
+        public JupyterCodemirrorMode CodemirrorMode { get; set; }
+
+        [DataMember(Name = "file_extension")]
+        public string FileExtension { get; set; }
+
+        [DataMember(Name = "mimetype")]
+        public string Mimetype { get; set; }
+
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "nbconvert_exporter")]
+        public string NbconvertExporter { get; set; }
+
+        [DataMember(Name = "pygments_lexer")]
+        public string PygmentsLexer { get; set; }
+
+        [DataMember(Name = "version")]
+        public string Version { get; set; }
+    }
+
+    [DataContract]
+    public class JupyterCodemirrorMode
+    {
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "version")]
+        public int Version { get; set; }
+    }
+
+    [DataContract]
+    public class JupyterCell
+    {
+        [DataMember(Name = "cell_type")]
+        public string CellType { get; set; }
+
+        [DataMember(Name = "execution_count")]
+        public int? ExecutionCount { get; set; }
+
+        [DataMember(Name = "metadata")]
+        public Dictionary<string, string> Metadata { get; set; }
+
+        [DataMember(Name = "outputs")]
+        public List<JupyterOutput> Outputs { get; set; }
+
+        [DataMember(Name = "source")]
+        public List<string> Source { get; set; } = new();
+    }
+    
 }

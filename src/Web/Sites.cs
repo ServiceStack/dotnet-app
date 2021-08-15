@@ -2,11 +2,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Apps.ServiceInterface.Langs;
 using ServiceStack;
-using ServiceStack.Text;
 
 namespace Apps.ServiceInterface
 {
@@ -31,19 +29,21 @@ namespace Apps.ServiceInterface
 
         public ConcurrentDictionary<string, LanguageInfo> Map { get; set; } = new();
 
-        public async Task<LanguageInfo> GetLangContentAsync(string lang, string includeTypes = null)
+        public async Task<LanguageInfo> GetLangContentAsync(string lang, string includeTypes = null, bool excludeNamespace = false)
         {
             try
             {
                 var langTypesUrl = Site.BaseUrl.CombineWith("types", lang);
-                var useGlobalNs = lang == "csharp" || lang == "fsharp" || lang == "vbnet";
+                var useGlobalNs = lang is "csharp" or "fsharp" or "vbnet";
                 if (useGlobalNs)
                     langTypesUrl += "?GlobalNamespace=MyApp";
                 if (lang == "java" || lang == "kotlin")
                     langTypesUrl += "?Package=myapp";
 
-                if (includeTypes != null)
+                if (includeTypes != null && includeTypes != "*")
                     langTypesUrl += (langTypesUrl.IndexOf('?') >= 0 ? "&" : "?") + $"IncludeTypes={includeTypes}";
+                if (excludeNamespace)
+                    langTypesUrl += (langTypesUrl.IndexOf('?') >= 0 ? "&" : "?") + "ExcludeNamespace=true";
 
                 var content = await langTypesUrl
                     .GetStringFromUrlAsync(requestFilter: req => req.UserAgent = "apps.servicestack.net");
@@ -51,7 +51,7 @@ namespace Apps.ServiceInterface
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -98,6 +98,17 @@ namespace Apps.ServiceInterface
         public string Code { get; }
         public string Url { get; }
         public string Content { get; }
+
+        public static string RemoveHeaderCommentsFromDtos(string lang, string langContent)
+        {
+            var dtosOnly = lang switch {
+                "python" => langContent.Substring(20).RightPart("\"\"\""),
+                "fsharp" => langContent.RightPart("*)"),
+                "vbnet" => langContent.RightPart("\n\n"),
+                _ => langContent.RightPart("*/")
+            };
+            return dtosOnly;
+        }
 
         public ConcurrentDictionary<string, LanguageInfo> RequestMap { get; set; } = new();
 
@@ -167,131 +178,25 @@ namespace Apps.ServiceInterface
             ? throw new ArgumentNullException(nameof(SiteInfo.Slug))
             : await GetSiteAsync(slug) ?? throw HttpError.NotFound("Site does not exist");
         
-        private static char[] WildcardChars = {'*', ',', '{'};
-        private static HashSet<string> AutoQueryDtoNames = new() {"QueryDb`1", "QueryDb`2", "QueryData`1", "QueryData`2"};
+        private static readonly char[] WildcardChars = {'*', ',', '{'};
 
-        public async Task<JupyterNotebook> CreateNotebookAsync(string slug, string requestDto = null, string requestArgs = null)
+        public async Task<JupyterNotebook> CreateNotebookAsync(LangInfo lang, string slug, string includeTypes = null, string requestDto = null, string requestArgs = null)
         {
             var site = await AssertSiteAsync(slug);
 
-            var includeTypes = requestDto == null
-                ? null
-                : requestDto.IndexOfAny(WildcardChars) >= 0
-                    ? requestDto
-                    : requestDto + ".*";
-
-            var baseUrl = SiteUtils.UrlFromSlug(slug);
-            var lang = await site.Languages.GetLangContentAsync("python", includeTypes);
-            var srcLines = lang.Content.ReadLines().Map(x => x);
-            srcLines.Add("");
-            srcLines.Add("");
-            srcLines.Add("from IPython.core.display import display, HTML");
-            srcLines.Add("");
-            srcLines.Add($"client = JsonServiceClient(\"{baseUrl}\")");
-
-            var to = new JupyterNotebook {
-                Cells = new List<JupyterCell> {
-                    new() {
-                        Source = srcLines
-                    },
-                }
-            };
-
-            if (requestDto != null)
+            if (string.IsNullOrEmpty(includeTypes))
             {
-                var requestBody = "";
-                var args = ParseJsRequest(requestArgs);
-                if (args != null)
-                {
-                    var python = new PythonLangInfo();
-                    var argsStringMap = args.ToStringDictionary();
-                    requestBody = python.RequestBody(requestDto, argsStringMap, site.Metadata.Api);
-                }
-                var requestOp = site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto);
-                var clientMethod = (requestOp?.Actions?.FirstOrDefault() != null
-                        ? (requestOp.Actions.First().EqualsIgnoreCase("ANY")
-                            ? null
-                            : requestOp.Actions.First().ToLower())
-                    : null) ?? "send";
-                to.Cells.Add(new() {
-                        Source = {
-                            $"response = client.{clientMethod}({requestDto}({requestBody}))"
-                        }
-                    }
-                );
-                to.Cells.Add(new() {
-                        Source = {
-                            "display(HTML(htmldump(response)))"
-                        }
-                    }
-                );
-                var response = requestOp?.Response;
-                if (response != null && response.Properties != null)
-                {
-                    var hasResults = response.Properties.FirstOrDefault(x => x.Name.EqualsIgnoreCase("Results")) != null;
-                    if (hasResults)
-                    {
-                        var resultsCell = new JupyterCell {
-                            Source = {
-                                "printtable(response.results)"
-                            }
-                        };
-                        var baseClass = requestOp.Request.Inherits?.Name;
-                        if (baseClass != null && AutoQueryDtoNames.Contains(baseClass))
-                        {
-                            var responseModel = requestOp.Request.Inherits.GenericArgs.Last();
-                            var dataModel = site.Metadata.Api.Types.FirstOrDefault(x => x.Name == responseModel);
-                            if (dataModel != null)
-                            {
-                                var propNames = dataModel.Properties.Map(x => 
-                                    '"' + x.Name.SplitCamelCase().ToLower().Replace(" ","_") + '"');
-                                resultsCell = new JupyterCell {
-                                    Source = {
-                                        "printtable(response.results,",
-                                        $"           headers=[{string.Join(",", propNames)}])"
-                                    }
-                                };
-                            }
-                        }
-                        to.Cells.Add(resultsCell);
-                    }
-                }
+                includeTypes = requestDto == null
+                    ? null
+                    : requestDto.IndexOfAny(WildcardChars) >= 0
+                        ? requestDto
+                        : requestDto + ".*";
             }
-            else
-            {
-                to.Cells.Add(new() {
-                        Source = {
-                            $"# response = client.send(MyRequest())"
-                        }
-                    }
-                );
-                to.Cells.Add(new() {
-                        Source = {
-                            "# display(HTML(htmldump(response)))"
-                        }
-                    }
-                );
-            }
-            
-            
-            return to;
-        }
 
-        public static Dictionary<string, object> ParseJsRequest(string requestArgs)
-        {
-            if (!string.IsNullOrEmpty(requestArgs))
-            {
-                try
-                {
-                    var ret = JS.eval(requestArgs);
-                    return (Dictionary<string, object>)ret;
-                }
-                catch (Exception e)
-                {
-                    throw new Exception("Request args should be a valid JavaScript Object literal");
-                }
-            }
-            return null;
+            var languageInfo = await site.Languages.GetLangContentAsync(lang.Code, includeTypes, excludeNamespace:true);
+            var langContent = LanguageInfo.RemoveHeaderCommentsFromDtos(lang.Code, languageInfo.Content);
+
+            return lang.CreateNotebook(site, langContent, requestDto, requestArgs);
         }
 
         public static readonly List<string> VerbMarkers = new[]{ nameof(IGet), nameof(IPost), nameof(IPut), nameof(IDelete), nameof(IPatch) }.ToList();
@@ -305,137 +210,12 @@ namespace Apps.ServiceInterface
             }
             return method;
         }
-        
-        public static readonly List<string> AutoQueryBaseTypes = new[] { "QueryDb`1", "QueryDb`2", "QueryData`1", "QueryData`2" }.ToList();
+
+        private static readonly List<string> AutoQueryBaseTypes = new[] { "QueryDb`1", "QueryDb`2", "QueryData`1", "QueryData`2" }.ToList();
 
         public static bool IsAutoQuery(MetadataOperationType op)
         {
             return op.Request.Inherits != null && AutoQueryBaseTypes.Contains(op.Request.Inherits.Name);            
         }
-
-    }
-
-
-    [DataContract]
-    public class JupyterNotebook
-    {
-        [DataMember(Name = "cells")]
-        public List<JupyterCell> Cells { get; set; }
-
-        [DataMember(Name = "metadata")]
-        public JupyterMetadata Metadata { get; set; }
-
-        [DataMember(Name = "nbformat")]
-        public int Nbformat { get; set; }
-
-        [DataMember(Name = "nbformat_minor")]
-        public int NbformatMinor { get; set; }
-    }
-
-    [DataContract]
-    public class JupyterOutput
-    {
-        [DataMember(Name = "name")]
-        public string Name { get; set; } = "stdout";
-
-        [DataMember(Name = "output_type")]
-        public string OutputType { get; set; } = "stream"; // display_data
-
-        [DataMember(Name = "text")]
-        public List<string> Text { get; set; }
-
-        [DataMember(Name = "data")]
-        public Dictionary<string, List<string>>
-            Data { get; set; } //= text/html => [src_lines], text/plain => [src_lines]
-
-        [DataMember(Name = "metadata")]
-        public Dictionary<string, string> Metadata { get; set; }
-    }
-
-    [DataContract]
-    public class JupyterMetadata
-    {
-        [DataMember(Name = "interpreter")]
-        public JupyterInterpreter Interpreter { get; set; }
-
-        [DataMember(Name = "kernelspec")]
-        public JupyterKernel Kernelspec { get; set; }
-
-        [DataMember(Name = "language_info")]
-        public JupyterLanguageInfo LanguageInfo { get; set; }
-
-        [DataMember(Name = "orig_nbformat")]
-        public int OrigNbformat { get; set; } = 4;
-    }
-
-    [DataContract]
-    public class JupyterInterpreter
-    {
-        [DataMember(Name = "hash")]
-        public string Hash { get; set; } = "63fd5069d213b44bf678585dea6b12cceca9941eaf7f819626cde1f2670de90d";
-    }
-
-    [DataContract]
-    public class JupyterKernel
-    {
-        [DataMember(Name = "display_name")]
-        public string DisplayName { get; set; } = "Python 3.9.6 64-bit";
-
-        [DataMember(Name = "name")]
-        public string Name { get; set; } = "python3";
-    }
-
-    [DataContract]
-    public class JupyterLanguageInfo
-    {
-        [DataMember(Name = "codemirror_mode")]
-        public JupyterCodemirrorMode CodemirrorMode { get; set; } = new();
-
-        [DataMember(Name = "file_extension")]
-        public string FileExtension { get; set; } = "py";
-
-        [DataMember(Name = "mimetype")]
-        public string Mimetype { get; set; } = "text/x-python";
-
-        [DataMember(Name = "name")]
-        public string Name { get; set; } = "python";
-
-        [DataMember(Name = "nbconvert_exporter")]
-        public string NbconvertExporter { get; set; } = "python";
-
-        [DataMember(Name = "pygments_lexer")]
-        public string PygmentsLexer { get; set; } = "ipython3";
-
-        [DataMember(Name = "version")]
-        public string Version { get; set; } = "3.9.6";
-    }
-
-    [DataContract]
-    public class JupyterCodemirrorMode
-    {
-        [DataMember(Name = "name")]
-        public string Name { get; set; } = "ipython";
-
-        [DataMember(Name = "version")]
-        public int Version { get; set; } = 3;
-    }
-
-    [DataContract]
-    public class JupyterCell
-    {
-        [DataMember(Name = "cell_type")]
-        public string CellType { get; set; } = "code";
-
-        [DataMember(Name = "execution_count")]
-        public int ExecutionCount { get; set; } = 1;
-
-        [DataMember(Name = "metadata")]
-        public Dictionary<string, string> Metadata { get; set; }
-
-        [DataMember(Name = "outputs")]
-        public List<JupyterOutput> Outputs { get; set; }
-
-        [DataMember(Name = "source")]
-        public List<string> Source { get; set; } = new();
     }
 }

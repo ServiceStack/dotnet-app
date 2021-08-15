@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ServiceStack;
 using ServiceStack.NativeTypes.Python;
 using ServiceStack.Text;
@@ -10,13 +11,13 @@ namespace Apps.ServiceInterface.Langs
     {
         public PythonLangInfo()
         {
-            Code = "Python";
+            Code = "python";
             Name = "Python";
             Ext = "py";
             LineComment = "#";
             DtosPathPrefix = "my_app\\";
             Files = new Dictionary<string, string> {
-                ["requirements.txt"] = @"servicestack>=0.0.7",
+                ["requirements.txt"] = @"servicestack>=0.1.1",
                 ["setup.py"] = @"from setuptools import setup, find_packages
 
 setup(
@@ -102,5 +103,85 @@ client = JsonServiceClient('{BASE_URL}')
             return to;
         }
 
-        public override string GetGuidLiteral(string value) => $"\"{value.ConvertTo<Guid>():D}\"";    }
+        public override string GetGuidLiteral(string value) => $"\"{value.ConvertTo<Guid>():D}\"";
+
+        public override JupyterNotebook CreateNotebook(SiteInfo site, string langContent, string requestDto, string requestArgs)
+        {
+            var dtosSource = $@"%pip install servicestack
+
+{langContent}
+
+from IPython.core.display import display, HTML
+
+client = JsonServiceClient(""{site.BaseUrl}"")
+";
+            var to = JupyterNotebook.CreateForPython3();
+            to.Cells = new List<JupyterCell> {
+                CreateCodeCell(dtosSource),
+            };
+
+            if (requestDto != null)
+            {
+                var requestBody = "";
+                var args = ParseJsRequest(requestArgs);
+                var argKeys = args != null
+                    ? new HashSet<string>(args.Keys, StringComparer.OrdinalIgnoreCase)
+                    : new HashSet<string>();
+                if (args != null)
+                {
+                    var argsStringMap = args.ToStringDictionary();
+                    requestBody = RequestBody(requestDto, argsStringMap, site.Metadata.Api);
+                }
+
+                var requestOp = site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto);
+                var clientMethod = (requestOp?.Actions?.FirstOrDefault() != null
+                    ? (requestOp.Actions.First().EqualsIgnoreCase("ANY")
+                        ? null
+                        : requestOp.Actions.First().ToLower())
+                    : null) ?? "send";
+                to.Cells.Add(CreateCodeCell($"response = client.{clientMethod}({requestDto}({requestBody}))"));
+                to.Cells.Add(CreateCodeCell("display(HTML(htmldump(response)))"));
+                var response = requestOp?.Response;
+                if (response?.Properties != null)
+                {
+                    var hasResults = response.Properties.FirstOrDefault(x => x.Name.EqualsIgnoreCase("Results")) != null;
+                    if (hasResults)
+                    {
+                        var resultsCell = CreateCodeCell("printtable(response.results)");
+                        var baseClass = requestOp.Request.Inherits?.Name;
+                        if (baseClass != null && AutoQueryDtoNames.Contains(baseClass))
+                        {
+                            var responseModel = requestOp.Request.Inherits.GenericArgs.Last();
+                            var dataModel = site.Metadata.Api.Types.FirstOrDefault(x => x.Name == responseModel);
+                            if (dataModel != null)
+                            {
+                                if (argKeys.Contains("fields")) //Already specified fields in AutoQuery Request
+                                {
+                                    resultsCell = CreateCodeCell("printtable(response.results)");
+                                }
+                                else
+                                {
+                                    var propNames = dataModel.Properties.Map(x =>
+                                        '"' + x.Name.SplitCamelCase().ToLower().Replace(" ", "_") + '"');
+                                    resultsCell =
+                                        CreateCodeCell(
+                                            $"printtable(response.results,\n           headers=[{string.Join(",", propNames)}])");
+                                }
+                            }
+                        }
+
+                        to.Cells.Add(resultsCell);
+                    }
+                }
+            }
+            else
+            {
+                to.Cells.Add(CreateCodeCell("# response = client.send(MyRequest())"));
+                to.Cells.Add(CreateCodeCell("# display(HTML(htmldump(response)))"));
+            }
+
+            return to;
+        }
+        
+    }
 }
