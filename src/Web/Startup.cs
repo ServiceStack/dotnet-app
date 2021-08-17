@@ -1694,6 +1694,7 @@ Usage:
   {tool} <lang>     <url> <file> Add ServiceStack Reference and save to file name
   {tool} csharp     <url>        Add C# ServiceStack Reference            (Alias 'cs')
   {tool} typescript <url>        Add TypeScript ServiceStack Reference    (Alias 'ts')
+  {tool} python     <url>        Add Python ServiceStack Reference        (Alias 'py')
   {tool} swift      <url>        Add Swift ServiceStack Reference         (Alias 'sw')
   {tool} java       <url>        Add Java ServiceStack Reference          (Alias 'ja')
   {tool} kotlin     <url>        Add Kotlin ServiceStack Reference        (Alias 'kt')
@@ -2242,7 +2243,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     return new Instruction { Handled = true };
                 }
                 
-                var request = args.Length > 2 ? args[2] : null;
+                var includeRequest = args.Length > 2 ? args[2] : null;
+                var request = includeRequest.IndexOf('.') >= 0
+                    ? includeRequest.LeftPart('.')
+                    : includeRequest;
+                
                 var site = await Apps.ServiceInterface.Sites.Instance.AssertSiteAsync(target);
                 var csharp = new CSharpGenerator(new MetadataTypesConfig());
                 "".Print();
@@ -2342,13 +2347,13 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         }
 
                         $"# {langName} DTOs:".Print();
-                        var langDtos = await site.Languages.GetLangContentAsync(lang, request, excludeNamespace:true);
+                        var langDtos = await site.Languages.GetLangContentAsync(lang, includeRequest, excludeNamespace:true);
                         var dtosOnly = Apps.ServiceInterface.LanguageInfo.RemoveHeaderCommentsFromDtos(lang, langDtos.Content);
                         dtosOnly.Print();
                     }
                     catch (Exception e)
                     {
-                        $"Could not retrieve {request} DTOs: {e.Message}".Print();
+                        $"Could not retrieve {includeRequest} DTOs: {e.Message}".Print();
                     }
                 }
                 return new Instruction { Handled = true };
