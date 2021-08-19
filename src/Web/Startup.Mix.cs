@@ -49,6 +49,7 @@ namespace Web
 
         static string[] OutArgs = CreateArgs("out");
         static string[] RawArgs = CreateArgs("raw");
+        static string[] JsonArgs = CreateArgs("json");
         static string[] BasicAuthArgs = CreateArgs("basic");
         static string[] AuthSecretArgs = CreateArgs("authsecret");
         static string[] SsIdArgs = CreateArgs("ss-id");
@@ -69,6 +70,7 @@ namespace Web
         public static string Use { get; set; }
         public static bool Preserve { get; set; }
         public static bool Raw { get; set; }
+        public static bool Json { get; set; }
         
         public static string GitHubToken { get; set; } 
         public static string Token { get; set; } // only set from -token cmd line argument

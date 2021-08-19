@@ -1332,6 +1332,12 @@ namespace Web
                 return true;
             }
 
+            if (JsonArgs.Contains(arg))
+            {
+                Json = true;
+                return true;
+            }
+
             if (BasicAuthArgs.Contains(arg))
             {
                 BasicAuth = NextArg(ref i);
@@ -2021,11 +2027,13 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     "".Print();
                     $"Options:".Print();
                     $" -raw                   Show raw HTTP Headers and Body".Print();
+                    $" -json                  Show Body as JSON".Print();
                     $" -token <token>         Use JWT or API Key Bearer Token".Print();
                     $" -basic <user:pass>     Use HTTP Basic Auth".Print();
                     $" -authsecret <secret>   Use Admin Auth Secret".Print();
                     $" -ss-id <session-id>    Use ss-id Session Id Cookie".Print();
                     $" -cookies <file>        Store and Load Cookies from file".Print();
+                    
                     return new Instruction { Handled = true };
                 }
                 
@@ -2194,7 +2202,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 await using var res = webRes.GetResponseStream();
                 var resBytes = await res.ReadFullyAsync();
 
-                if (Raw)
+                if (Raw || Json)
                 {
                     PrintBytes(resBytes, webRes.ContentType);
                 }
