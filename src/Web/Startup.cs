@@ -4421,7 +4421,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             ".log",
             ".dump",
             ".exe",
-            ".dll",
+            // ".dll", // required for publishing plugins/*.dll
             ".class",
             ".o",
             ".so",

@@ -1115,6 +1115,13 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_publish_studio()
+        {
+            Directory.SetCurrentDirectory("C:\\src\\Studio\\dist");
+            await Startup.CreateWebHost("x", new[]{ "publish", "-token", Environment.GetEnvironmentVariable("GISTLYN_TOKEN") });
+        }
+
+        [Test]
         public async Task Can_generate_jupyter_notebook()
         {
             Directory.SetCurrentDirectory("wip");
