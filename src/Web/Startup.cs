@@ -2244,7 +2244,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 }
                 
                 var includeRequest = args.Length > 2 ? args[2] : null;
-                var request = includeRequest.IndexOf('.') >= 0
+                var request = includeRequest != null && includeRequest.IndexOf('.') >= 0
                     ? includeRequest.LeftPart('.')
                     : includeRequest;
                 
