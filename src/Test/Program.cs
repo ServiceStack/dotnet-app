@@ -1108,6 +1108,13 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_inspect_techstacks()
+        {
+            // Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "inspect", "https://techstacks.io" });
+        }
+
+        [Test]
         public async Task Can_generate_jupyter_notebook()
         {
             Directory.SetCurrentDirectory("wip");

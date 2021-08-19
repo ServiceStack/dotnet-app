@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>app</id>
-        <version>5.1.23</version>
+        <version>5.1.30</version>
         <authors>ServiceStack</authors>
         <owners>ServiceStack</owners>
         <requireLicenseAcceptance>true</requireLicenseAcceptance>
@@ -84,11 +84,9 @@
         <file src="bin\Release\net5\publish\SQLitePCLRaw.nativelibrary.dll" target="tools\net5.0\any\SQLitePCLRaw.nativelibrary.dll" />
         <file src="bin\Release\net5\publish\SQLitePCLRaw.core.dll" target="tools\net5.0\any\SQLitePCLRaw.core.dll" />
         <file src="bin\Release\net5\publish\SQLitePCLRaw.provider.dynamic_cdecl.dll" target="tools\net5.0\any\SQLitePCLRaw.provider.dynamic_cdecl.dll" />
-        <file src="bin\Release\net5\publish\Renci.SshNet.dll" target="tools\net5.0\any\Renci.SshNet.dll" />
-        <file src="bin\Release\net5\publish\SshNet.Security.Cryptography.dll" target="tools\net5.0\any\SshNet.Security.Cryptography.dll" />
+        <file src="bin\Release\net5\publish\System.Data.SQLite.dll" target="tools\net5.0\any\System.Data.SQLite.dll" />
         <file src="bin\Release\net5\publish\System.Configuration.ConfigurationManager.dll" target="tools\net5.0\any\System.Configuration.ConfigurationManager.dll" />
         <file src="bin\Release\net5\publish\System.Data.SqlClient.dll" target="tools\net5.0\any\System.Data.SqlClient.dll" />
-        <file src="bin\Release\net5\publish\System.Data.SQLite.dll" target="tools\net5.0\any\System.Data.SQLite.dll" />
         <file src="bin\Release\net5\publish\System.Drawing.Common.dll" target="tools\net5.0\any\System.Drawing.Common.dll" />
         <file src="bin\Release\net5\publish\System.IdentityModel.Tokens.Jwt.dll" target="tools\net5.0\any\System.IdentityModel.Tokens.Jwt.dll" />
         <file src="bin\Release\net5\publish\System.Linq.Async.dll" target="tools\net5.0\any\System.Linq.Async.dll" />
@@ -97,7 +95,6 @@
         <file src="bin\Release\net5\publish\System.Security.Cryptography.ProtectedData.dll" target="tools\net5.0\any\System.Security.Cryptography.ProtectedData.dll" />
         <file src="bin\Release\net5\publish\System.ServiceModel.Primitives.dll" target="tools\net5.0\any\System.ServiceModel.Primitives.dll" />
         <file src="bin\Release\net5\publish\System.ServiceModel.dll" target="tools\net5.0\any\System.ServiceModel.dll" />
-        <file src="bin\Release\net5\publish\System.Xml.XPath.XmlDocument.dll" target="tools\net5.0\any\System.Xml.XPath.XmlDocument.dll" />
         <file src="bin\Release\net5\publish\Validation.dll" target="tools\net5.0\any\Validation.dll" />
         <file src="bin\Release\net5\publish\WinApi.dll" target="tools\net5.0\any\WinApi.dll" />
         <file src="bin\Release\net5\publish\Microsoft.WindowsAzure.Storage.dll" target="tools\net5.0\any\Microsoft.WindowsAzure.Storage.dll" />
@@ -126,8 +123,10 @@
         <file src="bin\Release\net5\publish\runtimes\win-arm64\native\e_sqlite3.dll" target="tools\net5.0\any\runtimes\win-arm64\native\e_sqlite3.dll" />
         <file src="bin\Release\net5\publish\runtimes\win-x64\native\sni.dll" target="tools\net5.0\any\runtimes\win-x64\native\sni.dll" />
         <file src="bin\Release\net5\publish\runtimes\win-x64\native\e_sqlite3.dll" target="tools\net5.0\any\runtimes\win-x64\native\e_sqlite3.dll" />
+        <file src="bin\Release\net5\publish\runtimes\win-x64\native\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\win-x64\native\SQLite.Interop.dll" />
         <file src="bin\Release\net5\publish\runtimes\win-x86\native\sni.dll" target="tools\net5.0\any\runtimes\win-x86\native\sni.dll" />
         <file src="bin\Release\net5\publish\runtimes\win-x86\native\e_sqlite3.dll" target="tools\net5.0\any\runtimes\win-x86\native\e_sqlite3.dll" />
+        <file src="bin\Release\net5\publish\runtimes\win-x86\native\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\win-x86\native\SQLite.Interop.dll" />
         <file src="bin\Release\net5\publish\runtimes\alpine-x64\native\libe_sqlite3.so" target="tools\net5.0\any\runtimes\alpine-x64\native\libe_sqlite3.so" />
         <file src="bin\Release\net5\publish\runtimes\linux-arm\native\libe_sqlite3.so" target="tools\net5.0\any\runtimes\linux-arm\native\libe_sqlite3.so" />
         <file src="bin\Release\net5\publish\runtimes\linux-arm64\native\libe_sqlite3.so" target="tools\net5.0\any\runtimes\linux-arm64\native\libe_sqlite3.so" />
@@ -135,19 +134,13 @@
         <file src="bin\Release\net5\publish\runtimes\linux-mips64\native\libe_sqlite3.so" target="tools\net5.0\any\runtimes\linux-mips64\native\libe_sqlite3.so" />
         <file src="bin\Release\net5\publish\runtimes\linux-musl-x64\native\libe_sqlite3.so" target="tools\net5.0\any\runtimes\linux-musl-x64\native\libe_sqlite3.so" />
         <file src="bin\Release\net5\publish\runtimes\linux-x64\native\libe_sqlite3.so" target="tools\net5.0\any\runtimes\linux-x64\native\libe_sqlite3.so" />
+        <file src="bin\Release\net5\publish\runtimes\linux-x64\native\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\linux-x64\native\SQLite.Interop.dll" />
         <file src="bin\Release\net5\publish\runtimes\linux-x86\native\libe_sqlite3.so" target="tools\net5.0\any\runtimes\linux-x86\native\libe_sqlite3.so" />
         <file src="bin\Release\net5\publish\runtimes\osx-x64\native\libe_sqlite3.dylib" target="tools\net5.0\any\runtimes\osx-x64\native\libe_sqlite3.dylib" />
+        <file src="bin\Release\net5\publish\runtimes\osx-x64\native\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\osx-x64\native\SQLite.Interop.dll" />
         <file src="bin\Release\net5\publish\runtimes\win-arm\native\e_sqlite3.dll" target="tools\net5.0\any\runtimes\win-arm\native\e_sqlite3.dll" />
         <file src="bin\Release\net5\publish\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\net5.0\any\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
         <file src="bin\Release\net5\publish\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\net5.0\any\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
-        <file src="bin\Release\net5\publish\runtimes\linux-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\linux-x64\native\netstandard2.0\SQLite.Interop.dll" />
-        <file src="bin\Release\net5\publish\runtimes\linux-x64\native\netstandard2.1\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\linux-x64\native\netstandard2.1\SQLite.Interop.dll" />
-        <file src="bin\Release\net5\publish\runtimes\osx-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\osx-x64\native\netstandard2.0\SQLite.Interop.dll" />
-        <file src="bin\Release\net5\publish\runtimes\osx-x64\native\netstandard2.1\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\osx-x64\native\netstandard2.1\SQLite.Interop.dll" />
-        <file src="bin\Release\net5\publish\runtimes\win-x64\native\netstandard2.0\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\win-x64\native\netstandard2.0\SQLite.Interop.dll" />
-        <file src="bin\Release\net5\publish\runtimes\win-x64\native\netstandard2.1\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\win-x64\native\netstandard2.1\SQLite.Interop.dll" />
-        <file src="bin\Release\net5\publish\runtimes\win-x86\native\netstandard2.0\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\win-x86\native\netstandard2.0\SQLite.Interop.dll" />
-        <file src="bin\Release\net5\publish\runtimes\win-x86\native\netstandard2.1\SQLite.Interop.dll" target="tools\net5.0\any\runtimes\win-x86\native\netstandard2.1\SQLite.Interop.dll" />
         <file src="bin\Release\net5\publish\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll" target="tools\net5.0\any\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll" />
         <file src="bin\Release\net5\publish\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll" target="tools\net5.0\any\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll" />
         <file src="bin\Release\net5\publish\runtimes\win\lib\netstandard2.0\System.Net.Http.WinHttpHandler.dll" target="tools\net5.0\any\runtimes\win\lib\netstandard2.0\System.Net.Http.WinHttpHandler.dll" />
