@@ -2021,6 +2021,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 if (target == null || requestDto == null || !target.IsBaseUrl())
                 {
+                    RegisterStat(tool, arg);
+
                     $"Usage: {tool} <send|GET|POST|PUT|DELETE|PATCH> <base-url> <request>".Print();
                     $"       {tool} <send|GET|POST|PUT|DELETE|PATCH> <base-url> <request> {{js-object}}".Print();
                     $"       {tool} <send|GET|POST|PUT|DELETE|PATCH> <base-url> <request> < body.json".Print();
@@ -2037,6 +2039,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     return new Instruction { Handled = true };
                 }
                 
+                RegisterStat(tool, arg, SiteUtils.UrlToSlug(target));
+
                 var site = await Apps.ServiceInterface.Sites.Instance.AssertSiteAsync(target);
                 var jsRequestArgs = ParseJsRequest(requestArgs);
                 var op = site.Metadata.Api.Operations.FirstOrDefault(x => x.Request.Name == requestDto);
@@ -2244,6 +2248,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 if (target == null || !target.IsBaseUrl())
                 {
+                    RegisterStat(tool, arg);
                     $"Usage: {tool} inspect <base-url>".Print();
                     $"       {tool} inspect <base-url> <request>".Print();
                     $"       {tool} inspect <base-url> <request> -lang <csharp|python|typescript|dart|java|kotlin|swift|fsharp|vbnet>".Print();
@@ -2256,6 +2261,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     ? includeRequest.LeftPart('.')
                     : includeRequest;
                 
+                RegisterStat(tool, arg, SiteUtils.UrlToSlug(target) + (request != null ? "_request" : ""));
+
                 var site = await Apps.ServiceInterface.Sites.Instance.AssertSiteAsync(target);
                 var csharp = new CSharpGenerator(new MetadataTypesConfig());
                 "".Print();

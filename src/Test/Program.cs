@@ -1181,6 +1181,16 @@ Content-Disposition: form-data; name=""EvaluateCode""
             await Startup.CreateWebHost("x", new[]{ "GET", "http://test.servicestack.net", "StoreLogs", 
                 "{Loggers:[{Id:786,Devices:[{Id:5955,Type:Panel,Channels:[{Name:Temperature,Value:58},{Name:Status,Value:On}]}]}]}", "-raw" });
         }
+
+        [Test]
+        public void name()
+        {
+            var client = new JsonServiceClient("http://test.servicestack.net");
+            client.CaptureHttp(print:true);
+
+            var authResponse = client.Send(new Authenticate { provider = "credentials", UserName = "admin", Password = "test" });
+        }
+
         
         [Test]
         public void Adhoc()

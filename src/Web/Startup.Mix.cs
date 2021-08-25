@@ -102,17 +102,18 @@ namespace Web
             .GetCustomAttribute<AssemblyFileVersionAttribute>()?
             .Version.LastLeftPart('.') ?? "0.0.0";
 
-        public static void RegisterStat(string tool, string name, string type = "tool")
+        public static Task RegisterStat(string tool, string name, string type = "tool")
         {
             if (Environment.GetEnvironmentVariable("SERVICESTACK_TELEMETRY_OPTOUT") == "1" ||
                 Environment.GetEnvironmentVariable("SERVICESTACK_TELEMETRY_OPTOUT") == "true")
-                return;
+                return Task.CompletedTask;
             try
             {
-                $"https://account.servicestack.net/stats/{type}/record?name={name}&source={tool}&version={GetVersion()}"
+                return $"https://account.servicestack.net/stats/{type}/record?name={name}&source={tool}&version={GetVersion()}"
                     .GetBytesFromUrlAsync(requestFilter:req => req.ApplyRequestFilters());
             }
             catch { }
+            return Task.CompletedTask;
         }
 
         private static void PrintGistLinks(string tool, List<GistLink> links, string tag = null, string usage = null)
