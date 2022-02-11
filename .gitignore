@@ -17,6 +17,18 @@ blob_storage/
 wip/
 App_Data/
 
+# CefGlue
+dist/
+coverage/
+# CEF Files
+GPUCache/
+*.pak
+*.lib
+*.dll
+*.bin
+*.dat
+*.exe
+
 # User-specific files
 *.suo
 *.user
