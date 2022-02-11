@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-    <TargetFramework>net5</TargetFramework>
-    <Version>5.1.34</Version>
+    <TargetFramework>net6.0</TargetFramework>
+    <Version>6.0.1</Version>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <Platforms>x64</Platforms>
@@ -25,7 +25,7 @@
     <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>-->
     <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
     <RootNamespace>Web</RootNamespace>
-    <DefineConstants>$(DefineConstants);NETCORE3;NETCORE5</DefineConstants>
+    <DefineConstants>$(DefineConstants);NETCORE;NET6_0</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -69,13 +69,13 @@
         <!--    <FrameworkReference Include="Microsoft.AspNetCore.App" />-->
 
         <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.9" />
-        <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
-        <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
+        <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+        <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
         <PackageReference Include="Mysql.Data" Version="8.0.26" />
-        <PackageReference Include="Npgsql" Version="4.1.9" />
-        <PackageReference Include="Markdig" Version="0.24.0" />
-        <PackageReference Include="NUglify" Version="1.13.8" />
-        <PackageReference Include="System.Net.Http.WinHttpHandler" Version="5.0.0" />
+        <PackageReference Include="Npgsql" Version="5.0.10" />
+        <PackageReference Include="Markdig" Version="0.26.0" />
+        <PackageReference Include="NUglify" Version="1.16.4" />
+        <PackageReference Include="System.Net.Http.WinHttpHandler" Version="6.0.0" />
         <PackageReference Include="WinApi" Version="4.*" />
         <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
 

@@ -3834,7 +3834,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
         public static void Init(string contentRootPath)
         {
-            if (Startup.GetDebugMode() && Startup.Verbose)
+            if (Startup.GetDebugMode() || Startup.Verbose)
                 LogManager.LogFactory = new ConsoleLogFactory(debugEnabled: true);
             
             ContentRootPath = contentRootPath;
@@ -4017,6 +4017,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         
         public override void OnStartupException(Exception ex)
         {
+            Console.WriteLine(ex);
             throw ex;
         }
     }
@@ -4426,6 +4427,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public static List<string> ExcludeFileExtensions = new() {
             ".xcodeproj",
             ".log",
+            ".old",
             ".dump",
             ".exe",
             // ".dll", // required for publishing plugins/*.dll
