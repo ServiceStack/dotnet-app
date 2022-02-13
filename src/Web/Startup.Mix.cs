@@ -1263,7 +1263,7 @@ namespace Web
             if (File.Exists(cachedPath))
                 return File.ReadAllText(cachedPath);
 
-            var text = url.GetStringFromUrl(requestFilter: req => req.UserAgent = GitHubUtils.UserAgent);
+            var text = url.GetStringFromUrl(requestFilter: req => req.With(c => c.UserAgent = GitHubUtils.UserAgent));
             File.WriteAllText(cachedPath, text);
 
             return text;
@@ -1313,18 +1313,17 @@ namespace Web
             return retVal.ToString().Trim();
         }
 
-        public static void ApplyRequestFilters(this HttpWebRequest req)
+        public static void ApplyRequestFilters(this System.Net.Http.HttpRequestMessage req)
         {
-            req.UserAgent = GitHubUtils.UserAgent;
-
-            if (!string.IsNullOrEmpty(Startup.GitHubToken))
-            {
-                req.Headers["Authorization"] = "token " + Startup.GitHubToken;
-            }
+            req.With(c => {
+                c.UserAgent = GitHubUtils.UserAgent;
+                if (!string.IsNullOrEmpty(Startup.GitHubToken))
+                    c.Authorization = new("token", Startup.GitHubToken);
+            });
 
             if (Startup.IgnoreSslErrors)
             {
-                req.ServerCertificateValidationCallback = (webReq, cert, chain, errors) => true;
+                ServicePointManager.ServerCertificateValidationCallback = (webReq, cert, chain, errors) => true;
             }
         }
 
@@ -1372,7 +1371,8 @@ namespace Web
             if (Startup.Verbose) 
                 $"API: {apiUrl}".Print();
                 
-            return apiUrl.GetJsonFromUrl(req => req.ApplyRequestFilters());
+            return apiUrl
+                .GetJsonFromUrl(req => req.ApplyRequestFilters());
         }
 
         public static readonly ConcurrentDictionary<string, Dictionary<string, string>> GistFilesCache = new();
@@ -1388,7 +1388,7 @@ namespace Web
         public static Dictionary<string, string> GetGistFilesFromUrl(this GitHubGateway gateway, string gistUrl)
         {
             return GistFilesCache.GetOrAdd(gistUrl, gistKey => {
-                var json = gistUrl.GetJsonFromUrl(req => req.UserAgent = "ServiceStack");
+                var json = gistUrl.GetJsonFromUrl(req => req.With(c => c.UserAgent = "ServiceStack"));
                 return FromJsonGist(json, gistKey);
             });
         }

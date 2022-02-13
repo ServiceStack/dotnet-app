@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <Version>0.0.16</Version>
         <AssemblyName>Run</AssemblyName>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -24,16 +24,16 @@
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
 
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
-        <PackageReference Include="NUnit" Version="3.12.0" />
-        <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
+        <PackageReference Include="NUnit" Version="3.13.2" />
+        <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
 
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.9" />
-        <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.2" />
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="3.0.1" />
         <PackageReference Include="Mysql.Data" Version="8.0.26" />
-        <PackageReference Include="Npgsql" Version="4.1.9" />
-        <PackageReference Include="Markdig" Version="0.25.0" />
-        <PackageReference Include="NUglify" Version="1.14.0" />
+        <PackageReference Include="Npgsql" Version="5.0.10" />
+        <PackageReference Include="Markdig" Version="0.27.0" />
+        <PackageReference Include="NUglify" Version="1.17.10" />
         <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.7.2" />
 
         <PackageReference Include="WinApi" Version="4.*" />
@@ -55,23 +55,24 @@
         <!--<PackageReference Include="ServiceStack.Aws" Version="5.*" />-->
         <!--<PackageReference Include="ServiceStack.Azure" Version="5.*" />-->
 
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj" /> 
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Client\ServiceStack.Client.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Common\ServiceStack.Common.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Desktop\ServiceStack.Desktop.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack\ServiceStack.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Api.OpenApi\ServiceStack.Api.OpenApi.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Server\ServiceStack.Server.Source.csproj" />
-<!--        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack.Kestrel\ServiceStack.Kestrel.Source.csproj" />-->
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite\ServiceStack.OrmLite.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite\ServiceStack.OrmLite.Sqlite.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.SqlServer\ServiceStack.OrmLite.SqlServer.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.MySql\ServiceStack.OrmLite.MySql.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.OrmLite\src\ServiceStack.OrmLite.PostgreSQL\ServiceStack.OrmLite.PostgreSQL.Source.csproj" /> 
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Redis\src\ServiceStack.Redis\ServiceStack.Redis.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.Source.csproj" />
-        <ProjectReference Include="..\..\..\..\..\Source\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.Source.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Client\ServiceStack.Client.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Common\ServiceStack.Common.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Desktop\ServiceStack.Desktop.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack\src\ServiceStack\ServiceStack.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Server\ServiceStack.Server.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Api.OpenApi\ServiceStack.Api.OpenApi.csproj" />
+
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.OrmLite\src\ServiceStack.OrmLite\ServiceStack.OrmLite.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite.Data\ServiceStack.OrmLite.Sqlite.Data.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.OrmLite\src\ServiceStack.OrmLite.SqlServer.Data\ServiceStack.OrmLite.SqlServer.Data.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.OrmLite\src\ServiceStack.OrmLite.MySql\ServiceStack.OrmLite.MySql.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.OrmLite\src\ServiceStack.OrmLite.PostgreSQL\ServiceStack.OrmLite.PostgreSQL.csproj" />
+
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.Redis\src\ServiceStack.Redis\ServiceStack.Redis.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.Aws\src\ServiceStack.Aws\ServiceStack.Aws.csproj" />
+        <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.Azure\src\ServiceStack.Azure\ServiceStack.Azure.csproj" />
 
     </ItemGroup>
     <ItemGroup>

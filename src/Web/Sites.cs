@@ -46,7 +46,7 @@ namespace Apps.ServiceInterface
                     langTypesUrl += (langTypesUrl.IndexOf('?') >= 0 ? "&" : "?") + "ExcludeNamespace=true";
 
                 var content = await langTypesUrl
-                    .GetStringFromUrlAsync(requestFilter: req => req.UserAgent = "apps.servicestack.net");
+                    .GetStringFromUrlAsync(requestFilter: req => req.With(c => c.UserAgent = "apps.servicestack.net"));
                 return new LanguageInfo(this, lang, langTypesUrl, content);
             }
             catch (Exception ex)

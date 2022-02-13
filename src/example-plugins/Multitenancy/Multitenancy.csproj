@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\..\..\Source\ServiceStack\src\ServiceStack\ServiceStack.Source.csproj" />
+      <ProjectReference Include="..\..\..\..\ServiceStack\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj" />
+      <ProjectReference Include="..\..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Client\ServiceStack.Client.csproj" />
+      <ProjectReference Include="..\..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Common\ServiceStack.Common.csproj" />
+      <ProjectReference Include="..\..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj" />
+      <ProjectReference Include="..\..\..\..\ServiceStack\ServiceStack\src\ServiceStack\ServiceStack.csproj" />
     </ItemGroup>
 
 </Project>

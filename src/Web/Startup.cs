@@ -2805,9 +2805,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     // checkUpdatesAndQuit = BeginCheckUpdates(tool);
 
                     var bytes = await url.GetBytesFromUrlAsync(requestFilter: req => {
-                        req.UserAgent = GitHubUtils.UserAgent;
+                        req.With(c => c.UserAgent = GitHubUtils.UserAgent);
                     }, responseFilter: res => {
-                        var disposition = res.Headers[HttpHeaders.ContentDisposition];
+                        var disposition = res.GetHeader(HttpHeaders.ContentDisposition);
                         if (!string.IsNullOrEmpty(disposition))
                         {
                             var parts = disposition.Split(';');
