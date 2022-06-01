@@ -39,21 +39,21 @@
         <PackageReference Include="WinApi" Version="4.*" />
         <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
 
-        <!--<PackageReference Include="ServiceStack.Text" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.Interfaces" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.Client" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.Common" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.Api.OpenApi" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.Server" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.OrmLite" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.OrmLite.Sqlite" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.OrmLite.SqlServer" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.OrmLite.MySql" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.OrmLite.PostgreSQL" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.Redis" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.Aws" Version="5.*" />-->
-        <!--<PackageReference Include="ServiceStack.Azure" Version="5.*" />-->
+        <!--<PackageReference Include="ServiceStack.Text" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.Interfaces" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.Client" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.Common" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.Api.OpenApi" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.Server" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.OrmLite" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.OrmLite.Sqlite" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.OrmLite.SqlServer" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.OrmLite.MySql" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.OrmLite.PostgreSQL" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.Redis" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.Aws" Version="6.*" />-->
+        <!--<PackageReference Include="ServiceStack.Azure" Version="6.*" />-->
 
         <ProjectReference Include="..\..\..\ServiceStack\ServiceStack.Text\src\ServiceStack.Text\ServiceStack.Text.csproj" />
         <ProjectReference Include="..\..\..\ServiceStack\ServiceStack\src\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj" />
