@@ -843,6 +843,7 @@ namespace Web
                         {
                             cmd.Print();
                             var cmdArgs = cmd.RightPart(' ');
+                            cmdArgs = ReplaceMyApp(cmdArgs, projectName);
                             PipeProcess(nugetPath, cmdArgs, workDir: hostDir);                        
                         }
                         else
@@ -856,6 +857,7 @@ namespace Web
                         {
                             cmd.Print();
                             var cmdArgs = cmd.RightPart(' ');
+                            cmdArgs = ReplaceMyApp(cmdArgs, projectName);
                             PipeProcess(dotnetPath, cmdArgs, workDir: hostDir);                        
                         }
                         else
