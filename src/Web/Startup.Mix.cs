@@ -843,6 +843,7 @@ namespace Web
                         {
                             cmd.Print();
                             var cmdArgs = cmd.RightPart(' ');
+                            cmdArgs = ReplaceMyApp(cmdArgs, projectName);
                             PipeProcess(nugetPath, cmdArgs, workDir: hostDir);                        
                         }
                         else
