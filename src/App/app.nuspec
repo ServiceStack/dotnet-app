@@ -2,13 +2,13 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>app</id>
-        <version>6.0.2</version>
+        <version>6.0.3</version>
         <authors>ServiceStack</authors>
         <owners>ServiceStack</owners>
         <requireLicenseAcceptance>true</requireLicenseAcceptance>
         <licenseUrl>https://servicestack.net/terms</licenseUrl>
         <projectUrl>https://github.com/ServiceStack/dotnet-app</projectUrl>
-        <iconUrl>https://servicestack.net/img/logo-32.png</iconUrl>
+        <iconUrl>https://servicestack.net/img/logo-128.png</iconUrl>
         <description>Easily view and deploy any ServiceStack .NET Core Web App in a self-contained Chrome CEF Browser (Win64)</description>
         <copyright>Copyright © 2008-present ServiceStack</copyright>
         <tags>CEF ServiceStack .NET Core WebApps self-contained exe Chromium CefGlue</tags>

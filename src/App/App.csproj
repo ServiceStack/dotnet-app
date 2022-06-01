@@ -2,7 +2,7 @@
 
     <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Version>6.0.2</Version>
+    <Version>6.0.3</Version>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <Platforms>x64</Platforms>
@@ -20,7 +20,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://servicestack.net/terms</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/ServiceStack/dotnet-app</PackageProjectUrl>
-    <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
+    <PackageIconUrl>https://servicestack.net/img/logo-128.png</PackageIconUrl>
     <LangVersion>latest</LangVersion>
     <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>-->
     <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>

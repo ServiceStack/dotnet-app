@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Version>6.0.2</Version>
+    <Version>6.0.3</Version>
     <AssemblyName>web</AssemblyName>
     <IsPackable>true</IsPackable>
     <PackageId>web</PackageId>
@@ -15,7 +15,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://servicestack.net/terms</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/ServiceStack/dotnet-app</PackageProjectUrl>
-    <PackageIconUrl>https://servicestack.net/img/logo-32.png</PackageIconUrl>
+    <PackageIconUrl>https://servicestack.net/img/logo-128.png</PackageIconUrl>
     <LangVersion>preview</LangVersion>
     <DefineConstants>$(DefineConstants);NETCOREAPP2_1</DefineConstants>
   </PropertyGroup>
