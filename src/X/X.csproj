@@ -41,14 +41,14 @@
       <PackageReference Include="ServiceStack.Api.OpenApi" Version="5.*" />
       -->
 
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.2" />
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="3.0.1" />
-    <PackageReference Include="Mysql.Data" Version="8.0.26" />
-    <PackageReference Include="Npgsql" Version="5.0.10" />
-    <PackageReference Include="Markdig" Version="0.27.0" />
-    <PackageReference Include="NUglify" Version="1.17.10" />
-    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.5" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="4.1.0" />
+    <PackageReference Include="Mysql.Data" Version="8.0.29" />
+    <PackageReference Include="Npgsql" Version="5.0.13" />
+    <PackageReference Include="Markdig" Version="0.30.2" />
+    <PackageReference Include="NUglify" Version="1.20.0" />
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="6.0.1" />
     <PackageReference Include="WinApi" Version="4.*" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
 

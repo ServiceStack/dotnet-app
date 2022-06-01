@@ -2330,7 +2330,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     }
                     if (op.Routes?.Count > 0)
                         $"Routes:             {GetRoutes(op)}".Print();
-                    if (op.RequiresAuth)
+                    if (op.RequiresAuth == true)
                     {
                         "".Print();
                         $"# Requires Auth".Print();

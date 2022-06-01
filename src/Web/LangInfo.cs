@@ -71,9 +71,9 @@ namespace Apps.ServiceInterface.Langs
                 ? useType.LeftPart("[")
                 : null;
             var enumType = prop.IsEnum == true
-                ? types.FindType(prop.Type, prop.TypeNamespace)
+                ? types.FindType(prop.Type, prop.Namespace)
                 : null;
-            var collectionType = prop.TypeNamespace == "System.Collections.Generic"
+            var collectionType = prop.Namespace == "System.Collections.Generic"
                 ? GetTypeName(prop.Type, prop.GenericArgs)
                 : null;
             if (collectionType != null)
@@ -108,7 +108,7 @@ namespace Apps.ServiceInterface.Langs
                 {
                     var itemProp = new MetadataPropertyType {
                         Type = elementType,
-                        TypeNamespace = "System",
+                        Namespace = "System",
                     };
                     var literalValue = GetLiteralValue(item, itemProp, types);
                     literalValue = Value(elementType, literalValue);
