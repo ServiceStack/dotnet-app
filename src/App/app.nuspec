@@ -29,6 +29,8 @@
         <file src="bin\Release\net6.0\publish\AWSSDK.DynamoDBv2.dll" target="tools\net6.0\any\AWSSDK.DynamoDBv2.dll" />
         <file src="bin\Release\net6.0\publish\AWSSDK.S3.dll" target="tools\net6.0\any\AWSSDK.S3.dll" />
         <file src="bin\Release\net6.0\publish\AWSSDK.SQS.dll" target="tools\net6.0\any\AWSSDK.SQS.dll" />
+        <file src="bin\Release\net6.0\publish\Azure.Core.dll" target="tools\net6.0\any\Azure.Core.dll" />
+        <file src="bin\Release\net6.0\publish\Azure.Identity.dll" target="tools\net6.0\any\Azure.Identity.dll" />
         <file src="bin\Release\net6.0\publish\BouncyCastle.Crypto.dll" target="tools\net6.0\any\BouncyCastle.Crypto.dll" />
         <file src="bin\Release\net6.0\publish\Google.Protobuf.dll" target="tools\net6.0\any\Google.Protobuf.dll" />
         <file src="bin\Release\net6.0\publish\K4os.Compression.LZ4.dll" target="tools\net6.0\any\K4os.Compression.LZ4.dll" />
@@ -40,18 +42,23 @@
         <file src="bin\Release\net6.0\publish\Microsoft.Azure.ServiceBus.dll" target="tools\net6.0\any\Microsoft.Azure.ServiceBus.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.Azure.Services.AppAuthentication.dll" target="tools\net6.0\any\Microsoft.Azure.Services.AppAuthentication.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.Bcl.AsyncInterfaces.dll" target="tools\net6.0\any\Microsoft.Bcl.AsyncInterfaces.dll" />
+        <file src="bin\Release\net6.0\publish\Microsoft.Data.SqlClient.dll" target="tools\net6.0\any\Microsoft.Data.SqlClient.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.Data.Sqlite.dll" target="tools\net6.0\any\Microsoft.Data.Sqlite.dll" />
+        <file src="bin\Release\net6.0\publish\Microsoft.Identity.Client.dll" target="tools\net6.0\any\Microsoft.Identity.Client.dll" />
+        <file src="bin\Release\net6.0\publish\Microsoft.Identity.Client.Extensions.Msal.dll" target="tools\net6.0\any\Microsoft.Identity.Client.Extensions.Msal.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" target="tools\net6.0\any\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" target="tools\net6.0\any\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.IdentityModel.JsonWebTokens.dll" target="tools\net6.0\any\Microsoft.IdentityModel.JsonWebTokens.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.IdentityModel.Logging.dll" target="tools\net6.0\any\Microsoft.IdentityModel.Logging.dll" />
+        <file src="bin\Release\net6.0\publish\Microsoft.IdentityModel.Protocols.dll" target="tools\net6.0\any\Microsoft.IdentityModel.Protocols.dll" />
+        <file src="bin\Release\net6.0\publish\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" target="tools\net6.0\any\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.IdentityModel.Tokens.dll" target="tools\net6.0\any\Microsoft.IdentityModel.Tokens.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.Rest.ClientRuntime.dll" target="tools\net6.0\any\Microsoft.Rest.ClientRuntime.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.Rest.ClientRuntime.Azure.dll" target="tools\net6.0\any\Microsoft.Rest.ClientRuntime.Azure.dll" />
         <file src="bin\Release\net6.0\publish\Microsoft.Win32.SystemEvents.dll" target="tools\net6.0\any\Microsoft.Win32.SystemEvents.dll" />
         <file src="bin\Release\net6.0\publish\MySql.Data.dll" target="tools\net6.0\any\MySql.Data.dll" />
         <file src="bin\Release\net6.0\publish\Ubiety.Dns.Core.dll" target="tools\net6.0\any\Ubiety.Dns.Core.dll" />
-        <file src="bin\Release\net6.0\publish\Zstandard.Net.dll" target="tools\net6.0\any\Zstandard.Net.dll" />
+        <file src="bin\Release\net6.0\publish\ZstdNet.dll" target="tools\net6.0\any\ZstdNet.dll" />
         <file src="bin\Release\net6.0\publish\NetCoreEx.BinaryExtensions.dll" target="tools\net6.0\any\NetCoreEx.BinaryExtensions.dll" />
         <file src="bin\Release\net6.0\publish\NetCoreEx.Geometry.dll" target="tools\net6.0\any\NetCoreEx.Geometry.dll" />
         <file src="bin\Release\net6.0\publish\Newtonsoft.Json.dll" target="tools\net6.0\any\Newtonsoft.Json.dll" />
@@ -82,21 +89,16 @@
         <file src="bin\Release\net6.0\publish\PInvoke.Windows.ShellScalingApi.dll" target="tools\net6.0\any\PInvoke.Windows.ShellScalingApi.dll" />
         <file src="bin\Release\net6.0\publish\PInvoke.WtsApi32.dll" target="tools\net6.0\any\PInvoke.WtsApi32.dll" />
         <file src="bin\Release\net6.0\publish\SQLitePCLRaw.batteries_v2.dll" target="tools\net6.0\any\SQLitePCLRaw.batteries_v2.dll" />
-        <file src="bin\Release\net6.0\publish\SQLitePCLRaw.nativelibrary.dll" target="tools\net6.0\any\SQLitePCLRaw.nativelibrary.dll" />
         <file src="bin\Release\net6.0\publish\SQLitePCLRaw.core.dll" target="tools\net6.0\any\SQLitePCLRaw.core.dll" />
-        <file src="bin\Release\net6.0\publish\SQLitePCLRaw.provider.dynamic_cdecl.dll" target="tools\net6.0\any\SQLitePCLRaw.provider.dynamic_cdecl.dll" />
-        <file src="bin\Release\net6.0\publish\System.Data.SQLite.dll" target="tools\net6.0\any\System.Data.SQLite.dll" />
+        <file src="bin\Release\net6.0\publish\SQLitePCLRaw.provider.e_sqlite3.dll" target="tools\net6.0\any\SQLitePCLRaw.provider.e_sqlite3.dll" />
         <file src="bin\Release\net6.0\publish\System.Configuration.ConfigurationManager.dll" target="tools\net6.0\any\System.Configuration.ConfigurationManager.dll" />
-        <file src="bin\Release\net6.0\publish\System.Data.SqlClient.dll" target="tools\net6.0\any\System.Data.SqlClient.dll" />
         <file src="bin\Release\net6.0\publish\System.Drawing.Common.dll" target="tools\net6.0\any\System.Drawing.Common.dll" />
         <file src="bin\Release\net6.0\publish\System.IdentityModel.Tokens.Jwt.dll" target="tools\net6.0\any\System.IdentityModel.Tokens.Jwt.dll" />
         <file src="bin\Release\net6.0\publish\System.Linq.Async.dll" target="tools\net6.0\any\System.Linq.Async.dll" />
         <file src="bin\Release\net6.0\publish\System.Net.Http.WinHttpHandler.dll" target="tools\net6.0\any\System.Net.Http.WinHttpHandler.dll" />
-        <file src="bin\Release\net6.0\publish\System.Private.ServiceModel.dll" target="tools\net6.0\any\System.Private.ServiceModel.dll" />
+        <file src="bin\Release\net6.0\publish\System.Runtime.Caching.dll" target="tools\net6.0\any\System.Runtime.Caching.dll" />
         <file src="bin\Release\net6.0\publish\System.Security.Cryptography.ProtectedData.dll" target="tools\net6.0\any\System.Security.Cryptography.ProtectedData.dll" />
         <file src="bin\Release\net6.0\publish\System.Security.Permissions.dll" target="tools\net6.0\any\System.Security.Permissions.dll" />
-        <file src="bin\Release\net6.0\publish\System.ServiceModel.Primitives.dll" target="tools\net6.0\any\System.ServiceModel.Primitives.dll" />
-        <file src="bin\Release\net6.0\publish\System.ServiceModel.dll" target="tools\net6.0\any\System.ServiceModel.dll" />
         <file src="bin\Release\net6.0\publish\System.Windows.Extensions.dll" target="tools\net6.0\any\System.Windows.Extensions.dll" />
         <file src="bin\Release\net6.0\publish\Validation.dll" target="tools\net6.0\any\Validation.dll" />
         <file src="bin\Release\net6.0\publish\WinApi.dll" target="tools\net6.0\any\WinApi.dll" />
@@ -114,40 +116,53 @@
         <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.MySql.dll" target="tools\net6.0\any\ServiceStack.OrmLite.MySql.dll" />
         <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.PostgreSQL.dll" target="tools\net6.0\any\ServiceStack.OrmLite.PostgreSQL.dll" />
         <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.Sqlite.dll" target="tools\net6.0\any\ServiceStack.OrmLite.Sqlite.dll" />
-        <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.SqlServer.dll" target="tools\net6.0\any\ServiceStack.OrmLite.SqlServer.dll" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.SqlServer.Data.dll" target="tools\net6.0\any\ServiceStack.OrmLite.SqlServer.Data.dll" />
         <file src="bin\Release\net6.0\publish\ServiceStack.Redis.dll" target="tools\net6.0\any\ServiceStack.Redis.dll" />
         <file src="bin\Release\net6.0\publish\ServiceStack.Server.dll" target="tools\net6.0\any\ServiceStack.Server.dll" />
         <file src="bin\Release\net6.0\publish\ServiceStack.Text.dll" target="tools\net6.0\any\ServiceStack.Text.dll" />
-        <file src="bin\Release\net6.0\publish\ServiceStack.CefGlue.pdb" target="tools\net6.0\any\ServiceStack.CefGlue.pdb" />
         <file src="bin\Release\net6.0\publish\ServiceStack.Text.xml" target="tools\net6.0\any\ServiceStack.Text.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.Client.xml" target="tools\net6.0\any\ServiceStack.Client.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.Common.xml" target="tools\net6.0\any\ServiceStack.Common.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.Desktop.xml" target="tools\net6.0\any\ServiceStack.Desktop.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.xml" target="tools\net6.0\any\ServiceStack.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.Server.xml" target="tools\net6.0\any\ServiceStack.Server.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.Api.OpenApi.xml" target="tools\net6.0\any\ServiceStack.Api.OpenApi.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.xml" target="tools\net6.0\any\ServiceStack.OrmLite.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.Sqlite.xml" target="tools\net6.0\any\ServiceStack.OrmLite.Sqlite.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.SqlServer.Data.xml" target="tools\net6.0\any\ServiceStack.OrmLite.SqlServer.Data.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.MySql.xml" target="tools\net6.0\any\ServiceStack.OrmLite.MySql.xml" />
         <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.MySql.dll.config" target="tools\net6.0\any\ServiceStack.OrmLite.MySql.dll.config" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.OrmLite.PostgreSQL.xml" target="tools\net6.0\any\ServiceStack.OrmLite.PostgreSQL.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.Redis.xml" target="tools\net6.0\any\ServiceStack.Redis.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.Aws.xml" target="tools\net6.0\any\ServiceStack.Aws.xml" />
         <file src="bin\Release\net6.0\publish\ServiceStack.Azure.xml" target="tools\net6.0\any\ServiceStack.Azure.xml" />
+        <file src="bin\Release\net6.0\publish\ServiceStack.CefGlue.pdb" target="tools\net6.0\any\ServiceStack.CefGlue.pdb" />
+        <file src="bin\Release\net6.0\publish\runtimes\unix\lib\netcoreapp3.1\Microsoft.Data.SqlClient.dll" target="tools\net6.0\any\runtimes\unix\lib\netcoreapp3.1\Microsoft.Data.SqlClient.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win\lib\netcoreapp3.1\Microsoft.Data.SqlClient.dll" target="tools\net6.0\any\runtimes\win\lib\netcoreapp3.1\Microsoft.Data.SqlClient.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win-arm\native\Microsoft.Data.SqlClient.SNI.dll" target="tools\net6.0\any\runtimes\win-arm\native\Microsoft.Data.SqlClient.SNI.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win-arm\native\e_sqlite3.dll" target="tools\net6.0\any\runtimes\win-arm\native\e_sqlite3.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win-arm64\native\Microsoft.Data.SqlClient.SNI.dll" target="tools\net6.0\any\runtimes\win-arm64\native\Microsoft.Data.SqlClient.SNI.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win-arm64\native\e_sqlite3.dll" target="tools\net6.0\any\runtimes\win-arm64\native\e_sqlite3.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll" target="tools\net6.0\any\runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win-x64\native\e_sqlite3.dll" target="tools\net6.0\any\runtimes\win-x64\native\e_sqlite3.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll" target="tools\net6.0\any\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win-x86\native\e_sqlite3.dll" target="tools\net6.0\any\runtimes\win-x86\native\e_sqlite3.dll" />
         <file src="bin\Release\net6.0\publish\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll" target="tools\net6.0\any\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll" />
         <file src="bin\Release\net6.0\publish\runtimes\win\lib\net6.0\System.Drawing.Common.dll" target="tools\net6.0\any\runtimes\win\lib\net6.0\System.Drawing.Common.dll" />
         <file src="bin\Release\net6.0\publish\runtimes\win\lib\net6.0\System.Net.Http.WinHttpHandler.dll" target="tools\net6.0\any\runtimes\win\lib\net6.0\System.Net.Http.WinHttpHandler.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-arm64\native\sni.dll" target="tools\net6.0\any\runtimes\win-arm64\native\sni.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-arm64\native\e_sqlite3.dll" target="tools\net6.0\any\runtimes\win-arm64\native\e_sqlite3.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-x64\native\sni.dll" target="tools\net6.0\any\runtimes\win-x64\native\sni.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-x64\native\e_sqlite3.dll" target="tools\net6.0\any\runtimes\win-x64\native\e_sqlite3.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-x64\native\SQLite.Interop.dll" target="tools\net6.0\any\runtimes\win-x64\native\SQLite.Interop.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-x86\native\sni.dll" target="tools\net6.0\any\runtimes\win-x86\native\sni.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-x86\native\e_sqlite3.dll" target="tools\net6.0\any\runtimes\win-x86\native\e_sqlite3.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-x86\native\SQLite.Interop.dll" target="tools\net6.0\any\runtimes\win-x86\native\SQLite.Interop.dll" />
         <file src="bin\Release\net6.0\publish\runtimes\alpine-x64\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\alpine-x64\native\libe_sqlite3.so" />
         <file src="bin\Release\net6.0\publish\runtimes\linux-arm\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\linux-arm\native\libe_sqlite3.so" />
         <file src="bin\Release\net6.0\publish\runtimes\linux-arm64\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\linux-arm64\native\libe_sqlite3.so" />
         <file src="bin\Release\net6.0\publish\runtimes\linux-armel\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\linux-armel\native\libe_sqlite3.so" />
         <file src="bin\Release\net6.0\publish\runtimes\linux-mips64\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\linux-mips64\native\libe_sqlite3.so" />
         <file src="bin\Release\net6.0\publish\runtimes\linux-musl-x64\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\linux-musl-x64\native\libe_sqlite3.so" />
+        <file src="bin\Release\net6.0\publish\runtimes\linux-s390x\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\linux-s390x\native\libe_sqlite3.so" />
         <file src="bin\Release\net6.0\publish\runtimes\linux-x64\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\linux-x64\native\libe_sqlite3.so" />
-        <file src="bin\Release\net6.0\publish\runtimes\linux-x64\native\SQLite.Interop.dll" target="tools\net6.0\any\runtimes\linux-x64\native\SQLite.Interop.dll" />
         <file src="bin\Release\net6.0\publish\runtimes\linux-x86\native\libe_sqlite3.so" target="tools\net6.0\any\runtimes\linux-x86\native\libe_sqlite3.so" />
+        <file src="bin\Release\net6.0\publish\runtimes\osx-arm64\native\libe_sqlite3.dylib" target="tools\net6.0\any\runtimes\osx-arm64\native\libe_sqlite3.dylib" />
         <file src="bin\Release\net6.0\publish\runtimes\osx-x64\native\libe_sqlite3.dylib" target="tools\net6.0\any\runtimes\osx-x64\native\libe_sqlite3.dylib" />
-        <file src="bin\Release\net6.0\publish\runtimes\osx-x64\native\SQLite.Interop.dll" target="tools\net6.0\any\runtimes\osx-x64\native\SQLite.Interop.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win-arm\native\e_sqlite3.dll" target="tools\net6.0\any\runtimes\win-arm\native\e_sqlite3.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\net6.0\any\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
-        <file src="bin\Release\net6.0\publish\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" target="tools\net6.0\any\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll" />
         <file src="bin\Release\net6.0\publish\runtimes\unix\lib\net6.0\System.Drawing.Common.dll" target="tools\net6.0\any\runtimes\unix\lib\net6.0\System.Drawing.Common.dll" />
+        <file src="bin\Release\net6.0\publish\runtimes\win\lib\netstandard2.0\System.Runtime.Caching.dll" target="tools\net6.0\any\runtimes\win\lib\netstandard2.0\System.Runtime.Caching.dll" />
         <file src="bin\Release\net6.0\publish\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" target="tools\net6.0\any\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" />
         <file src="bin\Release\net6.0\publish\runtimes\win\lib\netcoreapp3.0\System.Windows.Extensions.dll" target="tools\net6.0\any\runtimes\win\lib\netcoreapp3.0\System.Windows.Extensions.dll" />
         <file src="global.json" target="content\global.json" />
