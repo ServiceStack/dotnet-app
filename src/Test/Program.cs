@@ -297,6 +297,14 @@ namespace Run
         }
 
         [Test]
+        public async Task Run_creating_new_react_lite_corefx()
+        {
+            CreateHostProject();
+            Directory.SetCurrentDirectory("wip");
+            await Startup.CreateWebHost("x", new[]{ "new", "react-lite-corefx", "rl" });
+        }
+
+        [Test]
         public async Task Run_apply_init_authsqlserver_sqlite_default_project()
         {
             DeleteCreateAndSetDirectory("wip\\TestSqlite");
