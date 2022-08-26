@@ -1683,91 +1683,94 @@ Version:  {GetVersion()}
 
 Usage:   
   
-  {tool} new                     List available Project Templates
-  {tool} new <template> <name>   Create New Project From Template
-  {tool} download <user>/<repo>  Download latest GitHub Repo Release
-  {tool} get <url>               Download URL to file                     (-out <file|dir>)
-  {tool} stream <url>            Stream URL contents to console stdout
+  {tool} new                      List available Project Templates
+  {tool} new <template> <name>    Create New Project From Template
+  {tool} download <user>/<repo>   Download latest GitHub Repo Release
+  {tool} get <url>                Download URL to file                     (-out <file|dir>)
+  {tool} stream <url>             Stream URL contents to console stdout
   
-  {tool} mix                     Show available gists to mixin            (Alias '+')
-  {tool} mix <name>              Write gist files locally, e.g:           (Alias +init)
-  {tool} mix init                Create empty .NET Core ServiceStack App
-  {tool} mix [tag]               Search available gists
-  {tool} mix <gist-url>          Write all Gist text files to current directory
-  {tool} gist <gist-id>          Write all Gist text files to current directory
+  {tool} mix                      Show available gists to mixin            (Alias '+')
+  {tool} mix <name>               Write gist files locally, e.g:           (Alias +init)
+  {tool} mix init                 Create empty .NET Core ServiceStack App
+  {tool} mix [tag]                Search available gists
+  {tool} mix <gist-url>           Write all Gist text files to current directory
+  {tool} gist <gist-id>           Write all Gist text files to current directory
 
-  {tool} publish                 Publish Current Directory to Gist        (requires token)
-  {tool} gist-new <dir>          Create new Gist with Directory Files     (requires token)
-  {tool} gist-update <id> <dir>  Update Gist ID with Directory Files      (requires token)
-  {tool} gist-open <gist>        Download and open Gist folder            (-out <dir>)
+  {tool} publish                  Publish Current Directory to Gist        (requires token)
+  {tool} gist-new <dir>           Create new Gist with Directory Files     (requires token)
+  {tool} gist-update <id> <dir>   Update Gist ID with Directory Files      (requires token)
+  {tool} gist-open <gist>         Download and open Gist folder            (-out <dir>)
 
-  {tool} <lang>                  Update all ServiceStack References in directory (recursive)
-  {tool} <file>                  Update existing ServiceStack Reference (e.g. dtos.cs)
-  {tool} <lang>     <url> <file> Add ServiceStack Reference and save to file name
-  {tool} csharp     <url>        Add C# ServiceStack Reference            (Alias 'cs')
-  {tool} typescript <url>        Add TypeScript ServiceStack Reference    (Alias 'ts')
-  {tool} python     <url>        Add Python ServiceStack Reference        (Alias 'py')
-  {tool} swift      <url>        Add Swift ServiceStack Reference         (Alias 'sw')
-  {tool} java       <url>        Add Java ServiceStack Reference          (Alias 'ja')
-  {tool} kotlin     <url>        Add Kotlin ServiceStack Reference        (Alias 'kt')
-  {tool} dart       <url>        Add Dart ServiceStack Reference          (Alias 'da')
-  {tool} fsharp     <url>        Add F# ServiceStack Reference            (Alias 'fs')
-  {tool} vbnet      <url>        Add VB.NET ServiceStack Reference        (Alias 'vb')
-  {tool} tsd        <url>        Add TypeScript Definition ServiceStack Reference
+  {tool} <lang>                   Update all ServiceStack References in directory (recursive)
+  {tool} <file>                   Update existing ServiceStack Reference (e.g. dtos.cs)
+  {tool} <lang>     <url> <file>  Add ServiceStack Reference and save to file name
+  {tool} csharp     <url>         Add C# ServiceStack Reference            (Alias 'cs')
+  {tool} typescript <url>         Add TypeScript ServiceStack Reference    (Alias 'ts')
+  {tool} python     <url>         Add Python ServiceStack Reference        (Alias 'py')
+  {tool} swift      <url>         Add Swift ServiceStack Reference         (Alias 'sw')
+  {tool} java       <url>         Add Java ServiceStack Reference          (Alias 'ja')
+  {tool} kotlin     <url>         Add Kotlin ServiceStack Reference        (Alias 'kt')
+  {tool} dart       <url>         Add Dart ServiceStack Reference          (Alias 'da')
+  {tool} fsharp     <url>         Add F# ServiceStack Reference            (Alias 'fs')
+  {tool} vbnet      <url>         Add VB.NET ServiceStack Reference        (Alias 'vb')
+  {tool} tsd        <url>         Add TypeScript Definition ServiceStack Reference
 
-  {tool} proto <url>             Add gRPC .proto ServiceStack Reference
-  {tool} proto <url> <name>      Add gRPC .proto and save to <name>.services.proto
-  {tool} proto                   Update all gRPC *.services.proto ServiceStack References
-  {tool} proto-langs             Display list of gRPC supported languages
-  {tool} proto-<lang> <url>      Add gRPC .proto and generate language    (-out <dir>)
-  {tool} proto-<lang> <file|dir> Update gRPC .proto and re-gen language   (-out <dir>)
-  {tool} proto-<lang>            Update all gRPC .proto's and re-gen lang (-out <dir>)
+  {tool} proto <url>              Add gRPC .proto ServiceStack Reference
+  {tool} proto <url> <name>       Add gRPC .proto and save to <name>.services.proto
+  {tool} proto                    Update all gRPC *.services.proto ServiceStack References
+  {tool} proto-langs              Display list of gRPC supported languages
+  {tool} proto-<lang> <url>       Add gRPC .proto and generate language    (-out <dir>)
+  {tool} proto-<lang> <file|dir>  Update gRPC .proto and re-gen language   (-out <dir>)
+  {tool} proto-<lang>             Update all gRPC .proto's and re-gen lang (-out <dir>)
 
-  {tool} inspect <url>           Show info about a ServiceStack App
-  {tool} inspect <url> <request> Show info about a ServiceStack API Request
-  {tool} inspect-jwt             Show info about a decoded JWT
+  {tool} inspect <url>            Show info about a ServiceStack App
+  {tool} inspect <url> <request>  Show info about a ServiceStack API Request
+  {tool} inspect-jwt              Show info about a decoded JWT
 
-  {tool} send                    Show usage info info for Post Command
-  {tool} jupyter-python          Show usage info for generating Python Jupyter Notebooks
-  {tool} jupyter-csharp          Show usage info for generating C# Jupyter Notebooks
-  {tool} jupyter-fsharp          Show usage info for generating F# Jupyter Notebooks
+  {tool} send                     Show usage info info for Post Command
+  {tool} jupyter-python           Show usage info for generating Python Jupyter Notebooks
+  {tool} jupyter-csharp           Show usage info for generating C# Jupyter Notebooks
+  {tool} jupyter-fsharp           Show usage info for generating F# Jupyter Notebooks
 
-  {tool} open                    List of available Sharp Apps
-  {tool} open <app>              Install and run Sharp App
+  {tool} open                     List of available Sharp Apps
+  {tool} open <app>               Install and run Sharp App
 
-  {tool} run                     Run Sharp App in current directory
-  {tool} run <name>              Run Installed Sharp App
-  {tool} run path/app.settings   Run Sharp App at directory containing specified app.settings
+  {tool} run                      Run Sharp App in current directory
+  {tool} run <name>               Run Installed Sharp App
+  {tool} run path/app.settings    Run Sharp App at directory containing specified app.settings
 {runProcess}
-  {tool} install                 List available Sharp Apps to install     (Alias 'l')
-  {tool} install <app>           Install Sharp App                        (Alias 'i')
+  {tool} install                  List available Sharp Apps to install     (Alias 'l')
+  {tool} install <app>            Install Sharp App                        (Alias 'i')
 
-  {tool} uninstall               List Installed Sharp Apps
-  {tool} uninstall <app>         Uninstall Sharp App
+  {tool} uninstall                List Installed Sharp Apps
+  {tool} uninstall <app>          Uninstall Sharp App
   
-  {tool} alias                   Show all local gist aliases (for usage in mix or app's)
-  {tool} alias <alias>           Print local alias value
-  {tool} alias <alias> <gist-id> Set local alias with Gist Id or Gist URL
-  {tool} unalias <alias>         Remove local alias
+  {tool} alias                    Show all local gist aliases (for usage in mix or app's)
+  {tool} alias <alias>            Print local alias value
+  {tool} alias <alias> <gist-id>  Set local alias with Gist Id or Gist URL
+  {tool} unalias <alias>          Remove local alias
 
-  {tool} shortcut                Create Shortcut for Sharp App
-  {tool} shortcut <name>.dll     Create Shortcut for .NET Core App
+  {tool} shortcut                 Create Shortcut for Sharp App
+  {tool} shortcut <name>.dll      Create Shortcut for .NET Core App
 
-  {tool} scripts                 List all available package.json scripts  (Alias 's')
-  {tool} scripts <name>          Run package.json script                  (Alias 's')
+  {tool} scripts                  List all available package.json scripts  (Alias 's')
+  {tool} scripts <name>           Run package.json script                  (Alias 's')
 
-  {tool} run <name>.ss           Run #Script within context of AppHost    (or <name>.html)
-  {tool} watch <name>.ss         Watch #Script within context of AppHost  (or <name>.html)
-  {indt}                         Language File Extensions:
-  {indt}                           .ss - #Script source file
-  {indt}                           .sc - #Script `code` source file
-  {indt}                           .l  - #Script `lisp` source file
-  {tool} lisp                    Start Lisp REPL
+  {tool} run <name>.ss            Run #Script within context of AppHost    (or <name>.html)
+  {tool} watch <name>.ss          Watch #Script within context of AppHost  (or <name>.html)
+  {indt}                          Language File Extensions:
+  {indt}                            .ss - #Script source file
+  {indt}                            .sc - #Script `code` source file
+  {indt}                            .l  - #Script `lisp` source file
+  {tool} lisp                     Start Lisp REPL
 
-  {tool} base64 <text>           Convert text to Base64                   (or base64url)
-  {tool} base64 < file           Convert redirected input to Base64       (or base64url)
-  {tool} unbase64 <base64>       Convert from Base64 to text              (or unbase64url)
-  {tool} unbase64 < file         Convert redirected Base64 input to text  (or unbase64url)
+  {tool} patch .json.patch        Patch JSON file to <file.json>           (-remove) 
+  {tool} patch .json.patch <file> Patch JSON file to <file>                (-remove)
+
+  {tool} base64 <text>            Convert text to Base64                   (or base64url)
+  {tool} base64 < file            Convert redirected input to Base64       (or base64url)
+  {tool} unbase64 <base64>        Convert from Base64 to text              (or unbase64url)
+  {tool} unbase64 < file          Convert redirected Base64 input to text  (or unbase64url)
 {additional}
   dotnet tool update -g {tool}   Update to latest version
 
