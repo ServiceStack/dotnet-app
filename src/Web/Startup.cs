@@ -1670,8 +1670,8 @@ namespace Web
             var runProcess = "";
             if (Events?.RunNetCoreProcess != null)
             {
-                runProcess =  $"  {tool} <name>.dll              Run external .NET Core App{Environment.NewLine}";
-                runProcess += $"  {tool} <name>.exe              Run external self-contained .NET Core App{Environment.NewLine}";
+                runProcess =  $"  {tool} <name>.dll               Run external .NET Core App{Environment.NewLine}";
+                runProcess += $"  {tool} <name>.exe               Run external self-contained .NET Core App{Environment.NewLine}";
             }
 
             var additional = new StringBuilder();
@@ -1772,7 +1772,7 @@ Usage:
   {tool} unbase64 <base64>        Convert from Base64 to text              (or unbase64url)
   {tool} unbase64 < file          Convert redirected Base64 input to text  (or unbase64url)
 {additional}
-  dotnet tool update -g {tool}   Update to latest version
+  dotnet tool update -g {tool}    Update to latest version
 
 Options:
     -h, --help, ?             Print this message
