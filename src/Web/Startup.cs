@@ -1338,6 +1338,12 @@ namespace Web
                 return true;
             }
 
+            if (RemoveArgs.Contains(arg))
+            {
+                Remove = true;
+                return true;
+            }
+
             if (BasicAuthArgs.Contains(arg))
             {
                 BasicAuth = NextArg(ref i);
@@ -1982,6 +1988,25 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 else
                 {
                     base64.FromBase64UrlSafe().FromUtf8Bytes().Print();
+                }
+                return new Instruction { Handled = true };
+            }
+            if (arg == "patch")
+            {
+                var patchFile = args.Length > 1 ? args[1] : null;
+                if (patchFile == null)
+                {
+                    $"Usage: {tool} patch file.json.patch".Print();
+                    $"       {tool} patch file.json.patch file.json".Print();
+                    $"Options:".Print();
+                    $" -remove   Remove file.json.patch after use".Print();
+                }
+                else
+                {
+                    var targetFile = args.Length > 2 ? args[2] : patchFile.LeftPart(".patch");
+                    await PatchJsonFileAsync(targetFile, patchFile);
+                    if (Remove)
+                        File.Delete(patchFile);
                 }
                 return new Instruction { Handled = true };
             }
@@ -2849,7 +2874,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             }
 
             var isDownload = arg == "download";
-            if ((arg == "new" && (args.Length == 2 || args.Length == 3)) || (isDownload && args.Length == 2))
+            if ((arg == "new" && args.Length is 2 or 3) || (isDownload && args.Length == 2))
             {
                 var repo = args[1];
                 var parts = repo.Split('+');
@@ -3867,7 +3892,26 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                     if (featureTypes.Contains(type.Name))
                     {
-                        registerPlugins[Array.IndexOf(featureIndex, type.Name)] = type.CreatePlugin();
+                        var preconfiguredPlugin = appHost.GetPlugin(type);
+                        if (preconfiguredPlugin != null)
+                        {
+                            var pluginConfig = type.Name.GetAppSetting();
+                            if (pluginConfig != null)
+                            {
+                                var value = JS.eval(pluginConfig);
+                                if (value is Dictionary<string, object> objDictionary)
+                                {
+                                    if (Startup.Verbose) $"Populating pre-configured '{type.Name}' with: {pluginConfig}".Print();
+                                    objDictionary.PopulateInstance(preconfiguredPlugin);
+                                }
+                                else throw new NotSupportedException($"'{pluginConfig}' is not an Object Dictionary");
+                            }
+                        }
+                        else
+                        {
+                            var pluginIndex = Array.IndexOf(featureIndex, type.Name);
+                            registerPlugins[pluginIndex] = type.CreatePlugin();
+                        }
                         featureTypes.Remove(type.Name);
                     }
                 }
@@ -3901,11 +3945,11 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     throw new NotSupportedException($"Unable to locate plugin{plural}: " + string.Join(", ", featureTypes));
                 }
 
-                plugins = registerPlugins;
+                plugins = registerPlugins.Where(x => x != null).ToArray(); // remove empty pre-configured plugins
             }
             else
             {
-                plugins = new IPlugin[0];
+                plugins = Array.Empty<IPlugin>();
             }
         }
 
@@ -3955,22 +3999,20 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                     if (Startup.Verbose) $"Attempting to load plugin '{plugin.VirtualPath}', size: {plugin.Length} bytes".Print();
 
-                    using (var stream = plugin.OpenRead())
-                    {
-                        var asm = AssemblyLoadContext.Default.LoadFromStream(stream);
-                        assemblies.Add(asm);
+                    using var stream = plugin.OpenRead();
+                    var asm = AssemblyLoadContext.Default.LoadFromStream(stream);
+                    assemblies.Add(asm);
                         
-                        if (appHost == null)
+                    if (appHost == null)
+                    {
+                        foreach (var type in asm.GetTypes())
                         {
-                            foreach (var type in asm.GetTypes())
+                            if (typeof(AppHostBase).IsAssignableFrom(type))
                             {
-                                if (typeof(AppHostBase).IsAssignableFrom(type))
-                                {
-                                    if (Startup.Verbose) $"Using AppHost from Plugin '{plugin.VirtualPath}'".Print();
-                                    appHost = type.CreateInstance<AppHostBase>();
-                                    appHost.AppSettings = WebTemplateUtils.AppSettings;
-                                    break;
-                                }
+                                if (Startup.Verbose) $"Using AppHost from Plugin '{plugin.VirtualPath}'".Print();
+                                appHost = type.CreateInstance<AppHostBase>();
+                                appHost.AppSettings = WebTemplateUtils.AppSettings;
+                                break;
                             }
                         }
                     }

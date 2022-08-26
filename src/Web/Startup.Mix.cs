@@ -50,6 +50,7 @@ namespace Web
         static string[] OutArgs = CreateArgs("out");
         static string[] RawArgs = CreateArgs("raw");
         static string[] JsonArgs = CreateArgs("json");
+        static string[] RemoveArgs = CreateArgs("remove");
         static string[] BasicAuthArgs = CreateArgs("basic");
         static string[] AuthSecretArgs = CreateArgs("authsecret");
         static string[] SsIdArgs = CreateArgs("ss-id");
@@ -71,6 +72,7 @@ namespace Web
         public static bool Preserve { get; set; }
         public static bool Raw { get; set; }
         public static bool Json { get; set; }
+        public static bool Remove { get; set; }
         
         public static string GitHubToken { get; set; } 
         public static string Token { get; set; } // only set from -token cmd line argument
@@ -898,9 +900,51 @@ namespace Web
                 {
                     File.WriteAllText(filePath, fileContents);
                 }
+
+                if (filePath.EndsWith(".json.patch"))
+                {
+                    var patchJson = filePath;
+                    var patchTarget = patchJson.LeftPart(".patch");
+                    if (File.Exists(patchTarget))
+                    {
+                        PatchJsonFileAsync(patchTarget, patchJson).Wait();
+                        $"Patching {patchTarget}...".Print();
+                        File.Delete(patchJson);
+                    }
+                }
             }
         }
 
+        public static async Task PatchJsonFileAsync(string targetFile, string patchFile)
+        {
+            if (!File.Exists(targetFile))
+                await File.WriteAllTextAsync(targetFile, "{}");
+
+            var targetJson = await File.ReadAllTextAsync(targetFile);
+            var patchJson = await File.ReadAllTextAsync(patchFile);
+            var patchedFile = PatchJson(targetJson, patchJson);
+            await File.WriteAllTextAsync(targetFile, patchedFile);
+        }
+
+        public static string PatchJson(string targetJson, string patchJson)
+        {
+            var targetObj = Newtonsoft.Json.JsonConvert.DeserializeObject(targetJson);
+
+            var ops = Newtonsoft.Json.JsonConvert
+                .DeserializeObject<List<Microsoft.AspNetCore.JsonPatch.Operations.Operation>>(patchJson);
+            var patchDocument = new Microsoft.AspNetCore.JsonPatch.JsonPatchDocument(ops,
+                new Newtonsoft.Json.Serialization.DefaultContractResolver());
+
+            // Retardedly JSON Patch doesn't have a way to force creating an non-existent object so we need to special case adding it
+            if (ops.Any(x => x.path?.StartsWith("/scripts") == true) && targetObj is Newtonsoft.Json.Linq.JObject jObj &&
+                !jObj.ContainsKey("scripts"))
+                jObj["scripts"] = new Newtonsoft.Json.Linq.JObject();
+
+            patchDocument.ApplyTo(targetObj);
+            var patchedFile = Newtonsoft.Json.JsonConvert.SerializeObject(targetObj, Newtonsoft.Json.Formatting.Indented);
+            return patchedFile;
+        }
+        
         public static Dictionary<string, string> GetGistFiles(string gistId, out string gistLinkUrl)
         {
             Dictionary<string, string> gistFiles;

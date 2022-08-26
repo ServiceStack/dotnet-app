@@ -413,112 +413,112 @@ namespace Run
         [Test]
         public async Task Run_web_apps()
         {
-            await Startup.CreateWebHost("web", new[]{ "apps" });
+            await Startup.CreateWebHost("x", new[]{ "apps" });
         }
 
         [Test]
         public async Task Run_web_install_redis()
         {
-            await Startup.CreateWebHost("web", new[]{ "install", "redis" });
+            await Startup.CreateWebHost("x", new[]{ "install", "redis" });
         }
 
         [Test]
         public async Task Run_web_open_redis()
         {
-            await Startup.CreateWebHost("web", new[]{ "open", "redis" });
+            await Startup.CreateWebHost("x", new[]{ "open", "redis" });
         }
 
         [Test]
         public async Task Run_web_run_redis()
         {
-            await Startup.CreateWebHost("web", new[]{ "run", "redis" });
+            await Startup.CreateWebHost("x", new[]{ "run", "redis" });
         }
  
         [Test]
         public async Task Run_web_open_url()
         {
-            await Startup.CreateWebHost("web", new[]{ "open", "https://github.com/sharp-apps/bare" });
+            await Startup.CreateWebHost("x", new[]{ "open", "https://github.com/sharp-apps/bare" });
         }
 
         [Test]
         public async Task Run_version()
         {
-            await Startup.CreateWebHost("web", new[]{ "/version" });
+            await Startup.CreateWebHost("x", new[]{ "/version" });
         }
 
         [Test]
         public async Task Run_lisp_repl()
         {
-            await Startup.CreateWebHost("web", new[]{ "lisp" });
+            await Startup.CreateWebHost("x", new[]{ "lisp" });
         }
 
         [Test]
         public async Task Run_lisp_run_parse_rss()
         {
-            await Startup.CreateWebHost("web", new[]{ "run", "..\\..\\..\\parse-rss.l" });
+            await Startup.CreateWebHost("x", new[]{ "run", "..\\..\\..\\parse-rss.l" });
         }
  
         [Test]
         public async Task Run_ts_http2()
         {
-            await Startup.CreateWebHost("web", new[]{ "ts", "https://localhost:5001" });
+            await Startup.CreateWebHost("x", new[]{ "ts", "https://localhost:5001" });
         }
 
         [Test]
         public async Task Run_proto_url()
         {
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
-            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5001" });
+            await Startup.CreateWebHost("x", new[]{ "proto", "https://localhost:5001" });
         }
 
         [Test]
         public async Task Run_proto_url_file()
         {
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
-            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5001", "grpc.services.proto" });
+            await Startup.CreateWebHost("x", new[]{ "proto", "https://localhost:5001", "grpc.services.proto" });
         }
 
         [Test]
         public async Task Run_proto_update_multiple()
         {
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
-            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5001", "todoworld" });
-            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5002", "alltypes" });
-            await Startup.CreateWebHost("web", new[]{ "proto" });
+            await Startup.CreateWebHost("x", new[]{ "proto", "https://localhost:5001", "todoworld" });
+            await Startup.CreateWebHost("x", new[]{ "proto", "https://localhost:5002", "alltypes" });
+            await Startup.CreateWebHost("x", new[]{ "proto" });
         }
 
         [Test]
         public async Task Run_proto_langs()
         {
-            await Startup.CreateWebHost("web", new[]{ "proto-langs" });
+            await Startup.CreateWebHost("x", new[]{ "proto-langs" });
         }
 
         [Test]
         public async Task Run_proto_test_error()
         {
-//            await Startup.CreateWebHost("web", new[]{ "proto-test" });
-            await Startup.CreateWebHost("web", new[]{ "proto-test", "https://localhost:5001" });
+//            await Startup.CreateWebHost("x", new[]{ "proto-test" });
+            await Startup.CreateWebHost("x", new[]{ "proto-test", "https://localhost:5001" });
         }
 
         [Test]
         public async Task Run_proto_csharp()
         {
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
-            await Startup.CreateWebHost("web", new[]{ "proto-csharp", "https://localhost:5001", "todoworld" });
+            await Startup.CreateWebHost("x", new[]{ "proto-csharp", "https://localhost:5001", "todoworld" });
         }
 
         [Test]
         public async Task Run_proto_csharp_with_flags()
         {
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
-            await Startup.CreateWebHost("web", new[]{ "-v", "proto-csharp", "https://localhost:5001", "todoworld" });
+            await Startup.CreateWebHost("x", new[]{ "-v", "proto-csharp", "https://localhost:5001", "todoworld" });
         }
 
         [Test]
         public async Task Run_proto_csharp_with_outdir()
         {
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
-            await Startup.CreateWebHost("web", new[]{ "-v", "proto-csharp", "https://localhost:5001", "todoworld", "--out", "CSharp" });
+            await Startup.CreateWebHost("x", new[]{ "-v", "proto-csharp", "https://localhost:5001", "todoworld", "--out", "CSharp" });
         }
 
         [Test]
@@ -532,7 +532,7 @@ namespace Run
             foreach (var entry in response.Results)
             {
                 var lang = entry.Key;
-                await Startup.CreateWebHost("web", new[]{ "-v", "proto-" + lang, "https://localhost:5001", "todoworld", "--out", lang.ToPascalCase() });
+                await Startup.CreateWebHost("x", new[]{ "-v", "proto-" + lang, "https://localhost:5001", "todoworld", "--out", lang.ToPascalCase() });
             }
         }
  
@@ -540,10 +540,10 @@ namespace Run
         public async Task Run_proto_csharp_proto_and_file_update()
         {
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
-            await Startup.CreateWebHost("web", new[]{ "proto", "https://localhost:5001", "todoworld" });
+            await Startup.CreateWebHost("x", new[]{ "proto", "https://localhost:5001", "todoworld" });
             
-            await Startup.CreateWebHost("web", new[]{ "proto", "todoworld.services.proto" }); // update .proto
-            await Startup.CreateWebHost("web", new[]{ "proto-csharp", "todoworld.services.proto" }); // update .cs
+            await Startup.CreateWebHost("x", new[]{ "proto", "todoworld.services.proto" }); // update .proto
+            await Startup.CreateWebHost("x", new[]{ "proto-csharp", "todoworld.services.proto" }); // update .cs
         }
  
         [Test]
@@ -552,7 +552,7 @@ namespace Run
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
             "..\\..\\protos\\alltypes".CopyAllTo(Environment.CurrentDirectory);
             
-            await Startup.CreateWebHost("web", new[]{ "proto-csharp", "." }); // update .cs
+            await Startup.CreateWebHost("x", new[]{ "proto-csharp", "." }); // update .cs
         }
  
         [Test]
@@ -560,7 +560,7 @@ namespace Run
         {
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
             
-            await Startup.CreateWebHost("web", new[]{ "proto-csharp", "..\\..\\protos\\alltypes", "-out", "CSharp" }); // update .cs
+            await Startup.CreateWebHost("x", new[]{ "proto-csharp", "..\\..\\protos\\alltypes", "-out", "CSharp" }); // update .cs
         }
  
         [Test]
@@ -569,7 +569,7 @@ namespace Run
             DeleteCreateAndSetDirectory("wip\\TestGrpc");
             "..\\..\\protos\\alltypes".CopyAllTo(Path.Combine(Environment.CurrentDirectory, "alltypes"));
             
-            await Startup.CreateWebHost("web", new[]{ "proto-csharp" }); // update .cs
+            await Startup.CreateWebHost("x", new[]{ "proto-csharp" }); // update .cs
         }
 
         [Test]
@@ -577,7 +577,7 @@ namespace Run
         {
             DeleteCreateAndSetDirectory("wip\\TestAurelia");
             //"web new aurelia-spa testproject --verbose"
-            await Startup.CreateWebHost("web", new[]{ "new", "aurelia-spa", "testpoject" });
+            await Startup.CreateWebHost("x", new[]{ "new", "aurelia-spa", "testpoject" });
         }
 
         [Test]
@@ -585,7 +585,7 @@ namespace Run
         {
             DeleteCreateAndSetDirectory("wip\\TestRepo");
             //"web new aurelia-spa testproject --verbose"
-            await Startup.CreateWebHost("web", new[]{ "new", "mythz/web", "TheProject" });
+            await Startup.CreateWebHost("x", new[]{ "new", "mythz/web", "TheProject" });
         }
 
         [Test]
@@ -593,7 +593,7 @@ namespace Run
         {
             DeleteCreateAndSetDirectory("wip\\TestRepo");
             //"web new aurelia-spa testproject --verbose"
-            await Startup.CreateWebHost("web", new[]{ "new", "https://github.com/mythz/web/archive/master.zip", "TheProject" });
+            await Startup.CreateWebHost("x", new[]{ "new", "https://github.com/mythz/web/archive/master.zip", "TheProject" });
         }
 
         [Test]
@@ -1191,15 +1191,40 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
-        public void name()
+        public async Task Run_open_redis_mix()
         {
-            var client = new JsonServiceClient("http://test.servicestack.net");
-            client.CaptureHttp(print:true);
-
-            var authResponse = client.Send(new Authenticate { provider = "credentials", UserName = "admin", Password = "test" });
+            Directory.SetCurrentDirectory("C:\\src\\mix\\apps\\redis");
+            var host = (await Startup.CreateWebHost("x", Array.Empty<string>()))?.Build();
+            await host?.RunAsync();
         }
 
-        
+        [Test]
+        public async Task Can_patch_package_json_scripts()
+        {
+            DeleteCreateAndSetDirectory("wip\\TestRepo");
+            await File.WriteAllTextAsync("package.json.patch", "[{ \"op\":\"add\", \"path\":\"/scripts/migrate\", \"value\":\"dotnet run --AppTasks=migrate\" }]");
+            await Startup.CreateWebHost("x", new[]{ "patch", "package.json.patch" });
+            (await File.ReadAllTextAsync("package.json")).Print();
+            
+            Assert.That(File.Exists("package.json.patch"));
+
+            await File.WriteAllTextAsync("package.json.patch", "[" +
+               "{ \"op\":\"add\", \"path\":\"/scripts/revert:last\", \"value\":\"dotnet run --AppTasks=migrate.revert:last\" }," +
+               "{ \"op\":\"add\", \"path\":\"/scripts/revert:all\", \"value\":\"dotnet run --AppTasks=migrate.revert:all\" }," +
+            "]");
+            await Startup.CreateWebHost("x", new[]{ "patch", "package.json.patch", "-remove" });
+            (await File.ReadAllTextAsync("package.json")).Print();
+
+            Assert.That(File.Exists("package.json.patch"), Is.False);
+        }
+
+        [Test]
+        public async Task Can_mix_sqlite_vnext()
+        {
+            Directory.SetCurrentDirectory("C:\\src\\wip\\vnext\\PatchTest\\PatchTest");
+            await Startup.CreateWebHost("x", new[]{ "mix", "sqlite-vnext" });
+        }
+       
         [Test]
         public void Adhoc()
         {
