@@ -49,7 +49,7 @@ namespace Web
     {
         public string Tool { get; set; }
         public string[] Arguments { get; set; }
-        public string WebSettingsPath { get; set; }
+        public string AppSettingsPath { get; set; }
         public string StartUrl { get; set; }
         public string UseUrls { get; set; }
         public string IconPath { get; set; }
@@ -71,7 +71,7 @@ namespace Web
         {
             [nameof(Tool)] = Tool,
             [nameof(Arguments)] = Arguments,
-            [nameof(WebSettingsPath)] = WebSettingsPath,
+            [nameof(AppSettingsPath)] = AppSettingsPath,
             [nameof(StartUrl)] = StartUrl,
             [nameof(UseUrls)] = UseUrls,
             [nameof(IconPath)] = IconPath,
@@ -286,13 +286,13 @@ namespace Web
                     
                     return null;
                 }
-                if (arg == "mix" || arg == "-mix")
+                if (arg is "mix" or "-mix")
                 {
                     if (!await Mix($"{tool} mix", new[] {args[++i]}))
                         return null;
                     continue;
                 }
-                if (arg == "run" || arg == "watch")
+                if (arg is "run" or "watch")
                 {
                     if (i + 1 >= args.Length)
                     {
@@ -315,6 +315,7 @@ namespace Web
                         string appsDir = GetAppsPath(script);
                         if (Directory.Exists(appsDir))
                         {
+                            WebTemplateUtils.AppName = script;
                             RetryExec(() => Directory.SetCurrentDirectory(appsDir));
                             runSharpApp = true;
 
@@ -345,7 +346,7 @@ namespace Web
                     for (; i < args.Length; i++)
                     {
                         var key = args[i];
-                        if (key == "mix" || key == "-mix")
+                        if (key is "mix" or "-mix")
                         {
                             if (++i >= args.Length)
                                 throw new Exception($"Usage: {tool} run <name> mix <gist>");
@@ -406,7 +407,7 @@ namespace Web
                     for (; i < args.Length; i++)
                     {
                         var key = args[i];
-                        if (key == "mix" || key == "-mix")
+                        if (key is "mix" or "-mix")
                         {
                             if (++i >= args.Length)
                                 throw new Exception($"Usage: {tool} open <name> mix <gist>");
@@ -432,7 +433,7 @@ namespace Web
                     }
                     continue;
                 }
-                if (arg == "install" || arg == "i")
+                if (arg is "install" or "i")
                 {
                     var gistLinks = GetGistAppsLinks();
 
@@ -753,7 +754,7 @@ namespace Web
                 Tool = tool,
                 Arguments = dotnetArgs.ToArray(),
                 RunProcess = runProcess,
-                WebSettingsPath = appSettingsPath,
+                AppSettingsPath = appSettingsPath,
                 AppSettings = WebTemplateUtils.AppSettings,
                 AppDir = appDir.AssertDirectory(),
                 ToolPath = Assembly.GetExecutingAssembly().Location,
@@ -835,6 +836,17 @@ namespace Web
                     appSettings = new DictionarySettings(page.Args.ToStringDictionary());
             }
 
+            // Override any app settings with user app settings  
+            var userAppSettingsPath = AppSettingsUtils.GetUserAppSettingsPath(WebTemplateUtils.AppName);
+            if (userAppSettingsPath != null && File.Exists(userAppSettingsPath))
+            {
+                var userAppSettings = (await File.ReadAllTextAsync(userAppSettingsPath)).ParseKeyValueText(delimiter: " ");
+                foreach (var setting in userAppSettings)
+                {
+                    appSettings.Set(setting.Key, setting.Value);
+                }
+            }
+
             WebTemplateUtils.AppSettings = new MultiAppSettings(
                 appSettings,
                 new EnvironmentVariableSettings());
@@ -866,7 +878,7 @@ namespace Web
 
                 var toolPath = ctx.ToolPath;
                 var arguments = createShortcutFor == null
-                    ? $"\"{ctx.WebSettingsPath}\""
+                    ? $"\"{ctx.AppSettingsPath}\""
                     : $"\"{createShortcutFor}\"";
 
                 var targetPath = toolPath;
@@ -967,8 +979,7 @@ namespace Web
                     .UseSetting(WebHostDefaults.SuppressStatusMessagesKey, "True")
                     .UseContentRoot(contentRoot)
                     .UseWebRoot(useWebRoot)
-                    .ConfigureLogging(config =>
-                    {
+                    .ConfigureLogging(config => {
                         if (!GetDebugMode() && !Verbose &&
                             Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
                         {
@@ -1473,6 +1484,7 @@ namespace Web
 
             if (gistId != null)
             {
+                WebTemplateUtils.AppName ??= target.IndexOf('/') == -1 ? target : gistId;
                 GistVfs = new GistVirtualFiles(gistId);
                 GistVfsTask = GistVfs.GetGistAsync(); // fire to load asynchronously
             }
@@ -1519,6 +1531,7 @@ namespace Web
             DeleteDirectory(installDir);
             MoveDirectory(new DirectoryInfo(tmpDir).GetDirectories().First().FullName, installDir);
             
+            WebTemplateUtils.AppName = appName;
             $"Installed App '{appName}'".Print();
             
             return installDir;
@@ -4026,6 +4039,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 appHost = new AppHost();
 
             WebTemplateUtils.AppHost = appHost;
+            appHost.AppName = WebTemplateUtils.AppName;
 
             if (assemblies.Count > 0)
             {
@@ -4109,6 +4123,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
     {
         public static AppHostBase AppHost;
         public static IAppSettings AppSettings;
+        public static string AppName;
         public static IVirtualFiles VirtualFiles;
 
         public static string AssertDirectory(this DirectoryInfo dir) => AssertDirectory(dir?.FullName);

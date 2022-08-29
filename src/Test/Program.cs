@@ -1199,6 +1199,56 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Run_open_redis_repo()
+        {
+            var host = (await Startup.CreateWebHost("app", new[]{ "open", "sharp-apps/redis" }))?.Build();
+            await host?.RunAsync();
+        }
+
+        [Test]
+        public async Task Run_open_redis_repo_url()
+        {
+            var host = (await Startup.CreateWebHost("app", new[]{ "open", "https://github.com/sharp-apps/redis" }))?.Build();
+            await host?.RunAsync();
+        }
+
+        [Test]
+        public async Task Open_redis()
+        {
+            var host = (await Startup.CreateWebHost("app", new []{ "open", "redis" }))?.Build();
+            await host?.RunAsync();
+        }
+
+        [Test]
+        public async Task Run_redis()
+        {
+            var host = (await Startup.CreateWebHost("app", new []{ "run", "redis" }))?.Build();
+            await host?.RunAsync();
+        }
+
+        [Test]
+        public async Task Open_redis_gist()
+        {
+            var host = (await Startup.CreateWebHost("app", new []{ "open", "c936ca5fdb4590d9be5eed23fb73a8cf" }))?.Build();
+            await host?.RunAsync();
+        }
+
+        [Test]
+        public async Task Open_redis_gist_url()
+        {
+            var host = (await Startup.CreateWebHost("app", new []{ "open", "https://gist.github.com/gistlyn/c936ca5fdb4590d9be5eed23fb73a8cf" }))?.Build();
+            await host?.RunAsync();
+        }
+
+        [Test]
+        public async Task Open_redis_repo()
+        {
+            Directory.SetCurrentDirectory("C:\\src\\sharp-apps\\redis");
+            var host = (await Startup.CreateWebHost("app", Array.Empty<string>()))?.Build();
+            await host?.RunAsync();
+        }
+
+        [Test]
         public async Task Can_patch_package_json_scripts()
         {
             DeleteCreateAndSetDirectory("wip\\TestRepo");
