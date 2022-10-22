@@ -14,6 +14,10 @@ using ServiceStack;
 using ServiceStack.Configuration;
 using ServiceStack.Script;
 using ServiceStack.Text;
+using Web.Dtos;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+using Environment = System.Environment;
 
 namespace Web
 {
@@ -895,6 +899,64 @@ namespace Web
                         $"Could not Convert Base64 binary file '{filePath}': {ex.Message}".Print();
                         throw;
                     }
+                }
+                else if (filePath.EndsWith("|merge"))
+                {
+                    filePath = filePath.LastLeftPart("|");
+                    // Check valid file type before |merge that it is supported
+                    // Eg, yml for now
+                    // read gist file contents
+                    // traverse structure to last child node
+                    var yamlDeserializer = new DeserializerBuilder()
+                        .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                        .IgnoreUnmatchedProperties().Build();
+                    var yamlSerializer = new SerializerBuilder()
+                        .WithEventEmitter(emitter => new ActionWithEmitter(emitter))
+                        .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                        .Build();
+                    var gistYml = yamlDeserializer.Deserialize<Workflow>(fileContents);
+                    string sourceContents;
+
+                    List<ReplacementStep> stepsToReplace = new();
+                    foreach (var job in gistYml.Jobs)
+                    {
+                        foreach (var valueStep in job.Value.Steps)
+                        {
+                            stepsToReplace.Add(new ReplacementStep
+                            {
+                                Step = valueStep,
+                                JobKey = job.Key,
+                                StepKey = valueStep.Name
+                            });
+                        }
+                    }
+                    
+                    using (var sourceReader = File.OpenRead(filePath))
+                    {
+                        sourceContents = sourceReader.ReadToEnd();
+                    }
+                    
+                    var sourceYml = (Dictionary<object,object>)yamlDeserializer.Deserialize(new StringReader(sourceContents));
+                    var jobs = (Dictionary<object, object>)sourceYml["jobs"];
+                    foreach (var replacementStep in stepsToReplace)
+                    {
+                        var jobRef = (Dictionary<object,object>)jobs[replacementStep.JobKey];
+                        var steps = (List<object>)jobRef["steps"];
+                        for (var index = 0; index < steps.Count; index++)
+                        {
+                            if (steps[index] is Dictionary<object, object> step && 
+                                (string)step["name"] == replacementStep.StepKey)
+                            {
+                                steps[index] = replacementStep.Step;
+                            }
+                        }
+                    }
+                    File.WriteAllText(filePath, yamlSerializer.Serialize(sourceYml));
+                    // save path to last child node
+                    // check to make sure same schema exists in target file
+                    // replace contents of target file at same child node
+                    // Use key or "name" to match
+                    // Save result
                 }
                 else
                 {

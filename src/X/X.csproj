@@ -50,6 +50,7 @@
     <PackageReference Include="NUglify" Version="1.20.0" />
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="6.0.1" />
     <PackageReference Include="WinApi" Version="4.*" />
+    <PackageReference Include="YamlDotNet" Version="12.0.2" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="6.0.8" />
     
@@ -82,6 +83,9 @@
     </Compile>
     <Compile Include="..\Web\FSharpLangInfo.cs">
       <Link>FSharpLangInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Web\GitHubActionDtos.cs">
+      <Link>GitHubActionDtos.cs</Link>
     </Compile>
     <Compile Include="..\Web\LangInfo.cs">
       <Link>LangInfo.cs</Link>
