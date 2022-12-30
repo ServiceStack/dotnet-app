@@ -3203,6 +3203,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"fs", "fsharp"},
             {"vb", "vbnet"},
             {"py", "python"},
+            {"mjs", "mjs"},
             {"tsd", "typescript.d"},
             {"po", "proto"},
         };
@@ -3220,6 +3221,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"python", "dtos.py"},
             {"php", "dtos.php"},
             {"go", "dtos.go"},
+            {"mjs", "dtos.mjs"},
             {"typescript.d", "dtos.d.ts"},
             {"proto", "services.proto"},
         };
