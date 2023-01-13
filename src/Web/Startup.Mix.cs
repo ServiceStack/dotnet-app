@@ -812,7 +812,8 @@ namespace Web
                         continue;
                     
                     var cmd = line.Trim();
-                    if (!cmd.StartsWith("nuget") && !cmd.StartsWith("dotnet"))
+                    if (!cmd.StartsWith("nuget") && !cmd.StartsWith("dotnet") && 
+                        !cmd.StartsWith("flutter") && !cmd.StartsWith("dart"))
                     {
                         if (Verbose) $"Command '{cmd}' not supported".Print();
                         continue;
@@ -828,6 +829,18 @@ namespace Web
                     if (cmd.StartsWith("dotnet") && !(cmd.StartsWith("dotnet add ") || 
                                                       cmd.StartsWith("dotnet restore ") || 
                                                       cmd.Equals("dotnet restore")))
+                    {
+                        if (Verbose) $"Command '{cmd}' not allowed".Print();
+                        continue;
+                    }
+                    if (cmd.StartsWith("flutter") && !(cmd.StartsWith("flutter create ")))
+                    {
+                        if (Verbose) $"Command '{cmd}' not allowed".Print();
+                        continue;
+                    }
+                    
+                    if (cmd.StartsWith("dart") && !(cmd.StartsWith("dart pub add") || 
+                                                    cmd.StartsWith("dart pub get")))
                     {
                         if (Verbose) $"Command '{cmd}' not allowed".Print();
                         continue;
@@ -866,7 +879,41 @@ namespace Web
                         {
                             $"'dotnet' not found in PATH, skipping: '{cmd}'".Print();                            
                         }
-                    }                    
+                    }
+                    else if (cmd.StartsWith("flutter"))
+                    {
+                        var flutterExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            ? "flutter.bat"
+                            : "flutter";
+                        if (GetExePath(flutterExe, out var flutterPath))
+                        {
+                            cmd.Print();
+                            var cmdArgs = cmd.RightPart(' ');
+                            cmdArgs = ReplaceMyApp(cmdArgs, projectName.Replace(".","_"));
+                            PipeProcess(flutterPath, cmdArgs, workDir: hostDir);
+                        }
+                        else
+                        {
+                            $"'flutter' not found in PATH, skipping: '{cmd}'".Print();                            
+                        }
+                    }
+                    else if (cmd.StartsWith("dart"))
+                    {
+                        var dartExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            ? "dart.bat"
+                            : "dart";
+                        if (GetExePath(dartExe, out var dartPath))
+                        {
+                            cmd.Print();
+                            var cmdArgs = cmd.RightPart(' ');
+                            cmdArgs = ReplaceMyApp(cmdArgs, projectName.Replace(".","_"));
+                            PipeProcess(dartPath, cmdArgs, workDir: hostDir);
+                        }
+                        else
+                        {
+                            $"'dart' not found in PATH, skipping: '{cmd}'".Print();                            
+                        }
+                    }
                 }
             }
             
@@ -914,7 +961,7 @@ namespace Web
                 }
             }
         }
-
+        
         public static async Task PatchJsonFileAsync(string targetFile, string patchFile)
         {
             if (!File.Exists(targetFile))
