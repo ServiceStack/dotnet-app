@@ -2265,6 +2265,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {
                 string GetRoutes(MetadataOperationType op)
                 {
+                    var delims = new[] { ',', ' ' };
                     var sb = StringBuilderCache.Allocate();
                     for (var i = 0; i < op.Routes.Count; i++)
                     {
@@ -2277,7 +2278,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         }
                         else
                         {
-                            sb.Append(route.Verbs.Replace(" ", ",")).Append(':').Append(route.Path);
+                            var verbs = route.Verbs.Split(delims, StringSplitOptions.RemoveEmptyEntries).Where(x => x != HttpMethods.Options);
+                            sb.Append(string.Join(',',verbs)).Append(':').Append(route.Path);
                         }
                     }
 
@@ -2291,6 +2293,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 {
                     RegisterStat(tool, arg);
                     $"Usage: {tool} inspect <base-url>".Print();
+                    $"       {tool} inspect <base-url> [tag]".Print();
                     $"       {tool} inspect <base-url> <request>".Print();
                     $"       {tool} inspect <base-url> <request> -lang <csharp|python|typescript|dart|java|kotlin|swift|fsharp|vbnet>".Print();
                     $"       {tool} inspect <base-url> <request> -lang <cs|py|ts|da|ja|kt|sw|fs|vb>".Print();
@@ -2308,8 +2311,12 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                 var csharp = new CSharpGenerator(new MetadataTypesConfig());
                 "".Print();
 
-                if (request == null)
+                if (request == null || request.StartsWith('['))
                 {
+                    var tagFilter = request?.StartsWith('[') == true
+                        ? request.RightPart('[').LastLeftPart(']').Split(',').ToSet(StringComparer.OrdinalIgnoreCase)
+                        : null;
+                    
                     $"Base URL:           {site.BaseUrl}".Print();
                     if (site.Metadata.App != null)
                     {
@@ -2327,21 +2334,41 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     "".Print();
 
                     var apis = new List<ApiInfo>();
+                    var jsonApiHandler = site.Metadata.HttpHandlers.TryGetValue("ApiHandlers.Json", out var value)
+                        ? value
+                        : null;
+                    
                     foreach (var op in site.Metadata.Api.Operations.Safe())
                     {
+                        if (tagFilter != null)
+                        {
+                            if (op.Tags == null || op.Tags.Count == 0)
+                                continue;
+                            if (!op.Tags.Any(tag => tagFilter.Contains(tag)))
+                                continue;
+                        }
+                        
                         var isAutoQuery = Apps.ServiceInterface.Sites.IsAutoQuery(op);
                         var api = new ApiInfo { 
                             Api = op.Request.Name,
-                            Routes = op.Response != null
-                                ? $"/json/reply/{op.Request.Name}"
-                                : $"/json/oneway/{op.Request.Name}",
+                            Routes = jsonApiHandler != null
+                                ? jsonApiHandler.Replace("{Request}", op.Request.Name)
+                                : op.Response != null
+                                    ? $"/json/reply/{op.Request.Name}"
+                                    : $"/json/oneway/{op.Request.Name}",
                             Response = op.Response != null
                                 ? csharp.Type(op.Response.Name, isAutoQuery ? new[]{ op.Request.Inherits.GenericArgs.Last() } : op.Response.GenericArgs)
-                                : null
+                                : null,
+                            Tags = op.Tags != null ? '[' + string.Join(",", op.Tags) + ']' : null
                         };
                         apis.Add(api);
                         if (op.Routes?.Count > 0)
                             api.Routes = GetRoutes(op);
+
+                        if (tagFilter != null)
+                        {
+                            apis = apis.OrderBy(x => x.Tags).ThenBy(x => x.Api).ToList();
+                        }
                     }
 
                     apis.PrintDumpTable();
@@ -4769,6 +4796,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
         public string Api { get; set; }
         public string Routes { get; set; }
         public string Response { get; set; }
+        public string Tags { get; set; }
     }
 
 }

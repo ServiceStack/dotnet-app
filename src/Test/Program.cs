@@ -1123,6 +1123,22 @@ Content-Disposition: form-data; name=""EvaluateCode""
         }
 
         [Test]
+        public async Task Can_inspect_blazordiffusion()
+        {
+            // Directory.SetCurrentDirectory("wip");
+            //await Startup.CreateWebHost("x", new[]{ "inspect", "https://api.blazordiffusion.com" });
+            await Startup.CreateWebHost("x", new[]{ "inspect", "https://localhost:5001" });
+        }
+
+        [Test]
+        public async Task Can_inspect_blazordiffusion_by_tag()
+        {
+            // Directory.SetCurrentDirectory("wip");
+            //await Startup.CreateWebHost("x", new[]{ "inspect", "https://api.blazordiffusion.com" });
+            await Startup.CreateWebHost("x", new[]{ "inspect", "https://localhost:5001", "[albums,artifacts]" });
+        }
+
+        [Test]
         public async Task Can_publish_studio()
         {
             Directory.SetCurrentDirectory("C:\\src\\Studio\\dist");
