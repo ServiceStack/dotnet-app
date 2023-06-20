@@ -63,7 +63,7 @@ namespace Run
 
         private static void DeleteDirectory(string dir)
         {
-            RetryExec(() => FileSystemVirtualFiles.DeleteDirectoryRecursive(dir));
+            RetryExec(() => FileSystemVirtualFiles.DeleteDirectory(dir));
         }
 
         private static void DeleteAndCreateDirectory(string dir)
