@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -139,9 +140,14 @@ namespace Web
         
         static string[] PathArgs = CreateArgs("path");
 
+        public static string[] QueryArgs = CreateArgs("query", withFlag:'q');
+        public static NameValueCollection QueryString { get; set; }
+
         public static string[] EvalArgs = CreateArgs("eval", withFlag:'e');
 
         public static string[] LangArgs = CreateArgs("lang");
+
+
         public static string Lang { get; set; }
         
         public static string[] Includes = { };
@@ -1402,6 +1408,13 @@ namespace Web
                 return true;
             }
 
+            if (QueryArgs.Contains(arg))
+            {
+                var qs = NextArg(ref i);
+                QueryString = HttpUtility.ParseQueryString(qs);
+                return true;
+            }
+
             if (DescriptionArgs.Contains(arg))
             {
                 Description = NextArg(ref i);
@@ -1714,9 +1727,9 @@ Usage:
   {tool} gist-update <id> <dir>   Update Gist ID with Directory Files      (requires token)
   {tool} gist-open <gist>         Download and open Gist folder            (-out <dir>)
 
-  {tool} <lang>                   Update all ServiceStack References in directory (recursive)
+  {tool} <lang>                   Update all ServiceStack References in directory  (recursive)
   {tool} <file>                   Update existing ServiceStack Reference (e.g. dtos.cs)
-  {tool} <lang>     <url> <file>  Add ServiceStack Reference and save to file name
+  {tool} <lang>     <url> <file>  Add ServiceStack Reference and save to file name (-q <args>)
   {tool} csharp     <url>         Add C# ServiceStack Reference            (Alias 'cs')
   {tool} typescript <url>         Add TypeScript ServiceStack Reference    (Alias 'ts')
   {tool} python     <url>         Add Python ServiceStack Reference        (Alias 'py')
@@ -1796,9 +1809,11 @@ Options:
     -f, --force               Quiet mode, always approve, never prompt   (Alias 'y')
     -p, --preserve            Don't overwrite existing files
     -e, --eval                Evaluate #Script Code
+    -q  --query               Include additional options in URL QueryString format
         --token               Use GitHub Auth Token 
         --clean               Delete downloaded caches
         --verbose             Display verbose logging
+        --quiet               Quiet mode
         --ignore-ssl-errors   Ignore SSL Errors
 
 This tool collects anonymous usage to determine the most used commands to improve your experience.
@@ -1877,6 +1892,9 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                                 ? target.CombineWith($"/types/{lang}")
                                 : target.CombineWith(PathArg)
                             : target;
+
+                        if (QueryString != null)
+                            typesUrl = typesUrl.AddQueryParams(QueryString); 
 
                         SaveReference(tool, lang, typesUrl, filePath);
                     } 

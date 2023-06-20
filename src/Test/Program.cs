@@ -463,6 +463,12 @@ namespace Run
         {
             await Startup.CreateWebHost("x", new[]{ "ts", "https://localhost:5001" });
         }
+ 
+        [Test]
+        public async Task Run_csharp_with_args()
+        {
+            await Startup.CreateWebHost("x", new[]{ "csharp", "https://localhost:5001", "-q", "IncludeTypes={mail}" });
+        }
 
         [Test]
         public async Task Run_proto_url()

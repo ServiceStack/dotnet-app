@@ -27,7 +27,7 @@ namespace Web
         public static string[] VerboseArgs = CreateArgs("verbose", withFlag:'v');
 
         public static bool Silent { get; set; }
-        static string[] QuietArgs = CreateArgs("quiet", withFlag:'q');
+        static string[] QuietArgs = CreateArgs("quiet");
 
         static string[] SourceArgs = CreateArgs("source", withFlag:'s');
 
