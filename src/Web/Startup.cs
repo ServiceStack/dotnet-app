@@ -1737,6 +1737,7 @@ Usage:
   {tool} java       <url>         Add Java ServiceStack Reference          (Alias 'ja')
   {tool} kotlin     <url>         Add Kotlin ServiceStack Reference        (Alias 'kt')
   {tool} dart       <url>         Add Dart ServiceStack Reference          (Alias 'da')
+  {tool} php        <url>         Add PHP ServiceStack Reference           (Alias 'ph')
   {tool} fsharp     <url>         Add F# ServiceStack Reference            (Alias 'fs')
   {tool} vbnet      <url>         Add VB.NET ServiceStack Reference        (Alias 'vb')
   {tool} tsd        <url>         Add TypeScript Definition ServiceStack Reference
@@ -1894,7 +1895,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             : target;
 
                         if (QueryString != null)
-                            typesUrl = typesUrl.AddQueryParams(QueryString); 
+                            typesUrl = typesUrl.AddNameValueCollection(QueryString); 
 
                         SaveReference(tool, lang, typesUrl, filePath);
                     } 
@@ -2313,8 +2314,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                     $"Usage: {tool} inspect <base-url>".Print();
                     $"       {tool} inspect <base-url> [tag]".Print();
                     $"       {tool} inspect <base-url> <request>".Print();
-                    $"       {tool} inspect <base-url> <request> -lang <csharp|python|typescript|dart|java|kotlin|swift|fsharp|vbnet>".Print();
-                    $"       {tool} inspect <base-url> <request> -lang <cs|py|ts|da|ja|kt|sw|fs|vb>".Print();
+                    $"       {tool} inspect <base-url> <request> -lang <csharp|python|typescript|dart|java|kotlin|swift|php|fsharp|vbnet>".Print();
+                    $"       {tool} inspect <base-url> <request> -lang <cs|py|ts|da|ja|kt|sw|ph|fs|vb>".Print();
                     return new Instruction { Handled = true };
                 }
                 
@@ -2443,7 +2444,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                             lang = langAlias;
                         if (!LangNames.TryGetValue(lang, out var langName))
                         {
-                            $"Unknown language {lang}, valid languages: <csharp|python|typescript|dart|java|kotlin|swift|fsharp|vbnet>".Print();
+                            $"Unknown language {lang}, valid languages: <csharp|python|typescript|dart|java|kotlin|swift|php|fsharp|vbnet>".Print();
                             return new Instruction { Handled = true };
                         }
 
@@ -3248,6 +3249,7 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
             {"fs", "fsharp"},
             {"vb", "vbnet"},
             {"py", "python"},
+            {"ph", "php"},
             {"mjs", "mjs"},
             {"tsd", "typescript.d"},
             {"po", "proto"},
