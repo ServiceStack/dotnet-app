@@ -469,6 +469,13 @@ namespace Run
         {
             await Startup.CreateWebHost("x", new[]{ "csharp", "https://localhost:5001", "-q", "IncludeTypes={mail}" });
         }
+ 
+        [Test]
+        public async Task Run_php()
+        {
+            Directory.SetCurrentDirectory(@"C:\src\ServiceStack\servicestack-php\tests");
+            await Startup.CreateWebHost("x", new[]{ "php" });
+        }
 
         [Test]
         public async Task Run_proto_url()
