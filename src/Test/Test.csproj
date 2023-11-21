@@ -2,8 +2,8 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net6.0</TargetFramework>
-        <Version>0.0.16</Version>
+        <TargetFramework>net8.0</TargetFramework>
+        <Version>0.0.17</Version>
         <AssemblyName>Run</AssemblyName>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
         <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
@@ -25,21 +25,20 @@
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
 
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
-        <PackageReference Include="NUnit" Version="3.13.3" />
-        <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+        <PackageReference Include="NUnit" Version="3.*" />
+        <PackageReference Include="NUnit3TestAdapter" Version="4.*" />
 
-        <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.11" />
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
-        <PackageReference Include="Mysql.Data" Version="8.1.0" />
+        <PackageReference Include="System.Drawing.Common" Version="8.*" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="8.*" />
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.*" />
+        <PackageReference Include="Mysql.Data" Version="8.*" />
         <PackageReference Include="Npgsql" Version="7.0.6" />
         <PackageReference Include="Markdig" Version="0.33.0" />
         <PackageReference Include="NUglify" Version="1.21.0" />
-        <PackageReference Include="System.Net.Http.WinHttpHandler" Version="7.0.0" />
+        <PackageReference Include="System.Net.Http.WinHttpHandler" Version="8.*" />
         <PackageReference Include="WinApi" Version="4.*" />
         <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-        <PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="6.0.12" />
-
+        <PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="8.*" />
 
         <!--<PackageReference Include="ServiceStack.Text" Version="6.*" />-->
         <!--<PackageReference Include="ServiceStack.Interfaces" Version="6.*" />-->
