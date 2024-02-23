@@ -32,9 +32,9 @@
         <PackageReference Include="Microsoft.Data.Sqlite" Version="8.*" />
         <PackageReference Include="Microsoft.Data.SqlClient" Version="5.*" />
         <PackageReference Include="Mysql.Data" Version="8.*" />
-        <PackageReference Include="Npgsql" Version="7.0.6" />
-        <PackageReference Include="Markdig" Version="0.33.0" />
-        <PackageReference Include="NUglify" Version="1.21.0" />
+        <PackageReference Include="Npgsql" Version="8.0.1" />
+        <PackageReference Include="Markdig" Version="0.35.0" />
+        <PackageReference Include="NUglify" Version="1.21.4" />
         <PackageReference Include="System.Net.Http.WinHttpHandler" Version="8.*" />
         <PackageReference Include="WinApi" Version="4.*" />
         <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
