@@ -3059,9 +3059,8 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
 
                 // Install npm dependencies (if any)
                 var packageJsons = Directory.GetFiles(projectDir.FullName, "package.json", SearchOption.AllDirectories);
-                if (packageJsons.Length == 1)
+                foreach (var packageJson in packageJsons)
                 {
-                    var packageJson = packageJsons[0];
                     if (Verbose) $"Found {packageJson}".Print();
 
                     var npmScript = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "npm.cmd" : "npm";
@@ -3075,7 +3074,6 @@ To disable set SERVICESTACK_TELEMETRY_OPTOUT=1 environment variable to 1 using y
                         $"'npm' not found in PATH, skipping npm install.".Print();
                     }
                 }
-                else if (Verbose) $"Found {packageJsons.Length} package.json".Print();
 
                 // Install libman dependencies (if any)
                 var packageLibmans = Directory.GetFiles(projectDir.FullName, "libman.json", SearchOption.AllDirectories);
