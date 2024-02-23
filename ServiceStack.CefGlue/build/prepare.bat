@@ -1,3 +1,4 @@
+REM https://gitlab.com/xiliumhq/chromiumembedded/cefglue
 REM COPY https://cef-builds.spotifycdn.com/index.html#windows64 into C:\src\cef_binary_windows64
 
 XCOPY /E /Y C:\src\cef_binary_windows64\include C:\src\cefglue\CefGlue.Interop.Gen\include\
