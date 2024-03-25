@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="2.1.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.5.1" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
     <PackageReference Include="Mysql.Data" Version="8.0.12" />
     <PackageReference Include="Npgsql" Version="4.0.2" />
     <PackageReference Include="ServiceStack.Core" Version="5.*" />
