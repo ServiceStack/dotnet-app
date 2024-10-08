@@ -1,0 +1,1 @@
+dotnet pack U.csproj -c release -o nupkg

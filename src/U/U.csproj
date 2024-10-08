@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
-        <Version>0.0.2</Version>
+        <TargetFramework>net8.0</TargetFramework>
+        <Version>0.0.3</Version>
         <AssemblyName>u</AssemblyName>
         <IsPackable>true</IsPackable>
         <PackageId>u</PackageId>
