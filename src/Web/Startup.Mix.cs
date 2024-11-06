@@ -813,7 +813,8 @@ namespace Web
                     
                     var cmd = line.Trim();
                     if (!cmd.StartsWith("nuget") && !cmd.StartsWith("dotnet") && 
-                        !cmd.StartsWith("flutter") && !cmd.StartsWith("dart"))
+                        !cmd.StartsWith("flutter") && !cmd.StartsWith("dart") &&
+                        !cmd.StartsWith("kamal"))
                     {
                         if (Verbose) $"Command '{cmd}' not supported".Print();
                         continue;
@@ -841,6 +842,12 @@ namespace Web
                     
                     if (cmd.StartsWith("dart") && !(cmd.StartsWith("dart pub add") || 
                                                     cmd.StartsWith("dart pub get")))
+                    {
+                        if (Verbose) $"Command '{cmd}' not allowed".Print();
+                        continue;
+                    }
+                    
+                    if (cmd.StartsWith("kamal") && !(cmd.StartsWith("kamal init")))
                     {
                         if (Verbose) $"Command '{cmd}' not allowed".Print();
                         continue;
@@ -912,6 +919,23 @@ namespace Web
                         else
                         {
                             $"'dart' not found in PATH, skipping: '{cmd}'".Print();                            
+                        }
+                    }                   
+                    else if (cmd.StartsWith("kamal"))
+                    {
+                        var kamalExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            ? "kamal.bat"
+                            : "kamal";
+                        if (GetExePath(kamalExe, out var kamalPath))
+                        {
+                            cmd.Print();
+                            var cmdArgs = cmd.RightPart(' ');
+                            cmdArgs = ReplaceMyApp(cmdArgs, projectName.Replace(".","_"));
+                            PipeProcess(kamalPath, cmdArgs, workDir: hostDir);
+                        }
+                        else
+                        {
+                            $"'kamal' not found in PATH, skipping: '{cmd}'".Print();                            
                         }
                     }
                 }
