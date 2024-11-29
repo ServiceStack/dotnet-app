@@ -18,7 +18,7 @@
     <PackageIconUrl>https://servicestack.net/img/logo-128.png</PackageIconUrl>
     <LangVersion>latest</LangVersion>
     <RootNamespace>Web</RootNamespace>
-    <DefineConstants>$(DefineConstants);NETCORE;NET6_0</DefineConstants>
+    <DefineConstants>$(DefineConstants);NETCORE;NET6_0;NET8_0_OR_GREATER;NET8_0</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
 
