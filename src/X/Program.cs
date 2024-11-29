@@ -15,17 +15,17 @@ namespace Web
     {
         public static async Task Main(string[] cmdArgs)
         {
-            Startup.GetAppHostInstructions = _ => new AppHostInstructions {
-                ImportParams = DesktopConfig.Instance.ImportParams,
-            };
-            DesktopState.Tool = "x";
-            DesktopState.ToolVersion = Startup.GetVersion();
-            DesktopState.AppDebug = cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
-            if (DesktopState.AppDebug)
-                Startup.DebugMode = true;
-            
             try
             {
+                Startup.GetAppHostInstructions = _ => new AppHostInstructions {
+                    ImportParams = DesktopConfig.Instance.ImportParams,
+                };
+                DesktopState.Tool = "x";
+                DesktopState.ToolVersion = Startup.GetVersion();
+                DesktopState.AppDebug = cmdArgs.Any(x => Startup.DebugArgs.Contains(x));
+                if (DesktopState.AppDebug)
+                    Startup.DebugMode = true;
+            
                 var firstArg = cmdArgs.FirstOrDefault();
                 if (firstArg?.StartsWith("app:") == true || firstArg?.StartsWith("sharp:") == true || firstArg?.StartsWith("xapp:") == true)
                 {
@@ -49,8 +49,6 @@ namespace Web
             } 
             catch (Exception ex)
             {
-                if (!Startup.Verbose)
-                    Startup.Verbose = cmdArgs.Any(x => x.Contains("verbose"));
                 ex.HandleProgramExceptions();
             }
         }
