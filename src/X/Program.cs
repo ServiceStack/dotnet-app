@@ -49,6 +49,8 @@ namespace Web
             } 
             catch (Exception ex)
             {
+                if (!Startup.Verbose)
+                    Startup.Verbose = cmdArgs.Any(x => x.Contains("verbose"));
                 ex.HandleProgramExceptions();
             }
         }
